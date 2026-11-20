@@ -105,19 +105,19 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 - **8A ✅ feito (20/11/2026):** `scripts/cenarios.py` conversa com a IA de verdade numa clínica de teste e confere no banco; C16/C17/C18/C20 pelos testes automáticos. Resultado: 25 de 25. Achados corrigidos: transferência sem texto virava "problema técnico"; aviso da política de cancelamento não chegava ao paciente; limite de consultas só era avisado no fim; impasse (deadlock) em marcações simultâneas.
 - **8B ✅ feito (20/11/2026):** proteções de produção (backend não sobe com configuração incompleta, sem `https://` ou apontando para dev; chat de teste e documentação da API desligados; cookies só por HTTPS); `docker-compose.yml` com backend (1 processo, sem root, sem segredos na imagem) + painel servido pelo Caddy com HTTPS automático (Modo A) ou atrás do proxy existente (Modo B); `docs/GUIA-PRODUCAO.md`. Testado localmente com Docker: guarda de produção, painel, API, webhook assinado, SSE e conexão pelo Session pooler.
 
-## Etapa 9 — Outros segmentos e personalização — 🔨 em andamento
+## Etapa 9 — Outros segmentos e personalização ✅ (20/11/2026)
 **Por quê:** vender a Ísis também para médicos, fisioterapeutas, psicólogos, estética e outros negócios com agenda (D38–D41).
 
 - **9A — Segmentos e palavras:** ✅ feito e testado (20/11/2026, clínica de Psicologia). Segmento por clínica (escolhido ao criar no admin geral, editável no Perfil); palavras ajustáveis
   (profissional / cliente / atendimento); procedimentos iniciais por segmento; a assistente, as mensagens automáticas e as telas
   usam as palavras da clínica; urgências e "o que a assistente não é" por segmento; lembrete discreto.
 - **9B — Aparência e fotos:** ✅ feito e testado (20/11/2026). Logo ao lado do nome da clínica e cor principal (Configurações › Perfil › Aparência, com prévia; cores claras demais são recusadas); foto de perfil de cada usuário (Perfil › Minha conta); foto de cada lead/cliente (Leads / Clientes › editar), que aparece na lista e no CRM. Imagens PNG/JPG/WebP até 512 KB guardadas no banco (D40, D47).
-- **9C — Observações do cliente:** 🔨 em andamento (D48, D49). Em Leads / Clientes, histórico de observações em texto com formatação, cada uma com data e autor, e um botão que abre a pasta do Google Drive do cliente (só o link, sem integração).
+- **9C — Observações do cliente:** ✅ feito e testado (20/11/2026; D48, D49). Em Leads / Clientes, histórico de observações em texto com formatação, cada uma com data e autor, e um botão que abre a pasta do Google Drive do cliente (só o link, sem integração).
 
 **O que testar:** criar uma clínica de Psicologia no admin geral, conversar no chat de teste e conferir que a assistente fala
 em "sessão" e "psicólogo(a)", que o lembrete não cita o procedimento e que as telas trocam as palavras.
 
-## Etapa 10 — IA de cada clínica e controle de gastos — ⏳ liberada (D42–D46), começa depois da 9B
+## Etapa 10 — IA de cada clínica e controle de gastos — 🔨 em andamento (D42–D46)
 Cada clínica cadastra a própria chave (Google, OpenAI, OpenCode ou OpenRouter), escolhe o modelo, acompanha tokens e custo
 estimado e define um teto mensal. Substitui a D36 (IA paga por uso antes do 1º cliente).
 - **10A — Chave e modelo:** chave criptografada por clínica, provedores Google/OpenAI/OpenCode/OpenRouter, "Testar conexão", assistente desligada sem chave, opção "usar a chave da plataforma" no admin geral.

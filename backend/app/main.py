@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.agenda.erros import AgendaError
-from app.api import admin, agenda, auth, configuracoes, health, painel, webhooks
+from app.api import admin, agenda, auth, configuracoes, health, observacoes, painel, webhooks
 from app.config import get_settings
 from app.core.producao import problemas
 from app.db import fechar_pool
@@ -61,3 +61,4 @@ app.include_router(painel.router)
 app.include_router(webhooks.router)
 app.include_router(admin.router)
 app.include_router(configuracoes.router)
+app.include_router(observacoes.router)

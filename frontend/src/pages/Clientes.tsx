@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Search, Users } from 'lucide-react'
+import { FolderOpen, NotebookPen, Pencil, Search, Users } from 'lucide-react'
 import { api, type Etapa, type Paciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, telefone } from '../lib/formato'
@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader'
 import { Botao, Campo, Entrada, Modal, Selo, Vazio, type CorSelo } from '../components/ui'
 import { useTermos } from '../lib/termos'
 import { EnviarImagem, Retrato } from '../components/Imagem'
+import { ModalObservacoes } from '../components/ModalObservacoes'
 
 const ETAPA: Record<Etapa, [string, CorSelo]> = {
   novo_contato: ['Novo contato', 'rosa'],
@@ -24,6 +25,7 @@ export function Clientes() {
   const [busca, setBusca] = useState('')
   const [termo, setTermo] = useState('')
   const [editando, setEditando] = useState<Paciente | null>(null)
+  const [notas, setNotas] = useState<Paciente | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setTermo(busca.trim()), 300)
@@ -77,7 +79,23 @@ export function Clientes() {
                       <td className="py-2.5 pr-4">{p.proxima_consulta ? dataCurta(p.proxima_consulta, tz) : '—'}</td>
                       <td className="py-2.5 pr-4">{p.dentista_referencia ?? '—'}</td>
                       <td className="py-2.5 pr-4 capitalize">{p.origin}</td>
-                      <td className="py-2.5 text-right">
+                      <td className="whitespace-nowrap py-2.5 text-right">
+                        {p.drive_url && (
+                          <a href={p.drive_url} target="_blank" rel="noopener noreferrer" title="Abrir pasta no Google Drive"
+                            aria-label={`Abrir pasta no Drive de ${p.name ?? ''}`}
+                            className="inline-grid rounded-lg p-1.5 text-muted hover:bg-surface-muted hover:text-text">
+                            <FolderOpen className="size-4" />
+                          </a>
+                        )}
+                        <button type="button" title="Observações" aria-label={`Observações de ${p.name ?? ''}`} onClick={() => setNotas(p)}
+                          className="relative rounded-lg p-1.5 text-muted hover:bg-surface-muted hover:text-text">
+                          <NotebookPen className="size-4" />
+                          {p.notas > 0 && (
+                            <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-medium leading-4 text-primary-contrast">
+                              {p.notas}
+                            </span>
+                          )}
+                        </button>
                         <button type="button" aria-label={`Editar ${p.name ?? ''}`} onClick={() => setEditando(p)} className="rounded-lg p-1.5 text-muted hover:bg-surface-muted hover:text-text">
                           <Pencil className="size-4" />
                         </button>
@@ -91,6 +109,7 @@ export function Clientes() {
         )}
       </div>
       <ModalEditar paciente={editando} onFechar={() => setEditando(null)} />
+      <ModalObservacoes paciente={notas} onFechar={() => setNotas(null)} />
     </>
   )
 }
@@ -101,13 +120,11 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
   const aviso = useAviso()
   const [nome, setNome] = useState('')
   const [nasc, setNasc] = useState('')
-  const [obs, setObs] = useState('')
   const [foto, setFoto] = useState<number | null>(null)
   const qc = useQueryClient()
   useEffect(() => {
     setNome(paciente?.name ?? '')
     setNasc(paciente?.birth_date ?? '')
-    setObs(paciente?.notes ?? '')
     setFoto(paciente?.foto_versao ?? null)
   }, [paciente])
   const urlFoto = `/clinics/${clinica.id}/patients/${paciente?.id}/foto`
@@ -122,7 +139,7 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
   })
 
   const salvar = useMutation({
-    mutationFn: () => api.patch(`/clinics/${clinica.id}/patients/${paciente!.id}`, { name: nome || null, birth_date: nasc || null, notes: obs || null }),
+    mutationFn: () => api.patch(`/clinics/${clinica.id}/patients/${paciente!.id}`, { name: nome || null, birth_date: nasc || null }),
     onSuccess: () => { aviso.ok(`${pal.Cliente} atualizado`); onFechar() },
     onError: aviso.erro,
   })
@@ -141,7 +158,6 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
         <p className="text-sm text-muted">Telefone: {paciente && telefone(paciente.phone)} (é a chave do {pal.cliente} e não muda)</p>
         <Campo rotulo="Nome completo"><Entrada value={nome} onChange={(e) => setNome(e.target.value)} /></Campo>
         <Campo rotulo="Data de nascimento" ajuda="Usada na mensagem de aniversário"><Entrada type="date" value={nasc} onChange={(e) => setNasc(e.target.value)} /></Campo>
-        <Campo rotulo="Observações"><Entrada value={obs} onChange={(e) => setObs(e.target.value)} /></Campo>
       </div>
       <div className="mt-6 flex justify-end gap-2">
         <Botao variante="fantasma" onClick={onFechar}>Cancelar</Botao>

@@ -179,7 +179,8 @@ def mover_card(clinic_id: UUID, patient_id: UUID, body: MudancaEtapa, conn: Conn
 @router.get("/clinics/{clinic_id}/patients", summary="Pacientes e contatos")
 def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
-    sql = """select p.id, p.name, p.phone, p.birth_date, p.notes, p.origin, p.crm_stage, p.created_at,
+    sql = """select p.id, p.name, p.phone, p.birth_date, p.origin, p.crm_stage, p.created_at, p.drive_url,
+                    (select count(*) from patient_notes n where n.patient_id = p.id) as notas,
                     pr.name as dentista_referencia,
                     (select max(starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada') as ultima_consulta,
                     (select min(starts_at) from appointments a where a.patient_id = p.id
@@ -197,7 +198,6 @@ def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(ge
 class EdicaoPaciente(BaseModel):
     name: str | None = Field(None, max_length=200)
     birth_date: date | None = None
-    notes: str | None = Field(None, max_length=2000)
 
 
 @router.patch("/clinics/{clinic_id}/patients/{patient_id}", summary="Editar paciente")
@@ -208,7 +208,7 @@ def editar_paciente(clinic_id: UUID, patient_id: UUID, body: EdicaoPaciente, con
         raise AgendaError("DADOS_INVALIDOS", "Nada para alterar.")
     sets = ", ".join(f"{k} = %s" for k in campos)  # chaves vêm do modelo, não do usuário
     p = _cur(conn).execute(
-        f"update patients set {sets} where clinic_id = %s and id = %s returning id, name, phone, birth_date, notes",
+        f"update patients set {sets} where clinic_id = %s and id = %s returning id, name, phone, birth_date",
         [*campos.values(), clinic_id, patient_id],
     ).fetchone()
     if not p:

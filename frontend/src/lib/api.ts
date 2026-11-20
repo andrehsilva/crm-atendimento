@@ -137,7 +137,8 @@ export type Paciente = {
   name: string | null
   phone: string
   birth_date: string | null
-  notes: string | null
+  drive_url: string | null
+  notas: number
   origin: string
   crm_stage: Etapa
   dentista_referencia: string | null
@@ -145,6 +146,18 @@ export type Paciente = {
   proxima_consulta: string | null
   foto_versao: number | null
 }
+
+/** Etapa 9C: histórico de observações do cliente e pasta do Drive */
+export type NotaCliente = {
+  id: string
+  texto: string
+  autor: string
+  criado_em: string
+  editado_em: string | null
+  pode_editar: boolean
+  pode_apagar: boolean
+}
+export type Observacoes = { drive_url: string | null; notas: NotaCliente[] }
 
 export type Dashboard = {
   hoje: string
