@@ -46,6 +46,9 @@ Preencha tudo (os comentários do arquivo explicam cada linha). Pontos de atenç
 - `FRONTEND_ORIGIN` e `PUBLIC_BASE_URL` = `https://isis.seudominio.com.br` (com **https**).
 - `WAHA_WEBHOOK_HMAC_KEY`: gere um segredo **novo** (não reutilize o de desenvolvimento):
   `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`
+- `IA_CHAVE_MESTRA`: gere uma **nova** (não reutilize a de desenvolvimento) e guarde uma cópia em lugar seguro:
+  `python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
+  Ela criptografa as chaves de IA das clínicas; se mudar ou se perder, cada clínica precisa colar a chave de novo.
 - **Nunca** coloque `CHAT_TESTE=true` em produção: o chat de teste deixa qualquer pessoa ler conversas digitando um telefone.
 
 **Proteção automática:** em `ENV=prod` o backend **se recusa a subir** se faltar algo obrigatório, se os endereços não
@@ -136,11 +139,15 @@ Anote a senha provisória (aparece uma vez). Entre no painel e crie a sua senha.
 
 > Ao apontar o webhook, a sessão **deixa** de mandar mensagens para o endereço antigo (ex.: o n8n).
 
-## 7. ⚠️ Obrigatório antes do 1º cliente real: IA paga por uso (D36)
+## 7. IA de cada clínica (D42–D46)
 
-O OpenCode Go foi feito para ferramentas de programação e monitora uso fora desse padrão.
-Antes de atender pacientes de verdade, troque no `backend/.env` para uma API paga por uso (OpenCode Zen ou OpenAI direto):
-`LLM_BASE_URL`, `LLM_API_KEY` e `LLM_MODEL`. O código não muda.
+Cada clínica cadastra a **própria chave** (Google, OpenAI, OpenCode ou OpenRouter) em Configurações › Assistente, com o botão
+"Testar conexão". Clínica sem chave fica com a assistente **desligada** (as conversas vão para a equipe).
+A chave do `backend/.env` (`LLM_*`) é a **chave da plataforma**: só vale para as clínicas em que o admin geral marcar
+"Usar a chave da plataforma" (Admin geral › clínica › IA), para teste grátis ou demonstração.
+
+⚠️ O OpenCode Go foi feito para ferramentas de programação e monitora uso fora desse padrão: para a chave da plataforma
+atender pacientes de verdade, use uma API paga por uso (OpenCode Zen ou OpenAI direto).
 
 Depois: `docker compose up -d backend` e rode `curl "https://isis.seudominio.com.br/health?ia=true"` → `"ia":{"status":"ok"...}`.
 

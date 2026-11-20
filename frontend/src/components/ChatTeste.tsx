@@ -8,10 +8,11 @@ import { useAviso } from './Aviso'
 import { Botao, Entrada } from './ui'
 import { useTermos } from '../lib/termos'
 
-/** Chat de TESTE (D15): o "paciente" informa o telefone e conversa com a Ísis (IA). */
+/** Chat de TESTE (D15): o "paciente" informa o telefone e conversa com a assistente (IA) da clínica. */
 export function ChatTeste() {
   const { clinica } = useClinica()
   const pal = useTermos()
+  const ia = clinica.nome_assistente
   const aviso = useAviso()
   const qc = useQueryClient()
   const [telefone, setTelefone] = useState('')
@@ -56,9 +57,9 @@ export function ChatTeste() {
     return (
       <form className="flex h-full flex-col justify-center gap-3" onSubmit={(e) => { e.preventDefault(); entrar.mutate() }}>
         <div className="mb-2 flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-full bg-primary font-semibold text-primary-contrast">Í</span>
+          <span className="grid size-10 place-items-center rounded-full bg-primary font-semibold text-primary-contrast">{ia.charAt(0).toUpperCase()}</span>
           <div>
-            <div className="font-semibold">Ísis</div>
+            <div className="font-semibold">{ia}</div>
             <div className="text-xs text-muted">atendente virtual · {clinica.name}</div>
           </div>
         </div>
@@ -74,16 +75,16 @@ export function ChatTeste() {
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
         <div className="flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-full bg-primary font-semibold text-primary-contrast">Í</span>
+          <span className="grid size-9 place-items-center rounded-full bg-primary font-semibold text-primary-contrast">{ia.charAt(0).toUpperCase()}</span>
           <div>
-            <div className="text-sm font-semibold">Ísis</div>
-            <div className="text-xs text-muted">atendente virtual · online</div>
+            <div className="text-sm font-semibold">{ia}</div>
+            <div className="text-xs text-muted">atendente virtual · {clinica.name}</div>
           </div>
         </div>
         <button type="button" className="text-xs text-muted hover:text-text" onClick={() => setSessao(null)}>trocar telefone</button>
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-        {msgs.length === 0 && <p className="text-center text-xs text-muted">Diga "oi" para a Ísis 👋</p>}
+        {msgs.length === 0 && <p className="text-center text-xs text-muted">Diga "oi" para {ia} 👋</p>}
         {msgs.map((m) => (
           <div key={m.id} className={`flex ${m.direction === 'in' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.direction === 'in' ? 'bg-primary text-primary-contrast' : 'bg-surface-muted'}`}>
@@ -98,7 +99,7 @@ export function ChatTeste() {
             <div className="max-w-[85%] rounded-2xl bg-primary px-3 py-2 text-sm text-primary-contrast opacity-70">{enviar.variables}</div>
           </div>
         )}
-        {enviar.isPending && <p className="text-xs text-muted">Ísis está digitando…</p>}
+        {enviar.isPending && <p className="text-xs text-muted">{ia} está digitando…</p>}
         <div ref={fimRef} />
       </div>
       <form onSubmit={submeter} className="mt-3 flex gap-2">

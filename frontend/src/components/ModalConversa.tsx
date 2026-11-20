@@ -10,12 +10,14 @@ import { useTermos } from '../lib/termos'
 
 type Conversa = { conversa: { id: string; channel: string; status: 'ativa' | 'humano' | 'encerrada' } | null; mensagens: MensagemChat[] }
 
-const AUTOR: Record<string, string> = { paciente: '', isis: 'Ísis', recepcao: 'Equipe', sistema: 'Sistema' }
+const AUTOR: Record<string, string> = { paciente: '', recepcao: 'Equipe', sistema: 'Sistema' }
 
 /** Conversa do paciente + atendimento humano (RN-AT-06): assumir, responder, devolver para a Ísis. */
 export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | 'name' | 'phone'> | null; onFechar: () => void }) {
   const { clinica } = useClinica()
   const pal = useTermos()
+  const ia = clinica.nome_assistente
+  const autor = (a: string) => (a === 'isis' ? ia : AUTOR[a])
   const aviso = useAviso()
   const tz = clinica.timezone
   const [texto, setTexto] = useState('')
@@ -36,8 +38,8 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
     setTexto('')
   }, [card])
 
-  const assumir = useMutation({ mutationFn: () => api.post(`${base}/takeover`), onSuccess: () => aviso.ok('Você assumiu a conversa. A Ísis está pausada.'), onError: aviso.erro })
-  const devolver = useMutation({ mutationFn: () => api.post(`${base}/release`), onSuccess: () => aviso.ok('Conversa devolvida para a Ísis.'), onError: aviso.erro })
+  const assumir = useMutation({ mutationFn: () => api.post(`${base}/takeover`), onSuccess: () => aviso.ok(`Você assumiu a conversa. A assistente ${ia} está pausada.`), onError: aviso.erro })
+  const devolver = useMutation({ mutationFn: () => api.post(`${base}/release`), onSuccess: () => aviso.ok(`Conversa devolvida para a assistente ${ia}.`), onError: aviso.erro })
   const responder = useMutation({ mutationFn: (t: string) => api.post(`${base}/reply`, { texto: t }), onSuccess: () => setTexto(''), onError: aviso.erro })
 
   function enviar(e: FormEvent) {
@@ -53,10 +55,10 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
         <div className="flex items-center gap-2 text-sm text-muted">
           {telefone(card.phone)}
           {conversa && <Selo>{conversa.channel === 'web' ? 'Chat web' : 'WhatsApp'}</Selo>}
-          {conversa && (manual ? <Selo cor="ambar"><Hand className="size-3" />Atendimento manual</Selo> : <Selo><Bot className="size-3" />Ísis respondendo</Selo>)}
+          {conversa && (manual ? <Selo cor="ambar"><Hand className="size-3" />Atendimento manual</Selo> : <Selo><Bot className="size-3" />{ia} respondendo</Selo>)}
         </div>
         {conversa && (manual
-          ? <Botao variante="secundario" disabled={devolver.isPending} onClick={() => devolver.mutate()}><Bot className="size-4" />Devolver para a Ísis</Botao>
+          ? <Botao variante="secundario" disabled={devolver.isPending} onClick={() => devolver.mutate()}><Bot className="size-4" />Devolver para {ia}</Botao>
           : <Botao variante="secundario" disabled={assumir.isPending} onClick={() => assumir.mutate()}><Hand className="size-4" />Assumir conversa</Botao>)}
       </div>
 
@@ -65,7 +67,7 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
         {q.data?.mensagens.map((m) => (
           <div key={m.id} className={`flex ${m.direction === 'in' ? 'justify-start' : 'justify-end'}`}>
             <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${m.direction === 'in' ? 'bg-surface' : m.author === 'recepcao' ? 'bg-[#fcf1dc] text-[#5c4108]' : 'bg-primary-soft'}`}>
-              {AUTOR[m.author] && <p className="mb-0.5 text-[11px] font-semibold opacity-70">{AUTOR[m.author]}</p>}
+              {autor(m.author) && <p className="mb-0.5 text-[11px] font-semibold opacity-70">{autor(m.author)}</p>}
               <p className="whitespace-pre-line">{m.content}</p>
               <p className="mt-1 text-right text-[10px] opacity-60">{dataCurta(m.created_at, tz)} {hora(m.created_at, tz)}</p>
             </div>
@@ -77,7 +79,7 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
       {conversa && (
         <form onSubmit={enviar} className="mt-3 flex gap-2">
           <Entrada className="flex-1" value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={2000}
-            placeholder={manual ? 'Responder como equipe da clínica' : 'Responder (isso pausa a Ísis nesta conversa)'} />
+            placeholder={manual ? 'Responder como equipe da clínica' : 'Responder (isso pausa a assistente nesta conversa)'} />
           <Botao type="submit" aria-label="Enviar resposta" disabled={!texto.trim() || responder.isPending}><Send className="size-4" /></Botao>
         </form>
       )}

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from './auth'
-import { aplicarMarca } from './marca'
+import { aplicarMarca, lembrarClinica } from './marca'
 import { api, EVENTO_SESSAO, type Cadastros, type Clinica } from './api'
 
 type Contexto = { clinica: Clinica; cadastros: Cadastros }
@@ -89,6 +89,13 @@ export function ProvedorClinica({ children }: { children: ReactNode }) {
     aplicarMarca(cor)
     return () => aplicarMarca(null)
   }, [cor])
+  // A tela de entrar passa a mostrar esta clínica (nome, cor e logo) neste navegador
+  const dados = clinica.data
+  useEffect(() => {
+    if (!dados) return
+    lembrarClinica({ id: dados.id, nome: dados.name, cor: dados.cor, logo_versao: dados.logo_versao })
+    document.title = `${dados.name} · Painel`
+  }, [dados])
 
   if (lista.isError || clinica.isError) {
     return (

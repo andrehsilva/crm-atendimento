@@ -1,4 +1,4 @@
-"""A Ísis: monta o agente (Agno + gpt-6-luna), envia o histórico e devolve a resposta.
+"""A Ísis: monta o agente (Agno + o modelo de IA da clínica — Etapa 10A), envia o histórico e devolve a resposta.
 
 Falhas do modelo nunca derrubam o atendimento: o paciente recebe uma mensagem padrão e,
 se falhar duas vezes seguidas, a conversa vai para a equipe (RN-AT-06).
@@ -10,15 +10,13 @@ from datetime import datetime
 
 from agno.agent import Agent
 from agno.models.message import Message
-from agno.models.openai import OpenAIResponses
 from psycopg.types.json import Jsonb
 
 from app.agent.contexto import esta_aberta, instrucoes
 from app.agent.ferramentas import Sessao, criar_ferramentas
-from app.config import get_settings
 from app.eventos import avisar
 from app.painel import crm
-from app.services.llm import USER_AGENT
+from app.ia import ConfigIA, config_da_clinica, modelo_agno
 
 log = logging.getLogger("isis.agente")
 
@@ -44,16 +42,6 @@ def com_aviso_de_transferencia(saida: str, chamadas: list[dict], aberta: bool) -
     return f"{saida}\n\n{AVISO_EQUIPE}{'' if aberta else AVISO_FECHADA}"
 
 
-def _modelo(sessao_id: str) -> OpenAIResponses:
-    s = get_settings()
-    return OpenAIResponses(
-        id=s.llm_model,
-        api_key=s.llm_api_key,
-        base_url=s.llm_base_url,
-        store=False,  # não guardar conversas de pacientes no provedor
-        default_headers={"User-Agent": USER_AGENT, "x-opencode-session": sessao_id},
-        client_params={"timeout": 60, "max_retries": 1},
-    )
 
 
 def _historico(conn, conversa_id, antes_de) -> list[Message]:
@@ -72,16 +60,23 @@ def _historico(conn, conversa_id, antes_de) -> list[Message]:
     return msgs
 
 
-def responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, recebida_em: datetime) -> str:
-    """Gera a resposta da Ísis para a mensagem `texto` (já gravada no banco em `recebida_em`)."""
+def responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, recebida_em: datetime,
+              ia: ConfigIA | None = None) -> str:
+    """Gera a resposta da Ísis para a mensagem `texto` (já gravada no banco em `recebida_em`).
+
+    `ia` = a IA da clínica (chat.processar já buscou; sem ela, busca aqui). Sem IA a chamada falha e cai
+    na resposta padrão — mas o normal é chat.processar nem chamar a Ísis quando ela está desligada (D46)."""
+    ia = ia or config_da_clinica(conn, clinica["id"])
     agora = datetime.now(clinica["tz"])
     sessao = Sessao(conn=conn, clinica=clinica, paciente=paciente, conversa=conversa, agora=agora)
     inicio = time.perf_counter()
     saida, erro = None, None
 
     try:
+        if ia is None:
+            raise RuntimeError("assistente sem IA configurada")
         agente = Agent(
-            model=_modelo(f"{clinica['phone']}:{paciente['phone']}"),
+            model=modelo_agno(ia, f"{clinica['phone']}:{paciente['phone']}"),
             instructions=instrucoes(conn, clinica, paciente, agora),
             tools=criar_ferramentas(sessao),
             tool_call_limit=8,

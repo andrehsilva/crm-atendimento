@@ -126,3 +126,12 @@ def test_foto_de_lead_de_outra_clinica_nao_passa(cliente, conn, clinica, outra_c
     r = c.put(f"/api/clinics/{clinica.id}/patients/{pid}/foto", content=PNG, headers={"Content-Type": "image/png"})
     assert r.status_code == 422
     assert conn.execute("select count(*) from patient_photos where patient_id = %s", (pid,)).fetchone()[0] == 0
+
+
+def test_logo_da_tela_de_entrar_e_publica_e_so_a_imagem(cliente, conn, clinica):  # noqa: F811
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    anonimo = TestClient(app)
+    assert anonimo.get(f"/api/auth/marca/{clinica.id}/logo").status_code == 404  # sem logo
+    assert anonimo.get(f"/api/clinics/{clinica.id}/logo").status_code == 401  # a rota do painel continua fechada

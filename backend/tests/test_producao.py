@@ -8,7 +8,7 @@ from app.main import app
 
 BOA = dict(
     env="prod", database_url="postgresql://x", supabase_url="https://x.supabase.co", supabase_anon_key="pub",
-    supabase_service_role_key="sec", llm_api_key="k", waha_api_url="https://waha.x", waha_api_key="w",
+    supabase_service_role_key="sec", ia_chave_mestra="Q0hBVkUtTUVTVFJBLURFLVRFU1RFLTMyLUJZVEVTISE=", waha_api_url="https://waha.x", waha_api_key="w",
     waha_webhook_hmac_key="a" * 48, public_base_url="https://isis.exemplo.com.br", frontend_origin="https://isis.exemplo.com.br",
 )
 

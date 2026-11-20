@@ -27,6 +27,7 @@ STATUS_HTTP = {
     "SENHA_FRACA": 422,
     "LOGO_INVALIDA": 422,
     "LOGO_GRANDE": 413,
+    "IA_DESLIGADA": 409,
 }
 
 

@@ -1,17 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, LogIn, PauseCircle, PlayCircle, QrCode, RefreshCw, Smartphone, Unplug, UserPlus, Webhook } from 'lucide-react'
+import { ArrowLeft, KeyRound, LogIn, PauseCircle, PlayCircle, QrCode, RefreshCw, Smartphone, Unplug, UserPlus, Webhook } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
 import { Botao, Campo, Entrada, Modal, Secao, Seletor, Selo } from '../../components/ui'
-import { api, type AdminClinica, type SessaoWaha, type StatusWhatsapp, type UsuarioClinica } from '../../lib/api'
+import { api, type AdminClinica, type IaClinica, type SessaoWaha, type StatusWhatsapp, type UsuarioClinica } from '../../lib/api'
 import { nomePapel } from '../../lib/auth'
 import { escolherClinica } from '../../lib/clinica'
 import { telefone } from '../../lib/formato'
 import { FUSOS, SeloWhatsapp } from './Clinicas'
 import { SenhaProvisoria } from './SenhaProvisoria'
 
-const ABAS = ['Dados', 'WhatsApp', 'Usuários'] as const
+const ABAS = ['Dados', 'WhatsApp', 'IA', 'Usuários'] as const
 
 export function AdminClinicaDetalhe() {
   const { id = '' } = useParams()
@@ -80,6 +80,7 @@ export function AdminClinicaDetalhe() {
       </div>
       {aba === 'Dados' && <Dados c={c} />}
       {aba === 'WhatsApp' && <WhatsApp id={id} />}
+      {aba === 'IA' && <Ia id={id} />}
       {aba === 'Usuários' && <Usuarios id={id} />}
 
       <Modal titulo="Suspender clínica?" aberto={confirmar} onFechar={() => setConfirmar(false)}>
@@ -304,5 +305,48 @@ function Usuarios({ id }: { id: string }) {
       </Secao>
       {criado && <SenhaProvisoria email={criado.email} senha={criado.senha} onFechar={() => setCriado(null)} />}
     </div>
+  )
+}
+
+/** Etapa 10A (D46): o admin geral vê a situação e liga/desliga a chave da plataforma (teste grátis, demonstração). */
+function Ia({ id }: { id: string }) {
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['admin', 'ia', id], queryFn: () => api.get<IaClinica>(`/admin/clinicas/${id}/ia`) })
+  const mudar = useMutation({
+    mutationFn: (ligar: boolean) => api.put<IaClinica>(`/admin/clinicas/${id}/ia`, { usa_plataforma: ligar }),
+    onSuccess: (e) => {
+      qc.setQueryData(['admin', 'ia', id], e)
+      qc.invalidateQueries({ queryKey: ['clinica'] })
+      aviso.ok(e.usa_plataforma ? 'Chave da plataforma liberada para esta clínica.' : 'Chave da plataforma desligada para esta clínica.')
+    },
+    onError: aviso.erro,
+  })
+  if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
+  const e = q.data
+  const nome = e.provedores.find((p) => p.id === e.provedor)?.nome
+  return (
+    <Secao titulo="Inteligência artificial" icone={<KeyRound className="size-5" />} className="max-w-3xl">
+      <dl className="grid grid-cols-[minmax(0,14rem)_1fr] gap-x-6 gap-y-3 text-sm">
+        <dt className="text-muted">Situação</dt>
+        <dd>{e.origem === 'clinica' ? <Selo cor="verde">ligada · chave da clínica</Selo>
+          : e.origem === 'plataforma' ? <Selo cor="azul">ligada · chave da plataforma</Selo>
+          : <Selo cor="ambar">desligada</Selo>}</dd>
+        <dt className="text-muted">Chave da clínica</dt>
+        <dd>{e.tem_chave ? `${nome} · ${e.modelo} · termina em ${e.chave_final}${e.chave_ilegivel ? ' (ilegível: recadastrar)' : ''}` : '— nenhuma'}</dd>
+        <dt className="text-muted">Chave da plataforma</dt>
+        <dd>{e.plataforma.configurada ? `configurada no .env (${e.plataforma.modelo})` : 'não configurada no .env'}</dd>
+      </dl>
+      <label className="mt-6 flex items-start gap-3 text-sm">
+        <input type="checkbox" className="mt-0.5 size-4 accent-[var(--primary)]" checked={e.usa_plataforma} disabled={mudar.isPending}
+          onChange={(ev) => mudar.mutate(ev.target.checked)} />
+        <span>
+          Usar a chave da plataforma
+          <span className="block text-xs text-muted">
+            Para teste grátis ou demonstração. Vale só enquanto a clínica não tiver chave própria; o gasto fica na conta da plataforma.
+          </span>
+        </span>
+      </label>
+    </Secao>
   )
 }

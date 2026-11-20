@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "gpt-6-luna"
     llm_api_style: str = "responses"
+    # Etapa 10A: criptografa as chaves de IA das clínicas (Fernet). Perdeu = as chaves salvas precisam ser recadastradas.
+    ia_chave_mestra: str = ""
 
     # Etapa 5 — WhatsApp pelo WAHA (servidor do usuário, D28). Segredos só aqui no .env.
     waha_api_url: str = ""            # ex.: https://waha.seudominio.com.br

@@ -278,7 +278,7 @@ function AparenciaClinica({ podeEditar }: { podeEditar: boolean }) {
             <div className="flex flex-wrap gap-2 pt-1">
               <Botao disabled={!ok || !mudou || salvarCor.isPending} onClick={() => salvarCor.mutate(cor)}>Salvar cor</Botao>
               {q.data.cor !== q.data.cor_padrao && (
-                <Botao variante="fantasma" disabled={salvarCor.isPending} onClick={() => salvarCor.mutate(null)}>Voltar à cor da Ísis</Botao>
+                <Botao variante="fantasma" disabled={salvarCor.isPending} onClick={() => salvarCor.mutate(null)}>Voltar à cor padrão</Botao>
               )}
             </div>
           )}

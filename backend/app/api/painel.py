@@ -28,7 +28,7 @@ from app.core import relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
-from app import aparencia, segmentos
+from app import aparencia, ia, segmentos
 
 router = APIRouter(prefix="/api", tags=["painel"], dependencies=[Depends(acesso)])
 Conn = psycopg.Connection
@@ -56,6 +56,8 @@ def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         "address": c["address"], "horario": horario, "pausas": pausas,
         "segmento": segmentos.segmento_de(c["settings"]).codigo, "termos": segmentos.termos(c["settings"]),
         "cor": aparencia.cor_da_clinica(c["settings"]), "logo_versao": aparencia.versao_da_logo(conn, clinic_id),
+        "ia_ativa": ia.config_da_clinica(conn, clinic_id) is not None,
+        "nome_assistente": (c["settings"] or {}).get("nome_assistente") or "Ísis",
     }
 
 
@@ -332,6 +334,9 @@ def assumir(clinic_id: UUID, conversa_id: UUID, conn: Conn = Depends(get_conn)):
 @router.post("/clinics/{clinic_id}/conversations/{conversa_id}/release", summary="Devolver para a Ísis")
 def devolver(clinic_id: UUID, conversa_id: UUID, conn: Conn = Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
+    if ia.config_da_clinica(conn, clinic_id) is None:
+        raise AgendaError("IA_DESLIGADA", "A assistente está desligada (a clínica ainda não tem chave de IA). "
+                                          "Cadastre em Configurações › Assistente.")
     return _mudar_atendimento(conn, clinic_id, conversa_id, "ativa", "devolvido_para_isis")
 
 

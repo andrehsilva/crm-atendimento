@@ -19,6 +19,7 @@ from app.config import get_settings
 from app.db import get_conn
 from app.eventos import avisar
 from app.segmentos import SEGMENTOS
+from app import ia
 
 
 def _so_super_admin(request: Request, _=Depends(acesso)) -> None:
@@ -280,6 +281,26 @@ def whatsapp_qr(clinic_id: UUID, conn=Depends(get_conn)):
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", f"QR indisponível agora (a sessão precisa estar em SCAN_QR_CODE). {e}") from e
     return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+# ---------------------------------------------------------------------------
+# IA da clínica vista pelo admin geral (D46): ligar/desligar "usar a chave da plataforma"
+# ---------------------------------------------------------------------------
+class UsoPlataforma(BaseModel):
+    usa_plataforma: bool
+
+
+@router.get("/clinicas/{clinic_id}/ia", summary="Situação da IA da clínica")
+def ia_da_clinica(clinic_id: UUID, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    return ia.estado_publico(conn, clinic_id)
+
+
+@router.put("/clinicas/{clinic_id}/ia", summary="Ligar/desligar o uso da chave da plataforma")
+def ia_plataforma(clinic_id: UUID, body: UsoPlataforma, request: Request, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    ia.usar_plataforma(conn, clinic_id, body.usa_plataforma, usuario_da_requisicao(request).id)
+    return ia.estado_publico(conn, clinic_id)
 
 
 # ---------------------------------------------------------------------------

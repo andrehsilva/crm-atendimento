@@ -17,6 +17,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Demo } from './pages/Demo'
 import { Configuracoes } from './pages/Configuracoes'
 import { Mensagens } from './pages/Mensagens'
+import { AvisoIaDesligada } from './pages/config/IaClinica'
 import { RedefinirSenha } from './pages/RedefinirSenha'
 
 const queryClient = new QueryClient({
@@ -30,6 +31,7 @@ function Layout() {
       <main className="flex-1 overflow-y-auto">
         <Topbar />
         <div className="px-10 pb-10 pt-2">
+          <AvisoIaDesligada />
           <Outlet />
         </div>
       </main>

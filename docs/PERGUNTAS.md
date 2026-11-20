@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 43 de 51 resolvidas (40 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 49 de 57 resolvidas (46 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -43,6 +43,14 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente — Etapa 10 liberada.
 
+## 🟠 Bloqueia a 10C (Configuração inicial obrigatória)
+
+✅ Nada pendente — 10C liberada.
+
+## 🟣 Clínica de apresentação (Clínica Rodrigues)
+
+✅ Nada pendente.
+
 ---
 
 ## Propostas que precisam do seu "ok"
@@ -70,6 +78,12 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q44 — Configuração inicial obrigatória:** ok — passo a passo "Primeiros passos" em 6 etapas (clínica · assistente · aparência · horários · serviços e equipe · IA); WhatsApp fica com o admin geral. *(20/11 → D51)*
+- [x] **Q45 — Quem preenche:** ok — o admin da clínica (ou o admin geral pelo "Entrar como"); a recepção vê "A clínica está sendo configurada pelo administrador". *(20/11 → D52)*
+- [x] **Q46 — Clínicas existentes:** ok — mesma regra; o passo a passo mostra só o que falta. *(20/11 → D53)*
+- [x] **Q47 — Algo obrigatório apagado depois:** ok — não trava de novo; aviso no topo e item pendente em Configurações. *(20/11 → D54)*
+- [x] **Q48 — Clínica de apresentação:** ok — marcação no Admin geral; o admin da plataforma entra sempre por ela; botão "Admin geral" só nela; nas outras, "Voltar para a Clínica Rodrigues". *(20/11 → D55)*
+- [x] **Q49 — Reiniciar demonstração:** ok — apaga só consultas, conversas e mensagens de teste e recria os exemplos; nome, aparência, assistente, IA e WhatsApp ficam. *(20/11 → D56)*
 - [x] **Q42 — Observações do cliente:** ok — histórico (diário) com data, hora e autor; negrito, itálico, lista e link; quem escreveu corrige/apaga a sua, o admin apaga qualquer uma; a assistente não lê; o campo antigo vira a 1ª observação. *(20/11 → D48)*
 - [x] **Q43 — Pasta do Drive:** ok — um link por cliente, só `https://drive.google.com/...`; botão "Abrir pasta no Drive" em outra aba; sem integração. *(20/11 → D49)*
 - [x] **Q37 — Chave de IA:** ok — o admin da clínica (ou o admin geral) cadastra em Configurações › Assistente; chave criptografada no banco com chave-mestra no `.env`; só os 4 últimos caracteres aparecem; botão "Testar conexão". *(20/11 → D42)*

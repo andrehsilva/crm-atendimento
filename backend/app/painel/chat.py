@@ -12,6 +12,7 @@ from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
 from app.agent import isis
 from app.core import relogio
 from app.eventos import avisar
+from app.ia import config_da_clinica
 from app.mensagens import lembretes
 from app.painel import crm
 
@@ -89,11 +90,20 @@ def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
         avisar(conn, clinica["id"], "conversa", conversa["id"])
         return novas
 
+    ia = config_da_clinica(conn, clinica["id"])
+    if ia is None:  # D46: clínica sem IA = assistente desligada; a conversa vai direto para a equipe
+        if conversa["status"] != "humano":
+            conn.execute("update conversations set status = 'humano' where id = %s", (conversa["id"],))
+            conversa["status"] = "humano"
+            crm.registrar(conn, clinica["id"], paciente["id"], "aguardando_humano", "sistema")
+        avisar(conn, clinica["id"], "conversa", conversa["id"])
+        return novas
+
     # Grava e mostra a mensagem do paciente já; a resposta da IA vem numa transação separada
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     conn.commit()
 
-    resposta = isis.responder(conn, clinica, paciente, conversa, texto.strip(), entrada["created_at"])
+    resposta = isis.responder(conn, clinica, paciente, conversa, texto.strip(), entrada["created_at"], ia)
     novas.append(_gravar(conn, clinica["id"], conversa["id"], "out", "isis", resposta))
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     return novas

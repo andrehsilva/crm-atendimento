@@ -21,7 +21,7 @@ from app.auth.usuarios import criar_ou_ligar
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
-from app import aparencia, segmentos
+from app import aparencia, ia, segmentos
 
 router = APIRouter(prefix="/api/clinics/{clinic_id}/config", tags=["configurações"], dependencies=[Depends(acesso)])
 
@@ -454,6 +454,58 @@ def salvar_assistente(clinic_id: UUID, body: Assistente, request: Request, conn=
     _admin(request, clinic_id, conn)
     _settings(conn, clinic_id, body.model_dump())
     return ver_assistente(clinic_id, conn)
+
+
+# ---------------------------------------------------------------------------
+# IA da clínica (Etapa 10A — D42, D43, D46). A chave nunca volta para a tela.
+# ---------------------------------------------------------------------------
+class ConfigIa(BaseModel):
+    provedor: str = Field(pattern="^(google|openai|opencode|openrouter)$")
+    modelo: str = Field(min_length=1, max_length=120)
+    chave: str | None = Field(None, max_length=400)  # vazio = manter a chave já salva
+
+
+class TesteIa(BaseModel):
+    provedor: str | None = Field(None, pattern="^(google|openai|opencode|openrouter)$")
+    modelo: str | None = Field(None, max_length=120)
+    chave: str | None = Field(None, max_length=400)
+
+
+def _regra(f, *args):
+    try:
+        return f(*args)
+    except ia.ChaveMestraAusente as e:
+        raise AgendaError("DADOS_INVALIDOS", "O servidor ainda não tem a IA_CHAVE_MESTRA no .env. Fale com o suporte.") from e
+    except ValueError as e:
+        raise AgendaError("DADOS_INVALIDOS", str(e)) from e
+
+
+@router.get("/ia", summary="Provedor, modelo e situação da IA (a chave nunca aparece, só o final)")
+def ver_ia(clinic_id: UUID, conn=Depends(get_conn)):
+    return ia.estado_publico(conn, clinic_id)
+
+
+@router.put("/ia", summary="Salvar provedor, modelo e chave da IA")
+def salvar_ia(clinic_id: UUID, body: ConfigIa, request: Request, conn=Depends(get_conn)):
+    u = exigir_admin_clinica(request, clinic_id)
+    _regra(ia.salvar_chave, conn, clinic_id, body.provedor, body.modelo, body.chave or None, u.id)
+    return ia.estado_publico(conn, clinic_id)
+
+
+@router.delete("/ia/chave", summary="Apagar a chave de IA da clínica")
+def apagar_chave_ia(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
+    u = exigir_admin_clinica(request, clinic_id)
+    ia.remover_chave(conn, clinic_id, u.id)
+    return ia.estado_publico(conn, clinic_id)
+
+
+@router.post("/ia/testar", summary="Testar conexão (manda uma mensagem curtíssima ao provedor)")
+def testar_ia(clinic_id: UUID, body: TesteIa, request: Request, conn=Depends(get_conn)):
+    exigir_admin_clinica(request, clinic_id)
+    cfg = _regra(ia.para_teste, conn, clinic_id, body.provedor, body.modelo, body.chave or None)
+    if cfg is None:
+        return {"ok": False, "detalhe": "A assistente está desligada: cadastre uma chave primeiro."}
+    return ia.testar(cfg)
 
 
 # ---------------------------------------------------------------------------

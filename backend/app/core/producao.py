@@ -5,13 +5,14 @@ sem HTTPS ou com o chat de teste aberto.
 """
 
 from app.config import Settings
+from app.ia import chave_mestra_valida
 
 OBRIGATORIAS = {
     "database_url": "DATABASE_URL",
     "supabase_url": "SUPABASE_URL",
     "supabase_anon_key": "SUPABASE_ANON_KEY",
     "supabase_service_role_key": "SUPABASE_SERVICE_ROLE_KEY",
-    "llm_api_key": "LLM_API_KEY",
+    "ia_chave_mestra": "IA_CHAVE_MESTRA",
     "waha_api_url": "WAHA_API_URL",
     "waha_api_key": "WAHA_API_KEY",
     "waha_webhook_hmac_key": "WAHA_WEBHOOK_HMAC_KEY",
@@ -33,6 +34,8 @@ def problemas(s: Settings) -> list[str]:
             erros.append(f"{nome} ainda aponta para desenvolvimento ({valor!r})")
     if s.waha_webhook_hmac_key and len(s.waha_webhook_hmac_key) < 32:
         erros.append("WAHA_WEBHOOK_HMAC_KEY curta demais (use 32+ caracteres aleatórios)")
+    if s.ia_chave_mestra and not chave_mestra_valida(s.ia_chave_mestra):
+        erros.append("IA_CHAVE_MESTRA inválida (gere com o comando do .env.example)")
     if s.chat_teste:
         erros.append("CHAT_TESTE=true em produção expõe conversas de pacientes: remova a linha do .env")
     return erros

@@ -53,6 +53,10 @@ export type Clinica = {
   termos: Termos
   cor: string
   logo_versao: number | null
+  /** Etapa 10A (D46): false = assistente desligada (clínica sem chave de IA) */
+  ia_ativa: boolean
+  /** nome que a assistente usa com os clientes (Configurações › Assistente) */
+  nome_assistente: string
 }
 
 /** Etapa 9B: cor principal e logo da clínica */
@@ -285,6 +289,23 @@ export type ProfissionalCfg = {
   horario_proprio: boolean
   folgas: Folga[]
 }
+/** Etapa 10A: IA da clínica. A chave nunca vem do servidor, só os 4 últimos caracteres. */
+export type ProvedorIa = 'google' | 'openai' | 'opencode' | 'openrouter'
+export type IaClinica = {
+  provedor: ProvedorIa | null
+  modelo: string | null
+  tem_chave: boolean
+  chave_final: string | null
+  usa_plataforma: boolean
+  atualizado_em: string | null
+  origem: 'clinica' | 'plataforma' | null
+  chave_ilegivel: boolean
+  modelo_aprovado: boolean
+  plataforma: { configurada: boolean; modelo: string | null }
+  provedores: { id: ProvedorIa; nome: string; onde: string; modelos_aprovados: string[] }[]
+}
+export type TesteIa = { ok: boolean; ms?: number; resposta?: string; detalhe?: string }
+
 export type AssistenteCfg = {
   nome_assistente: string
   tratamento: 'você' | 'senhor(a)'

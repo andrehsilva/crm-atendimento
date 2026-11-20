@@ -10,7 +10,7 @@ const BASE_ESCURA = '#1f1f22' // --bg do tema escuro
 
 /** Tons sugeridos: todos legíveis com texto branco e sobre fundo claro. */
 export const CORES_SUGERIDAS: { nome: string; cor: string }[] = [
-  { nome: 'Rosa Ísis', cor: '#b85c74' },
+  { nome: 'Rosa (padrão)', cor: '#b85c74' },
   { nome: 'Vinho', cor: '#8e2445' },
   { nome: 'Laranja queimado', cor: '#c2410c' },
   { nome: 'Dourado', cor: '#9a6700' },
@@ -71,5 +71,27 @@ export function aplicarMarca(cor: string | null) {
   for (const [k, v] of Object.entries(tons(cor ?? COR_PADRAO))) {
     if (cor) raiz.setProperty(k, v)
     else raiz.removeProperty(k)
+  }
+}
+
+// ---------------------------------------------------------------- tela de entrar
+// A tela de entrar mostra a última clínica usada neste navegador (nome, cor e logo), não a marca da plataforma.
+const CHAVE_ENTRADA = 'isis:marca-entrada'
+export type MarcaEntrada = { id: string; nome: string; cor: string; logo_versao: number | null }
+
+export function lembrarClinica(m: MarcaEntrada): void {
+  try {
+    localStorage.setItem(CHAVE_ENTRADA, JSON.stringify(m))
+  } catch {
+    // navegador sem armazenamento: a tela de entrar fica com a marca padrão
+  }
+}
+
+export function clinicaLembrada(): MarcaEntrada | null {
+  try {
+    const m = JSON.parse(localStorage.getItem(CHAVE_ENTRADA) ?? 'null')
+    return m && typeof m.id === 'string' && typeof m.nome === 'string' ? m : null
+  } catch {
+    return null
   }
 }

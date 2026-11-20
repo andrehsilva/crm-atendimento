@@ -1,5 +1,7 @@
 """Login do painel (D34, D35): entrar, sair, quem sou eu, trocar senha e "Esqueci minha senha"."""
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
 
@@ -138,3 +140,13 @@ def remover_foto(request: Request, response: Response, conn=Depends(get_conn)):
     u = A.obter_usuario(request, response, conn)
     conn.execute("delete from user_photos where user_id = %s", (u.id,))
     return A.carregar_usuario(conn, str(u.id)).publico()
+
+
+@router.get("/marca/{clinic_id}/logo", summary="Logo da clínica na tela de entrar (pública: só a imagem)")
+def logo_publica(clinic_id: UUID, conn=Depends(get_conn)):
+    """A tela de entrar mostra a logo da última clínica usada neste navegador. Não exige login,
+    então só devolve a imagem (nada de nome, telefone ou outro dado)."""
+    r = conn.execute("select mime, data from clinic_logos where clinic_id = %s", (clinic_id,)).fetchone()
+    if not r:
+        return Response(status_code=404)
+    return aparencia.resposta_imagem(r[0], bytes(r[1]))

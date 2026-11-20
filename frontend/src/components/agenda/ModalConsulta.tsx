@@ -68,7 +68,7 @@ export function ModalConsulta({ consulta, onFechar }: { consulta: Consulta | nul
         <dt className="text-muted">{pal.Profissional}</dt><dd>{consulta.profissional}</dd>
         <dt className="text-muted">Telefone</dt><dd>{telefone(consulta.telefone)}</dd>
         <dt className="text-muted">Status</dt><dd><SeloStatus status={consulta.status} /></dd>
-        <dt className="text-muted">Marcada por</dt><dd><Selo>{{ isis: 'Ísis', recepcao: 'Recepção', paciente_botao: pal.Cliente }[consulta.source] ?? consulta.source}</Selo></dd>
+        <dt className="text-muted">Marcada por</dt><dd><Selo>{{ isis: clinica.nome_assistente, recepcao: 'Recepção', paciente_botao: pal.Cliente }[consulta.source] ?? consulta.source}</Selo></dd>
       </dl>
 
       {modo === 'ver' && ativa && (

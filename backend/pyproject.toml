@@ -13,6 +13,7 @@ dependencies = [
     "psycopg-pool>=3.2",
     "agno>=3.2.1",
     "pyjwt[crypto]>=2.9",
+    "cryptography>=43",
 ]
 
 [dependency-groups]

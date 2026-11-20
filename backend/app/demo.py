@@ -50,6 +50,8 @@ def criar_estrutura(conn, nome: str, telefone: str, slug: str, endereco: str | N
            values (%s, %s, %s, %s, %s) returning id""",
         (nome, telefone, slug, "America/Sao_Paulo", endereco),
     ).fetchone()[0]
+    # demo e bateria de cenários usam a IA da plataforma (D46)
+    conn.execute("insert into clinic_ai (clinic_id, usa_plataforma) values (%s, true)", (clinic_id,))
     for wd, (ini, fim) in HORARIO.items():
         conn.execute("insert into clinic_hours (clinic_id, weekday, start_time, end_time) values (%s,%s,%s,%s)",
                      (clinic_id, wd, ini, fim))

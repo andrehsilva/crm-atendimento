@@ -33,9 +33,9 @@ export function ProvedorAuth({ children }: { children: ReactNode }) {
 
   async function sair() {
     await api.post('/auth/logout').catch(() => undefined)
-    qc.clear()
-    qc.setQueryData(['me'], null)
-    await qc.invalidateQueries({ queryKey: ['me'] })
+    // Recarrega na página inicial: limpa tudo da sessão (cache, tempo real, cor) e mostra a tela de entrar.
+    // (Antes o cache era limpo sem avisar a tela, que ficava parada no painel.)
+    window.location.replace('/')
   }
 
   if (me.isLoading) return <div className="grid h-full place-items-center text-muted">Carregando…</div>

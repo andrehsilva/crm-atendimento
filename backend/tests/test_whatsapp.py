@@ -94,7 +94,7 @@ class WahaFalso:
 
 @pytest.fixture
 def isis_falsa(monkeypatch):
-    monkeypatch.setattr(chat.isis, "responder", lambda conn, clinica, paciente, conversa, texto, em: f"Resposta para: {texto}")
+    monkeypatch.setattr(chat.isis, "responder", lambda conn, clinica, paciente, conversa, texto, em, ia=None: f"Resposta para: {texto}")
 
 
 @pytest.fixture

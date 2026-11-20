@@ -66,11 +66,20 @@ def test_super_admin_ve_todas(cliente, conn, clinica, outra_clinica):
     assert _como(cliente, _usuario(conn, super_admin=True)).get(f"/api/clinics/{outra_clinica.id}/dashboard").status_code == 200
 
 
+# Logo na tela de entrar (antes do login): só a imagem, nada de nome/telefone/dados.
+PUBLICAS = {"/api/auth/marca/{clinic_id}/logo"}
+
+
 def _rotas_da_clinica():
     for caminho, metodos in app.openapi()["paths"].items():
-        if "{clinic_id}" in caminho:
+        if "{clinic_id}" in caminho and caminho not in PUBLICAS:
             for metodo in sorted(metodos):
                 yield metodo.upper(), caminho
+
+
+def test_rotas_publicas_com_clinic_id_sao_so_estas():
+    """Exceções da varredura C16: abertas de propósito e sem dado da clínica além da imagem."""
+    assert PUBLICAS == {"/api/auth/marca/{clinic_id}/logo"}
 
 
 def test_c16_nenhuma_rota_entrega_dado_de_outra_clinica(cliente, conn, clinica, outra_clinica):

@@ -34,6 +34,7 @@ def _clinica(conn, telefone: str, slug: str, nome: str) -> SimpleNamespace:
     cid = conn.execute(
         "insert into clinics (name, phone, slug) values (%s, %s, %s) returning id", (nome, telefone, slug)
     ).fetchone()[0]
+    conn.execute("insert into clinic_ai (clinic_id, usa_plataforma) values (%s, true)", (cid,))  # D46: IA ligada
     for wd in range(5):  # seg-sex 08-18, almoço 12-13
         conn.execute("insert into clinic_hours (clinic_id, weekday, start_time, end_time) values (%s,%s,'08:00','18:00')", (cid, wd))
         conn.execute("insert into clinic_breaks (clinic_id, weekday, start_time, end_time) values (%s,%s,'12:00','13:00')", (cid, wd))

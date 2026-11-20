@@ -12,7 +12,7 @@ export function AdminPlataforma() {
   const p = q.data
   const linhas: [string, React.ReactNode][] = [
     ['Ambiente', p.ambiente === 'dev' ? <Selo cor="azul">desenvolvimento</Selo> : <Selo cor="verde">{p.ambiente}</Selo>],
-    ['Modelo de IA', <span key="m">{p.modelo_ia} {sim(p.ia_configurada)}</span>],
+    ['Chave da plataforma (IA)', <span key="m">{p.modelo_ia} {sim(p.ia_configurada)}</span>],
     ['Servidor WAHA', <span key="w">{p.waha_servidor ?? '—'} {sim(p.waha_configurado)}</span>],
     ['Webhook assinado (HMAC)', sim(p.webhook_assinado, 'sim', 'não')],
     ['Endereço público do backend', p.endereco_publico ?? <span className="text-muted">— (abra o túnel)</span>],
