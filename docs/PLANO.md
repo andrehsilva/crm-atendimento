@@ -39,7 +39,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** o `/health` mostrar `banco: ok` e `ia: ok`, e o script imprimir a resposta da Ísis.
 
-## Etapa 2 — Banco e motor de agenda (sem IA) — 🧪 aguardando seu teste
+## Etapa 2 — Banco e motor de agenda (sem IA) ✅ (19/11/2026)
 **Entrega:** o "caderno" da clínica funcionando pela API.
 - Tabelas (spec 08) e dados de exemplo: 1 clínica demo, 2 dentistas, procedimentos (60 min por padrão), horário da clínica com pausa de almoço.
 - Serviço de agenda: horários livres, marcar, remarcar e cancelar, **com todas as validações** (conflito, expediente, pausas, antecedência, telefone, dentista de referência).
@@ -47,7 +47,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** pela página `/docs` do FastAPI, marcar uma consulta. Tentar marcar outra no mesmo horário (deve recusar), tentar marcar no almoço (deve recusar) e tentar cancelar com o telefone errado (deve recusar).
 
-## Etapa 3 — Painel operacional em tempo real
+## Etapa 3 — Painel operacional em tempo real — 🧪 aguardando seu teste
 **Entrega:** as telas no layout aprovado (`docs/layouts/`, specs 06 e 11), ainda sem IA.
 - Dashboard (primeira versão), CRM (kanban com 4 colunas provisórias e arrastar), Agenda da semana, Mensagens enviadas e Leads/Clientes.
 - Tela `/demo` em 3 colunas (chat + agenda + mensagens). Chat web de teste com resposta "eco" provisória.

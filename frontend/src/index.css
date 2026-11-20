@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* "dark:" do Tailwind segue o tema escolhido no botão (ou o do sistema, se nenhum foi escolhido) */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
 /* Tokens de design — docs/specs/11-design-visual.md */
 :root {
   --bg: #f3f1ee;

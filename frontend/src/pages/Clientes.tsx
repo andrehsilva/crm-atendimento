@@ -1,0 +1,122 @@
+import { useEffect, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { Pencil, Search, Users } from 'lucide-react'
+import { api, type Etapa, type Paciente } from '../lib/api'
+import { useClinica } from '../lib/clinica'
+import { dataCurta, telefone } from '../lib/formato'
+import { useAviso } from '../components/Aviso'
+import { PageHeader } from '../components/PageHeader'
+import { Botao, Campo, Entrada, Modal, Selo, Vazio, type CorSelo } from '../components/ui'
+
+const ETAPA: Record<Etapa, [string, CorSelo]> = {
+  novo_contato: ['Novo contato', 'rosa'],
+  agendado: ['Agendado', 'verde'],
+  confirmado: ['Confirmado', 'verde'],
+  cancelado: ['Cancelado', 'vermelho'],
+}
+
+export function Clientes() {
+  const { clinica } = useClinica()
+  const tz = clinica.timezone
+  const [busca, setBusca] = useState('')
+  const [termo, setTermo] = useState('')
+  const [editando, setEditando] = useState<Paciente | null>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setTermo(busca.trim()), 300)
+    return () => clearTimeout(t)
+  }, [busca])
+
+  const q = useQuery({
+    queryKey: ['pacientes', clinica.id, termo],
+    queryFn: () => api.get<Paciente[]>(`/clinics/${clinica.id}/patients${termo ? `?busca=${encodeURIComponent(termo)}` : ''}`),
+  })
+
+  return (
+    <>
+      <PageHeader titulo="Leads / Clientes" subtitulo="Pacientes e contatos da clínica" />
+      <div className="rounded-3xl bg-surface p-5">
+        <div className="relative mb-4 max-w-sm">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+          <Entrada className="w-full pl-9" placeholder="Buscar por nome ou telefone" value={busca} onChange={(e) => setBusca(e.target.value)} />
+        </div>
+        {!q.data?.length ? (
+          <Vazio icone={<Users className="size-8" />} texto={q.isLoading ? 'Carregando…' : 'Nenhum paciente encontrado.'} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-wide text-muted">
+                <tr className="border-b border-line">
+                  <th className="py-2 pr-4 font-medium">Nome</th>
+                  <th className="py-2 pr-4 font-medium">Telefone</th>
+                  <th className="py-2 pr-4 font-medium">Etapa</th>
+                  <th className="py-2 pr-4 font-medium">Nascimento</th>
+                  <th className="py-2 pr-4 font-medium">Próxima consulta</th>
+                  <th className="py-2 pr-4 font-medium">Dentista de referência</th>
+                  <th className="py-2 pr-4 font-medium">Origem</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {q.data.map((p) => {
+                  const [rot, cor] = ETAPA[p.crm_stage]
+                  return (
+                    <tr key={p.id}>
+                      <td className="py-2.5 pr-4 font-medium">{p.name ?? <span className="text-muted">sem nome</span>}</td>
+                      <td className="py-2.5 pr-4">{telefone(p.phone)}</td>
+                      <td className="py-2.5 pr-4"><Selo cor={cor}>{rot}</Selo></td>
+                      <td className="py-2.5 pr-4">{p.birth_date ? p.birth_date.split('-').reverse().join('/') : '—'}</td>
+                      <td className="py-2.5 pr-4">{p.proxima_consulta ? dataCurta(p.proxima_consulta, tz) : '—'}</td>
+                      <td className="py-2.5 pr-4">{p.dentista_referencia ?? '—'}</td>
+                      <td className="py-2.5 pr-4 capitalize">{p.origin}</td>
+                      <td className="py-2.5 text-right">
+                        <button type="button" aria-label={`Editar ${p.name ?? ''}`} onClick={() => setEditando(p)} className="rounded-lg p-1.5 text-muted hover:bg-surface-muted hover:text-text">
+                          <Pencil className="size-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      <ModalEditar paciente={editando} onFechar={() => setEditando(null)} />
+    </>
+  )
+}
+
+function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFechar: () => void }) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  const [nome, setNome] = useState('')
+  const [nasc, setNasc] = useState('')
+  const [obs, setObs] = useState('')
+  useEffect(() => {
+    setNome(paciente?.name ?? '')
+    setNasc(paciente?.birth_date ?? '')
+    setObs(paciente?.notes ?? '')
+  }, [paciente])
+
+  const salvar = useMutation({
+    mutationFn: () => api.patch(`/clinics/${clinica.id}/patients/${paciente!.id}`, { name: nome || null, birth_date: nasc || null, notes: obs || null }),
+    onSuccess: () => { aviso.ok('Paciente atualizado'); onFechar() },
+    onError: aviso.erro,
+  })
+
+  return (
+    <Modal titulo="Editar paciente" aberto={!!paciente} onFechar={onFechar}>
+      <div className="space-y-4">
+        <p className="text-sm text-muted">Telefone: {paciente && telefone(paciente.phone)} (é a chave do paciente e não muda)</p>
+        <Campo rotulo="Nome completo"><Entrada value={nome} onChange={(e) => setNome(e.target.value)} /></Campo>
+        <Campo rotulo="Data de nascimento" ajuda="Usada na mensagem de aniversário"><Entrada type="date" value={nasc} onChange={(e) => setNasc(e.target.value)} /></Campo>
+        <Campo rotulo="Observações"><Entrada value={obs} onChange={(e) => setObs(e.target.value)} /></Campo>
+      </div>
+      <div className="mt-6 flex justify-end gap-2">
+        <Botao variante="fantasma" onClick={onFechar}>Cancelar</Botao>
+        <Botao disabled={salvar.isPending} onClick={() => salvar.mutate()}>Salvar</Botao>
+      </div>
+    </Modal>
+  )
+}

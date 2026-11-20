@@ -4,7 +4,7 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 1 concluída** — estrutura básica + banco (Supabase, Postgres 17) e IA (OpenCode Go, `gpt-6-luna`) conectados. Próximo: **Etapa 2** — banco e motor de agenda.
+> Status: **Etapa 3 em teste** — painel (Dashboard, CRM, Agenda, Mensagens, Clientes) e tela `/demo` com atualização em tempo real. Próximo: **Etapa 4** — Ísis com IA.
 >
 > Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 

@@ -208,3 +208,49 @@ def test_nao_marca_com_dentista_de_outra_clinica(conn, clinica, outra_clinica):
     with pytest.raises(AgendaError) as e:
         marcar(conn, clinica, as_(23, 9), prof=outra_clinica.prof_a)
     assert codigo(e) == "PROFISSIONAL_NAO_FAZ"
+
+
+# --- CRM e fila de mensagens (RN-PN-09, RN-MS-01, D18) ----------------------------
+def _etapa(conn, clinica):
+    return conn.execute("select crm_stage, last_event from patients where clinic_id = %s and phone = '+5511988887777'",
+                        (clinica.id,)).fetchone()
+
+
+def _fila(conn, clinica):
+    return [r[0] for r in conn.execute(
+        "select kind from outbound_messages where clinic_id = %s order by created_at, kind", (clinica.id,))]
+
+
+def test_marcar_move_card_e_enfileira_confirmacao(conn, clinica):
+    marcar(conn, clinica, as_(23, 9))
+    assert _etapa(conn, clinica) == ("agendado", "consulta_agendada")
+    assert _fila(conn, clinica) == ["confirmacao"]
+
+
+def test_confirmar_move_para_confirmado(conn, clinica):
+    c = marcar(conn, clinica, as_(23, 9))
+    S.mudar_status(conn, clinica.id, appointment_id=c["id"], novo="confirmada", ator="recepcao")
+    assert _etapa(conn, clinica) == ("confirmado", "consulta_confirmada")
+
+
+def test_cancelar_unica_consulta_vai_para_cancelados(conn, clinica):
+    c = marcar(conn, clinica, as_(23, 9))
+    S.cancelar(conn, clinica.id, appointment_id=c["id"], telefone=None, ator="recepcao", agora=AGORA)
+    assert _etapa(conn, clinica) == ("cancelado", "consulta_cancelada")
+    assert "cancelamento" in _fila(conn, clinica)
+
+
+def test_cancelar_com_outra_consulta_continua_agendado(conn, clinica):
+    c = marcar(conn, clinica, as_(23, 9))
+    marcar(conn, clinica, as_(24, 9))
+    S.cancelar(conn, clinica.id, appointment_id=c["id"], telefone=None, ator="recepcao", agora=AGORA)
+    assert _etapa(conn, clinica)[0] == "agendado"
+
+
+def test_remarcar_enfileira_uma_mensagem_de_remarcacao(conn, clinica):
+    c = marcar(conn, clinica, as_(23, 9))
+    S.remarcar(conn, clinica.id, appointment_id=c["id"], telefone=None, ator="recepcao", novo_inicio=as_(24, 14), agora=AGORA)
+    assert _fila(conn, clinica).count("remarcacao") == 1
+    assert _fila(conn, clinica).count("confirmacao") == 1  # só a da marcação original
+    texto = conn.execute("select body from outbound_messages where kind = 'remarcacao' and clinic_id = %s", (clinica.id,)).fetchone()[0]
+    assert "segunda-feira, 23/11 às 09:00" in texto and "terça-feira, 24/11 às 14:00" in texto

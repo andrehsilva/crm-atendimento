@@ -17,6 +17,8 @@ from psycopg.types.json import Jsonb
 from app.agenda import regras as R
 from app.agenda.erros import AgendaError
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
+from app.eventos import avisar
+from app.painel import avisos, crm
 
 Ator = Literal["isis", "recepcao", "paciente"]
 ATIVOS = ("agendada", "confirmada")
@@ -224,6 +226,7 @@ def _registrar(conn, clinic_id, appointment_id, ator: str, acao: str, antes=None
            values (%s, %s, %s, %s, %s, %s, %s)""",
         (clinic_id, appointment_id, ator, ator_id, acao, Jsonb(antes) if antes else None, Jsonb(depois) if depois else None),
     )
+    avisar(conn, clinic_id, "agenda", appointment_id)
 
 
 def _foto(c: dict) -> dict:
@@ -294,7 +297,11 @@ def marcar(
             raise AgendaError("HORARIO_OCUPADO", "Esse horário acabou de ser ocupado. Escolha outro.") from e
 
         _registrar(conn, clinic_id, consulta["id"], ator, "marcada", depois=_foto(consulta))
-    return detalhar(conn, clinic_id, consulta["id"])
+        detalhe = detalhar(conn, clinic_id, consulta["id"])
+        if not _remarcando:  # na remarcação, quem avisa é remarcar()
+            crm.registrar(conn, clinic_id, paciente["id"], "consulta_agendada", ator, "agendado")
+            avisos.enfileirar(conn, clinica, detalhe, "confirmacao")
+    return detalhe
 
 
 def _consulta_do_paciente(conn, clinic_id, appointment_id, telefone: str | None, ator: Ator) -> dict:
@@ -327,8 +334,12 @@ def cancelar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | Non
         (motivo, appointment_id),
     ).fetchone()
     _registrar(conn, clinic_id, appointment_id, ator, "cancelada", _foto(c), _foto(novo))
+    detalhe = detalhar(conn, clinic_id, appointment_id)
+    crm.registrar(conn, clinic_id, c["patient_id"], "consulta_cancelada", ator,
+                  crm.etapa_apos_cancelar(conn, clinic_id, c["patient_id"], agora))
+    avisos.enfileirar(conn, clinica, detalhe, "cancelamento")
     # RN-AG-07: cancela, mas avisa a política e sinaliza a recepção
-    return {"consulta": detalhar(conn, clinic_id, appointment_id), "aviso_politica": _aviso_politica(clinica, c["starts_at"], agora)}
+    return {"consulta": detalhe, "aviso_politica": _aviso_politica(clinica, c["starts_at"], agora)}
 
 
 def remarcar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | None, ator: Ator,
@@ -352,6 +363,8 @@ def remarcar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | Non
             _remarcando=appointment_id,
         )
         _registrar(conn, clinic_id, appointment_id, ator, "remarcada", _foto(antiga), {"nova_consulta": str(nova["id"])})
+        crm.registrar(conn, clinic_id, antiga["patient_id"], "consulta_remarcada", ator, "agendado")
+        avisos.enfileirar(conn, clinica, nova, "remarcacao", anterior=antiga)
     return {"consulta": nova, "anterior_id": appointment_id, "aviso_politica": _aviso_politica(clinica, antiga["starts_at"], agora)}
 
 
@@ -378,6 +391,8 @@ def mudar_status(conn, clinic_id: UUID, *, appointment_id: UUID, novo: str, ator
             (c["professional_id"], c["patient_id"]),
         )
     _registrar(conn, clinic_id, appointment_id, ator, novo, _foto(c), _foto(novo_c))
+    etapa = {"confirmada": "confirmado"}.get(novo)
+    crm.registrar(conn, clinic_id, c["patient_id"], f"consulta_{novo}", ator, etapa)
     return detalhar(conn, clinic_id, appointment_id)
 
 

@@ -33,3 +33,4 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D24 | ✅ Disparos na 1ª versão: só **aniversário**. Mensagens programadas (ex.: férias coletivas) e automações ficam para depois | Q24 |
 | D13 | ✅ Modelo: **OpenCode Go + `gpt-6-luna`** via Responses API (`https://opencode.ai/inference/go/openai/v1`). No Agno: `OpenAIResponses(id=..., base_url=..., api_key=...)`. Enviar cabeçalho `x-opencode-session` estável por conversa e User-Agent próprio (`isis-atendimento/0.x`). Tudo no `.env`, trocável sem mexer no código | Definido pelo usuário em 16/11/2026; endpoint conforme docs do OpenCode Go |
 | D25 | 🟡 Dev usa a conexão **direta** do Supabase (exige IPv6). Em produção, usar **Session pooler** se o servidor não tiver IPv6 | Etapa 1B, 19/11/2026 |
+| D26 | ✅ Projeto Supabase recriado na região **South America (São Paulo)** — menor latência e dados no Brasil (LGPD) | Q27, 19/11/2026 |
