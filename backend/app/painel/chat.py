@@ -1,6 +1,6 @@
 """Chat web de TESTE (D15): o paciente informa o telefone e conversa.
 
-Etapa 3: a resposta é um "eco" provisório. Na Etapa 4 a Ísis (IA) responde no lugar.
+Etapa 4: quem responde é a Ísis (IA). Com a conversa em atendimento humano, ela fica quieta.
 """
 
 from uuid import UUID
@@ -9,6 +9,7 @@ from psycopg.rows import dict_row
 
 from app.agenda.erros import AgendaError
 from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
+from app.agent import isis
 from app.eventos import avisar
 from app.painel import crm
 
@@ -59,22 +60,26 @@ def _gravar(conn, clinic_id, conversa_id, direcao, autor, texto) -> dict:
     return m
 
 
-def receber(conn, slug: str, telefone: str, texto: str) -> list[dict]:
-    """Grava a mensagem do paciente e a resposta. Devolve as mensagens novas."""
+def receber(conn, slug: str, telefone: str, texto: str, responder: bool = True) -> list[dict]:
+    """Grava a mensagem do paciente e a resposta da Ísis. Devolve as mensagens novas.
+
+    responder=False só grava a mensagem (usado pelo seed da demo, sem chamar a IA).
+    """
     clinica = clinica_por_slug(conn, slug)
     paciente = obter_ou_criar_paciente(conn, clinica["id"], telefone, None, origem="web")
     conversa = _conversa(conn, clinica["id"], paciente["id"], "web")
     novas = [_gravar(conn, clinica["id"], conversa["id"], "in", "paciente", texto)]
     crm.registrar(conn, clinica["id"], paciente["id"], "conversando", "paciente")
 
-    if conversa["status"] == "humano":  # RN-AT-06: Ísis pausada, a recepção responde
+    if conversa["status"] == "humano" or not responder:  # RN-AT-06: Ísis pausada, a recepção responde
         avisar(conn, clinica["id"], "conversa", conversa["id"])
         return novas
 
-    resposta = (
-        "🛠️ Ísis em construção (chega na Etapa 4). "
-        f"Recebi sua mensagem: “{texto.strip()[:300]}”"
-    )
+    # Grava e mostra a mensagem do paciente já; a resposta da IA vem numa transação separada
+    avisar(conn, clinica["id"], "conversa", conversa["id"])
+    conn.commit()
+
+    resposta = isis.responder(conn, clinica, paciente, conversa, texto.strip(), novas[0]["created_at"])
     novas.append(_gravar(conn, clinica["id"], conversa["id"], "out", "isis", resposta))
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     return novas

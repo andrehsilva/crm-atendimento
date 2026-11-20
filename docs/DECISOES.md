@@ -34,3 +34,6 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D13 | ✅ Modelo: **OpenCode Go + `gpt-6-luna`** via Responses API (`https://opencode.ai/inference/go/openai/v1`). No Agno: `OpenAIResponses(id=..., base_url=..., api_key=...)`. Enviar cabeçalho `x-opencode-session` estável por conversa e User-Agent próprio (`isis-atendimento/0.x`). Tudo no `.env`, trocável sem mexer no código | Definido pelo usuário em 16/11/2026; endpoint conforme docs do OpenCode Go |
 | D25 | 🟡 Dev usa a conexão **direta** do Supabase (exige IPv6). Em produção, usar **Session pooler** se o servidor não tiver IPv6 | Etapa 1B, 19/11/2026 |
 | D26 | ✅ Projeto Supabase recriado na região **South America (São Paulo)** — menor latência e dados no Brasil (LGPD) | Q27, 19/11/2026 |
+| D27 | ✅ Quando a Ísis não sabe responder, ela **continua passando a conversa para a equipe** (e para de responder), mas o paciente **sempre recebe um aviso claro** de que a equipe assume dali em diante. O aviso é acrescentado pelo código | Q28, 20/11/2026 — no teste da Etapa 4 a Ísis ficou em silêncio sem avisar |
+| D28 | ✅ WAHA roda num **servidor do usuário** (não no Docker local). O webhook do WAHA aponta **direto para o backend** (sem n8n, D1); em desenvolvimento, via túnel até a máquina local | Q29, 20/11/2026 |
+| D29 | ✅ Primeira versão: **1 número de WhatsApp = 1 clínica** | Q12, 20/11/2026 |

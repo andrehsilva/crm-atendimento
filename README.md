@@ -4,7 +4,7 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 3 em teste** — painel (Dashboard, CRM, Agenda, Mensagens, Clientes) e tela `/demo` com atualização em tempo real. Próximo: **Etapa 4** — Ísis com IA.
+> Status: **Etapa 4 em teste** — Ísis conversando com IA (Agno + gpt-6-luna) no chat de teste, com ações em dois passos e atendimento humano. Próximo: **Etapa 5** — WhatsApp (WAHA).
 >
 > Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 
@@ -19,6 +19,7 @@ Pré-requisitos: `uv` (Python), Node 20+. Na pasta do projeto:
 - Painel: http://localhost:5173
 - Backend: http://localhost:8000/health · documentação da API: http://localhost:8000/docs
 - Testes do backend: `cd backend; uv run pytest`
+- Conversas de teste com a IA: `cd backend; uv run python scripts/conversa_teste.py` (gasta um pouco do plano)
 - Banco: `cd backend; uv run python scripts/migrar.py` (cria/atualiza tabelas) e `uv run python scripts/seed_demo.py --reset` (recria a clínica demo)
 
 ## O que vamos ver na tela (resultado final)

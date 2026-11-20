@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 22 de 35 resolvidas (19 respondidas · 3 adiadas) — 19/11/2026.
+**Progresso:** 25 de 37 resolvidas (22 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -20,9 +20,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## 🟣 Bloqueia a Etapa 5 (WhatsApp WAHA)
 
-- [ ] **Q12 — Números por clínica:** uma clínica pode ter mais de um número de WhatsApp?
-  - Sugestão: não na primeira versão (1 número = 1 clínica).
-  - Resposta:
+✅ Nada pendente — Etapa 5 liberada.
 
 ## ⚪ Bloqueia a Etapa 7 (Admin multi-tenant e WhatsApp oficial)
 
@@ -88,3 +86,6 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 - [x] **Q23 — Aniversário:** 09:00. *(16/11 → RN-DP-01)*
 - [x] **Q24 — Outros disparos:** ficam para depois (ex.: aviso de férias coletivas). Primeira versão só com **aniversário**. *(16/11 → D24)*
 - [x] **Q27 — Região do banco:** recriar o projeto Supabase em **São Paulo** antes da Etapa 3. *(19/11 → D26)*
+- [x] **Q28 — Dúvida que a Ísis não sabe:** continua transferindo para a equipe, mas **avisando claramente** o paciente que a equipe assume. *(20/11 → D27, RN-AT-06)*
+- [x] **Q12 — Números por clínica:** 1 número de WhatsApp = 1 clínica na primeira versão. *(20/11 → D29)*
+- [x] **Q29 — WAHA:** já roda num **servidor do usuário**; o webhook passa a apontar **direto para o nosso backend**, sem n8n. *(20/11 → D28)*

@@ -104,7 +104,7 @@ def criar_demo(conn, reset: bool = False) -> str:
     servico.mudar_status(conn, clinic_id, appointment_id=joao["id"], novo="confirmada", ator="recepcao")
 
     # Um contato novo que só conversou (coluna "Novo Contato")
-    chat.receber(conn, SLUG, "(11) 96543-2109", "Oi! Vocês fazem clareamento?")
+    chat.receber(conn, SLUG, "(11) 96543-2109", "Oi! Vocês fazem clareamento?", responder=False)
     conn.execute("update patients set name = 'Pedro Alves' where clinic_id = %s and phone = '+5511965432109'", (clinic_id,))
 
     # Aniversariante do dia, para o Dashboard

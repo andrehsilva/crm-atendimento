@@ -212,6 +212,82 @@ async def eventos(clinic_id: UUID, request: Request):
 
 
 # ---------------------------------------------------------------------------
+# Conversas e atendimento humano (RN-AT-06)
+# ---------------------------------------------------------------------------
+@router.get("/clinics/{clinic_id}/patients/{patient_id}/conversation", summary="Conversa do paciente (histórico)")
+def conversa_do_paciente(clinic_id: UUID, patient_id: UUID, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    c = _cur(conn).execute(
+        """select id, channel, status, last_message_at from conversations
+           where clinic_id = %s and patient_id = %s order by last_message_at desc limit 1""",
+        (clinic_id, patient_id),
+    ).fetchone()
+    if not c:
+        return {"conversa": None, "mensagens": []}
+    return {"conversa": c, "mensagens": chat.historico(conn, c["id"], limite=200)}
+
+
+def _mudar_atendimento(conn, clinic_id: UUID, conversa_id: UUID, status: str, evento: str) -> dict:
+    c = _cur(conn).execute(
+        "update conversations set status = %s where clinic_id = %s and id = %s returning id, patient_id, status",
+        (status, clinic_id, conversa_id),
+    ).fetchone()
+    if not c:
+        raise AgendaError("DADOS_INVALIDOS", "Conversa não encontrada.")
+    crm.registrar(conn, clinic_id, c["patient_id"], evento, "recepcao")
+    avisar(conn, clinic_id, "conversa", conversa_id)
+    return c
+
+
+@router.post("/clinics/{clinic_id}/conversations/{conversa_id}/takeover", summary="Equipe assume (Ísis pausa)")
+def assumir(clinic_id: UUID, conversa_id: UUID, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    return _mudar_atendimento(conn, clinic_id, conversa_id, "humano", "atendimento_manual")
+
+
+@router.post("/clinics/{clinic_id}/conversations/{conversa_id}/release", summary="Devolver para a Ísis")
+def devolver(clinic_id: UUID, conversa_id: UUID, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    return _mudar_atendimento(conn, clinic_id, conversa_id, "ativa", "devolvido_para_isis")
+
+
+class RespostaEquipe(BaseModel):
+    texto: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/clinics/{clinic_id}/conversations/{conversa_id}/reply", summary="Equipe responde ao paciente")
+def responder_paciente(clinic_id: UUID, conversa_id: UUID, body: RespostaEquipe, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    c = _cur(conn).execute(
+        "select id, patient_id, status from conversations where clinic_id = %s and id = %s", (clinic_id, conversa_id)
+    ).fetchone()
+    if not c:
+        raise AgendaError("DADOS_INVALIDOS", "Conversa não encontrada.")
+    if c["status"] != "humano":  # responder manualmente pausa a Ísis, para as duas não falarem juntas
+        conn.execute("update conversations set status = 'humano' where id = %s", (conversa_id,))
+    m = _cur(conn).execute(
+        """insert into messages (clinic_id, conversation_id, direction, author, content)
+           values (%s, %s, 'out', 'recepcao', %s) returning id, direction, author, content, created_at""",
+        (clinic_id, conversa_id, body.texto.strip()),
+    ).fetchone()
+    conn.execute("update conversations set last_message_at = now() where id = %s", (conversa_id,))
+    crm.registrar(conn, clinic_id, c["patient_id"], "recepcao_respondeu", "recepcao")
+    avisar(conn, clinic_id, "conversa", conversa_id)
+    return m
+
+
+@router.get("/web/{slug}/history", summary="Chat de teste: histórico (o paciente vê respostas da equipe)")
+def chat_historico(slug: str, telefone: str, conn: Conn = Depends(get_conn)):
+    clin = chat.clinica_por_slug(conn, slug)
+    p = servico.buscar_paciente(conn, clin["id"], telefone)
+    if not p:
+        return []
+    c = conn.execute("select id from conversations where clinic_id = %s and patient_id = %s and channel = 'web'",
+                     (clin["id"], p["id"])).fetchone()
+    return chat.historico(conn, c[0]) if c else []
+
+
+# ---------------------------------------------------------------------------
 # Chat web de teste (D15)
 # ---------------------------------------------------------------------------
 class InicioChat(BaseModel):

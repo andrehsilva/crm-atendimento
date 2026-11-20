@@ -15,7 +15,8 @@
   1. `prompts/isis.md` — persona e regras fixas (RN-AT), editável em texto.
   2. Bloco da clínica (do banco): nome, endereço, horários, profissionais, procedimentos, políticas, tom.
   3. Bloco do momento: data/hora atual por extenso no fuso da clínica + **calendário dos próximos 14 dias** (dia da semana ↔ data), nome do paciente se conhecido, consultas futuras dele.
-- **Memória:** histórico da conversa salvo no Postgres (storage do Agno), `session_id = clinic_phone:patient_phone`, últimas ~20 mensagens no contexto.
+- **Memória:** o histórico é a nossa própria tabela `messages` (últimas 20), enviado a cada mensagem. Ações preparadas e ainda não confirmadas entram nas instruções (o token não fica no texto da conversa).
+- **Datas relativas:** o código calcula "próxima terça", "semana que vem" etc. e entrega pronto à Ísis (ela não calcula de cabeça).
 
 ## Ferramentas
 Todas recebem `clinic_id` e `patient_id` **do contexto da sessão** (não são parâmetros visíveis ao modelo).
@@ -30,9 +31,9 @@ Todas recebem `clinic_id` e `patient_id` **do contexto da sessão** (não são p
 | `confirmar_acao(token)` | | Grava marcar/remarcar/cancelar previamente preparado |
 | `preparar_remarcacao(consulta_id, novo_slot)` | | Idem, para remarcar |
 | `preparar_cancelamento(consulta_id, motivo?)` | | Idem, para cancelar |
-| `chamar_humano(motivo)` | | Handoff (RN-AT-06) |
+| `chamar_humano(motivo)` | | Handoff (RN-AT-06): Ísis pausa; o código acrescenta à resposta o aviso de que a equipe assume (D27) |
 
-**Dois passos (preparar → confirmar):** garante RN-AG-11 no código. O token expira em 10 min e é revalidado na confirmação (o horário pode ter sido tomado no meio-tempo).
+**Dois passos (preparar → confirmar):** garante RN-AG-11 no código. `preparar_*` roda a ação de verdade dentro de um savepoint e desfaz (valida todas as regras sem gravar). `confirmar_acao` só funciona se existir **mensagem do paciente posterior ao resumo**, para o mesmo paciente e clínica, uma única vez, em até 15 min; e a ação é revalidada (o horário pode ter sido tomado no meio-tempo).
 
 ## Fluxo de uma mensagem
 ```

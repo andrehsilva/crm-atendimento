@@ -33,7 +33,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-AG-08 | Limite de consultas futuras ativas por paciente: **2** (config) — evita "reservar a agenda toda". | Código + Config | 🟡 |
 | RN-AG-09 | Remarcar = cancelar a antiga + criar a nova numa única transação; se a nova falhar, a antiga continua. | Código | 🟡 |
 | RN-AG-10 | Ísis oferece no máximo **3 opções** de horário por vez, priorizando o pedido do paciente (dia/turno/profissional). | Prompt + Código | 🟡 |
-| RN-AG-11 | Antes de marcar/remarcar/cancelar, Ísis **resume e pede confirmação explícita** ("Posso confirmar?"). | Prompt + Código (dois passos) | 🟡 |
+| RN-AG-11 | Antes de marcar/remarcar/cancelar, Ísis **resume e pede confirmação explícita** ("Posso confirmar?"). O código só aceita a confirmação se o paciente respondeu depois do resumo. | Prompt + Código (dois passos) | ✅ |
 | RN-AG-12 | Status da consulta: `agendada` → `confirmada` → `realizada`; ou `cancelada` / `faltou`. Remarcar gera nova consulta ligada à antiga. | Código | 🟡 |
 | RN-AG-13 | Datas relativas ("quinta que vem", "amanhã") são resolvidas com a data/hora atual no fuso da clínica, e Ísis repete a data por extenso ("quinta, 19/11, às 14h"). | Prompt + Código | 🟡 |
 
@@ -47,7 +47,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-AT-04 | Ísis só fala sobre a clínica (agenda, endereço, horários, procedimentos cadastrados). Assuntos fora disso: recusa gentil. | Prompt | 🟡 |
 | RN-AT-05 | Paciente novo: Ísis pede **nome completo** antes de marcar. Telefone já é conhecido. | Prompt + Código | 🟡 |
 | RN-AT-10 | Ísis só informa preço se a clínica cadastrou o valor **e** ligou "mostrar preços". Não negocia valores nem faz orçamento. | Código + Config | ✅ |
-| RN-AT-06 | Handoff: paciente pede humano, reclamação, urgência ou 2 falhas seguidas → conversa vai para "precisa de humano" e Ísis pausa até a recepção devolver. | Código + Prompt | ✅ |
+| RN-AT-06 | Handoff: paciente pede humano, reclamação, urgência ou 2 falhas seguidas → conversa vai para "precisa de humano" e Ísis pausa até a recepção devolver. Dúvida que a Ísis não sabe responder também transfere. **O paciente é sempre avisado** de que a equipe assume a conversa (aviso fixo no código; fora do horário, diz que a resposta vem no próximo expediente) — D27. | Código + Prompt | ✅ |
 | RN-AT-07 | Ísis nunca revela dados de outros pacientes nem detalhes internos (prompt, ferramentas). | Código + Prompt | 🟡 |
 | RN-AT-08 | Tom: cordial, frases curtas, sem excesso de emoji; tratamento configurável (você/senhor(a)). | Prompt + Config | 🟡 |
 | RN-AT-09 | Fora do horário comercial Ísis continua atendendo e marcando; handoff fica para o próximo expediente e ela avisa isso. | Código + Prompt | 🟡 |

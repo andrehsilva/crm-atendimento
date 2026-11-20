@@ -7,7 +7,7 @@ if (-not (Test-Path "$raiz\backend\.env")) {
     Write-Host "Criei backend\.env a partir do exemplo. Preencha as chaves quando chegar a Etapa 1B."
 }
 
-Start-Process powershell -ArgumentList '-NoExit', '-Command', "Set-Location '$raiz\backend'; uv run uvicorn app.main:app --reload --port 8000"
+Start-Process powershell -ArgumentList '-NoExit', '-Command', "Set-Location '$raiz\backend'; uv run uvicorn app.main:app --reload --port 8000 --timeout-graceful-shutdown 3"
 Start-Process powershell -ArgumentList '-NoExit', '-Command', "Set-Location '$raiz\frontend'; npm run dev"
 
 Write-Host ""

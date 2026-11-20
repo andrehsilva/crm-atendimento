@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Send } from 'lucide-react'
 import { api, type MensagemChat } from '../lib/api'
 import { useClinica } from '../lib/clinica'
@@ -7,34 +7,45 @@ import { hora } from '../lib/formato'
 import { useAviso } from './Aviso'
 import { Botao, Entrada } from './ui'
 
-/** Chat de TESTE (D15): o "paciente" informa o telefone e conversa. A Ísis de verdade chega na Etapa 4. */
+/** Chat de TESTE (D15): o "paciente" informa o telefone e conversa com a Ísis (IA). */
 export function ChatTeste() {
   const { clinica } = useClinica()
   const aviso = useAviso()
+  const qc = useQueryClient()
   const [telefone, setTelefone] = useState('')
   const [nome, setNome] = useState('')
   const [sessao, setSessao] = useState<string | null>(null)
-  const [msgs, setMsgs] = useState<MensagemChat[]>([])
   const [texto, setTexto] = useState('')
   const fimRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => fimRef.current?.scrollIntoView({ behavior: 'smooth' }), [msgs])
+  // Histórico vem do servidor e recarrega pelos avisos em tempo real (inclui respostas da equipe)
+  const chave = ['chat', 'web', clinica.slug, sessao]
+  const historico = useQuery({
+    queryKey: chave,
+    queryFn: () => api.get<MensagemChat[]>(`/web/${clinica.slug}/history?telefone=${encodeURIComponent(sessao!)}`),
+    enabled: !!sessao,
+  })
+  const msgs = historico.data ?? []
+
+  useEffect(() => {
+    fimRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [msgs.length])
 
   const entrar = useMutation({
-    mutationFn: () => api.post<{ historico: MensagemChat[] }>(`/web/${clinica.slug}/session`, { telefone, nome: nome || null }),
-    onSuccess: (r) => { setSessao(telefone); setMsgs(r.historico) },
+    mutationFn: () => api.post(`/web/${clinica.slug}/session`, { telefone, nome: nome || null }),
+    onSuccess: () => setSessao(telefone),
     onError: aviso.erro,
   })
   const enviar = useMutation({
     mutationFn: (t: string) => api.post<MensagemChat[]>(`/web/${clinica.slug}/messages`, { telefone: sessao, texto: t }),
-    onSuccess: (novas) => setMsgs((m) => [...m, ...novas]),
+    onSettled: () => qc.invalidateQueries({ queryKey: chave }),
     onError: aviso.erro,
   })
 
   function submeter(e: FormEvent) {
     e.preventDefault()
     const t = texto.trim()
-    if (!t) return
+    if (!t || enviar.isPending) return
     setTexto('')
     enviar.mutate(t)
   }
@@ -58,7 +69,7 @@ export function ChatTeste() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
         <div className="flex items-center gap-3">
           <span className="grid size-9 place-items-center rounded-full bg-primary font-semibold text-primary-contrast">Í</span>
@@ -67,17 +78,24 @@ export function ChatTeste() {
             <div className="text-xs text-muted">atendente virtual · online</div>
           </div>
         </div>
-        <button type="button" className="text-xs text-muted hover:text-text" onClick={() => { setSessao(null); setMsgs([]) }}>trocar telefone</button>
+        <button type="button" className="text-xs text-muted hover:text-text" onClick={() => setSessao(null)}>trocar telefone</button>
       </div>
-      <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+        {msgs.length === 0 && <p className="text-center text-xs text-muted">Diga "oi" para a Ísis 👋</p>}
         {msgs.map((m) => (
           <div key={m.id} className={`flex ${m.direction === 'in' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.direction === 'in' ? 'bg-primary text-primary-contrast' : 'bg-surface-muted'}`}>
+              {m.author === 'recepcao' && <p className="mb-0.5 text-[11px] font-semibold text-primary">Equipe da clínica</p>}
               <p className="whitespace-pre-line">{m.content}</p>
               <p className="mt-1 text-right text-[10px] opacity-70">{hora(m.created_at, clinica.timezone)}</p>
             </div>
           </div>
         ))}
+        {enviar.isPending && !msgs.some((m) => m.direction === 'in' && m.content === enviar.variables) && (
+          <div className="flex justify-end">
+            <div className="max-w-[85%] rounded-2xl bg-primary px-3 py-2 text-sm text-primary-contrast opacity-70">{enviar.variables}</div>
+          </div>
+        )}
         {enviar.isPending && <p className="text-xs text-muted">Ísis está digitando…</p>}
         <div ref={fimRef} />
       </div>

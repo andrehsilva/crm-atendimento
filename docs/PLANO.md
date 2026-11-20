@@ -47,7 +47,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** pela página `/docs` do FastAPI, marcar uma consulta. Tentar marcar outra no mesmo horário (deve recusar), tentar marcar no almoço (deve recusar) e tentar cancelar com o telefone errado (deve recusar).
 
-## Etapa 3 — Painel operacional em tempo real — 🧪 aguardando seu teste
+## Etapa 3 — Painel operacional em tempo real ✅ (19/11/2026)
 **Entrega:** as telas no layout aprovado (`docs/layouts/`, specs 06 e 11), ainda sem IA.
 - Dashboard (primeira versão), CRM (kanban com 4 colunas provisórias e arrastar), Agenda da semana, Mensagens enviadas e Leads/Clientes.
 - Tela `/demo` em 3 colunas (chat + agenda + mensagens). Chat web de teste com resposta "eco" provisória.
@@ -56,7 +56,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** abrir o painel em duas abas, marcar uma consulta numa delas e ver a consulta aparecer na agenda e no kanban das duas na hora.
 
-## Etapa 4 — Ísis (agente com IA)
+## Etapa 4 — Ísis (agente com IA) ✅ (20/11/2026)
 **Entrega:** a Ísis conversando de verdade no chat web de teste.
 - Agno + `gpt-6-luna` (OpenCode Go).
 - Personalidade e regras em arquivo de texto editável (`backend/app/agent/prompts/isis.md`) + regras da clínica vindas do banco.
@@ -68,7 +68,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 ## Etapa 5 — WhatsApp (WAHA)
 **Entrega:** a mesma Ísis respondendo no WhatsApp.
-- WAHA em Docker (já instalado na sua máquina), conectado por QR code.
+- WAHA no servidor do usuário (D28), conectado por QR code; 1 número = 1 clínica (D29).
 - Webhook de entrada, envio de respostas e túnel para teste local (cloudflared).
 
 **O que testar:** ler o QR com um celular de teste, mandar "oi" de outro celular, marcar uma consulta pelo WhatsApp e ver a consulta na agenda.

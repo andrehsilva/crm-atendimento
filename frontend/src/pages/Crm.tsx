@@ -7,6 +7,7 @@ import { dataHora, horasDesde, telefone, tempoParado } from '../lib/formato'
 import { useAviso } from '../components/Aviso'
 import { PageHeader } from '../components/PageHeader'
 import { ModalNovaConsulta, type Previa } from '../components/agenda/ModalNovaConsulta'
+import { ModalConversa } from '../components/ModalConversa'
 import { Botao, Modal, Selo, type CorSelo } from '../components/ui'
 
 // Colunas provisórias (D19)
@@ -25,6 +26,7 @@ export function Crm() {
   const [sobre, setSobre] = useState<Etapa | null>(null)
   const [previa, setPrevia] = useState<Previa | undefined>()
   const [cancelar, setCancelar] = useState<CardCrm | null>(null)
+  const [aberto, setAberto] = useState<string | null>(null)
 
   const q = useQuery({ queryKey: ['kanban', clinica.id], queryFn: () => api.get<{ cards: CardCrm[] }>(`/clinics/${clinica.id}/kanban`) })
 
@@ -89,7 +91,8 @@ export function Crm() {
                 )}
                 {doCol.map((c) => (
                   <CardLead key={c.id} card={c} cor={col.cor} titulo={col.titulo} tz={clinica.timezone}
-                    onDragStart={() => setArrastando(c)} onDragEnd={() => { setArrastando(null); setSobre(null) }} />
+                    onDragStart={() => setArrastando(c)} onDragEnd={() => { setArrastando(null); setSobre(null) }}
+                    onAbrir={() => setAberto(c.id)} />
                 ))}
               </div>
             </section>
@@ -97,6 +100,7 @@ export function Crm() {
         })}
       </div>
 
+      <ModalConversa card={cards.find((c) => c.id === aberto) ?? null} onFechar={() => setAberto(null)} />
       <ModalNovaConsulta aberto={!!previa} previa={previa} onFechar={() => setPrevia(undefined)} />
       <Modal titulo="Cancelar consulta?" aberto={!!cancelar} onFechar={() => setCancelar(null)}>
         {cancelar && (
@@ -116,13 +120,13 @@ export function Crm() {
   )
 }
 
-function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd }: {
-  card: CardCrm; cor: CorSelo; titulo: string; tz: string; onDragStart: () => void; onDragEnd: () => void
+function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
+  card: CardCrm; cor: CorSelo; titulo: string; tz: string; onDragStart: () => void; onDragEnd: () => void; onAbrir: () => void
 }) {
   const parado = horasDesde(card.last_activity_at) >= PARADO_ALERTA_H
   const dias = Math.floor(horasDesde(card.created_at) / 24)
   return (
-    <article draggable onDragStart={onDragStart} onDragEnd={onDragEnd}
+    <article draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onAbrir} title="Clique para ver a conversa"
       className="cursor-grab rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-line active:cursor-grabbing">
       <div className="mb-3 flex flex-col items-end gap-1.5">
         {card.atendimento_manual
@@ -146,7 +150,7 @@ function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd }: {
           <span className="text-xs text-muted" title="Tempo desde o primeiro contato">⏱ {dias}d</span>
         </div>
         {parado && <Selo cor="vermelho" className="mt-1.5">Parado {tempoParado(card.last_activity_at)}</Selo>}
-        <button type="button" onClick={() => navigator.clipboard?.writeText(card.last_event)} title="Copiar último evento"
+        <button type="button" onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(card.last_event) }} title="Copiar último evento"
           className="mt-1.5 flex items-center gap-1 rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[11px] text-muted hover:text-text">
           {card.last_event}<Copy className="size-3" />
         </button>
