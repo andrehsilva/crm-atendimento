@@ -18,7 +18,7 @@ export function Agenda() {
         <Botao onClick={() => setPrevia({})}><Plus className="size-4" />Nova consulta</Botao>
       </div>
       <div className="h-[calc(100vh-220px)] min-h-[520px] rounded-3xl bg-surface p-5">
-        <AgendaSemana onConsulta={setAberta} onVazio={(dia, hora) => setPrevia({ dia, hora })} />
+        <AgendaSemana onConsulta={setAberta} onVazio={(dia, hora, professionalId) => setPrevia({ dia, hora, professionalId })} />
       </div>
       <ModalConsulta consulta={aberta} onFechar={() => setAberta(null)} />
       <ModalNovaConsulta aberto={!!previa} previa={previa} onFechar={() => setPrevia(undefined)} />

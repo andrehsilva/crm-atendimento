@@ -12,7 +12,7 @@ type Conversa = { conversa: { id: string; channel: string; status: 'ativa' | 'hu
 const AUTOR: Record<string, string> = { paciente: '', isis: 'Ísis', recepcao: 'Equipe', sistema: 'Sistema' }
 
 /** Conversa do paciente + atendimento humano (RN-AT-06): assumir, responder, devolver para a Ísis. */
-export function ModalConversa({ card, onFechar }: { card: CardCrm | null; onFechar: () => void }) {
+export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | 'name' | 'phone'> | null; onFechar: () => void }) {
   const { clinica } = useClinica()
   const aviso = useAviso()
   const tz = clinica.timezone

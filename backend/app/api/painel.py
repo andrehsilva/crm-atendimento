@@ -69,11 +69,33 @@ def dashboard(clinic_id: UUID, conn: Conn = Depends(get_conn)):
     r = conn.execute(
         """select
              (select count(*) from conversations where clinic_id = %(c)s and status = 'humano'),
-             (select count(*) from patients where clinic_id = %(c)s and crm_stage in ('novo_contato')
+             (select count(*) from patients where clinic_id = %(c)s and crm_stage = 'novo_contato'
                 and last_activity_at < now() - make_interval(hours => %(h)s)),
              (select count(*) from outbound_messages where clinic_id = %(c)s and status = 'agendada')""",
         {"c": clinic_id, "h": parado_horas},
     ).fetchone()
+    # Listas por trás de cada indicador (o painel mostra ao clicar no card)
+    esperando = _cur(conn).execute(
+        """select p.id, p.name, p.phone, cv.channel, cv.last_message_at,
+                  (select m.content from messages m where m.conversation_id = cv.id and m.clinic_id = cv.clinic_id
+                   order by m.created_at desc limit 1) as ultima_mensagem
+           from conversations cv join patients p on p.id = cv.patient_id and p.clinic_id = cv.clinic_id
+           where cv.clinic_id = %s and cv.status = 'humano' order by cv.last_message_at limit 50""",
+        (clinic_id,),
+    ).fetchall()
+    parados = _cur(conn).execute(
+        """select id, name, phone, last_event, last_activity_at from patients
+           where clinic_id = %s and crm_stage = 'novo_contato'
+             and last_activity_at < now() - make_interval(hours => %s)
+           order by last_activity_at limit 50""",
+        (clinic_id, parado_horas),
+    ).fetchall()
+    fila = _cur(conn).execute(
+        """select o.id, o.kind, o.body, o.scheduled_for, o.attempts, o.error, p.name as paciente, p.phone
+           from outbound_messages o join patients p on p.id = o.patient_id and p.clinic_id = o.clinic_id
+           where o.clinic_id = %s and o.status = 'agendada' order by o.scheduled_for limit 50""",
+        (clinic_id,),
+    ).fetchall()
     aniversariantes = _cur(conn).execute(
         """select id, name, phone from patients where clinic_id = %s and birth_date is not null
            and extract(month from birth_date) = %s and extract(day from birth_date) = %s order by name""",
@@ -87,6 +109,9 @@ def dashboard(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         "precisando_humano": r[0],
         "leads_parados": r[1],
         "mensagens_na_fila": r[2],
+        "esperando": esperando,
+        "parados": parados,
+        "fila": fila,
         "aniversariantes": aniversariantes,
     }
 

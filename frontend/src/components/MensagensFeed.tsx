@@ -3,15 +3,9 @@ import { Inbox } from 'lucide-react'
 import { api, type Mensagem } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, hora, telefone } from '../lib/formato'
-import { Selo, Vazio, type CorSelo } from './ui'
+import { Selo, Vazio } from './ui'
+import { TIPO_MENSAGEM } from './tipoMensagem'
 
-const TIPO: Record<Mensagem['kind'], [string, CorSelo]> = {
-  confirmacao: ['Confirmação', 'verde'],
-  remarcacao: ['Remarcação', 'azul'],
-  cancelamento: ['Cancelamento', 'vermelho'],
-  lembrete: ['Lembrete', 'ambar'],
-  aniversario: ['Aniversário', 'roxo'],
-}
 
 function situacao(m: Mensagem, tz: string): string {
   switch (m.status) {
@@ -31,7 +25,7 @@ function situacao(m: Mensagem, tz: string): string {
 }
 
 /** Painel "Mensagens enviadas" (imagem 03, coluna direita). */
-export function MensagensFeed({ tipo, limite = 100 }: { tipo?: string; limite?: number }) {
+export function MensagensFeed({ tipo, limite = 100, colunas = false }: { tipo?: string; limite?: number; colunas?: boolean }) {
   const { clinica } = useClinica()
   const tz = clinica.timezone
   const q = useQuery({
@@ -43,9 +37,9 @@ export function MensagensFeed({ tipo, limite = 100 }: { tipo?: string; limite?: 
   if (!q.data?.length) return <Vazio icone={<Inbox className="size-8" />} texto="Nenhuma mensagem ainda." />
 
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className={colunas ? 'grid items-start gap-3 lg:grid-cols-2 2xl:grid-cols-3' : 'flex flex-col gap-3'}>
       {q.data.map((m) => {
-        const [rotulo, cor] = TIPO[m.kind]
+        const [rotulo, cor] = TIPO_MENSAGEM[m.kind]
         return (
           <li key={m.id} className="rounded-2xl border border-line p-4">
             <div className="mb-1 flex items-center justify-between gap-2">

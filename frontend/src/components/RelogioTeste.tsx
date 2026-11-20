@@ -53,9 +53,9 @@ export function RelogioTeste() {
   const ocupado = proximo.isPending || zerar.isPending || rodar.isPending
 
   return (
-    <section className="mb-6 max-w-3xl rounded-3xl border border-dashed border-line bg-surface p-5">
-      <div className="mb-3 flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary">
+    <section className="mb-6 flex flex-col gap-4 rounded-3xl border border-dashed border-line bg-surface p-5 xl:flex-row xl:items-center xl:gap-8">
+      <div className="flex items-center gap-3 xl:w-72 xl:shrink-0">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
           <Clock className="size-5" />
         </span>
         <div>
@@ -63,17 +63,23 @@ export function RelogioTeste() {
           <p className="text-xs text-muted">Só em desenvolvimento. Adianta o horário das mensagens automáticas.</p>
         </div>
       </div>
-      <dl className="mb-4 grid gap-1 text-sm sm:grid-cols-2">
-        <dt className="text-muted">Horário {r.simulado ? 'simulado' : 'real'}</dt>
-        <dd className={r.simulado ? 'font-semibold text-primary' : ''}>
-          {dataHora(r.agora, tz)}{r.simulado ? ` (+${r.adiantado_min} min)` : ''}
-        </dd>
-        <dt className="text-muted">Próximo lembrete</dt>
-        <dd>{r.proximo_lembrete ? dataHora(r.proximo_lembrete, tz) : 'nenhum na fila'}</dd>
-        <dt className="text-muted">Envio automático</dt>
-        <dd>{r.envio_automatico ? 'ligado (a cada 30 s)' : 'desligado'}</dd>
+      <dl className="grid flex-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-xs text-muted">Horário {r.simulado ? 'simulado' : 'real'}</dt>
+          <dd className={r.simulado ? 'font-semibold text-primary' : 'font-medium'}>
+            {dataHora(r.agora, tz)}{r.simulado ? ` (+${r.adiantado_min} min)` : ''}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">Próximo lembrete</dt>
+          <dd className="font-medium">{r.proximo_lembrete ? dataHora(r.proximo_lembrete, tz) : 'nenhum na fila'}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted">Envio automático</dt>
+          <dd className="font-medium">{r.envio_automatico ? 'ligado (a cada 30 s)' : 'desligado'}</dd>
+        </div>
       </dl>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 xl:shrink-0">
         <Botao onClick={() => proximo.mutate()} disabled={ocupado || !r.proximo_lembrete}>
           <FastForward className="size-4" /> {proximo.isPending ? 'Enviando…' : 'Avançar até o próximo lembrete'}
         </Botao>

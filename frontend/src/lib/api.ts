@@ -125,6 +125,9 @@ export type Dashboard = {
   precisando_humano: number
   leads_parados: number
   mensagens_na_fila: number
+  esperando: { id: string; name: string | null; phone: string; channel: 'web' | 'whatsapp'; last_message_at: string; ultima_mensagem: string | null }[]
+  parados: { id: string; name: string | null; phone: string; last_event: string; last_activity_at: string }[]
+  fila: { id: string; kind: Mensagem['kind']; body: string; scheduled_for: string; attempts: number; error: string | null; paciente: string | null; phone: string }[]
   aniversariantes: { id: string; name: string; phone: string }[]
 }
 

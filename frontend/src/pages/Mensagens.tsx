@@ -26,8 +26,8 @@ export function Mensagens() {
           </button>
         ))}
       </div>
-      <div className="max-w-3xl rounded-3xl bg-surface p-5">
-        <MensagensFeed tipo={tipo || undefined} limite={200} />
+      <div className="rounded-3xl bg-surface p-5">
+        <MensagensFeed tipo={tipo || undefined} limite={200} colunas />
       </div>
     </>
   )
