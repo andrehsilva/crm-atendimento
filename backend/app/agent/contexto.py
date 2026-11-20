@@ -9,6 +9,7 @@ from pathlib import Path
 
 from psycopg.rows import dict_row
 
+from app import segmentos
 from app.agenda import servico
 from app.painel.avisos import DIAS, quando
 
@@ -19,6 +20,37 @@ DIAS_CURTOS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 def _telefone_legivel(e164: str) -> str:
     d = e164.lstrip("+")[2:]
     return f"({d[:2]}) {d[2:-4]}-{d[-4:]}" if len(d) >= 10 else e164
+
+
+def _bloco_urgencia(seg: segmentos.Segmento, telefone: str) -> str:
+    extra = f"; {seg.extra_urgencia}" if seg.extra_urgencia else ""
+    if not seg.urgencias:
+        return ("- **Emergência** (risco à vida ou à saúde): oriente ligar para o **SAMU (192)** ou os **Bombeiros (193)**"
+                f" e chame `chamar_humano` com o motivo \"urgência\". O telefone do lugar é **{telefone}**.")
+    return f"""- **Urgência:** se a pessoa relatar **{seg.urgencias}**:
+  - oriente atendimento imediato: ligar no **{telefone}** ou procurar um pronto-socorro{extra};
+  - se houver risco à vida (dificuldade para respirar, desmaio, risco de se machucar), oriente ligar **imediatamente para o SAMU (192)**;
+  - chame `chamar_humano` com o motivo "urgência";
+  - **não** ofereça um horário comum para daqui a dias."""
+
+
+def vocabulario(clinica: dict) -> dict:
+    """Palavras do segmento/clínica para o texto da assistente (Etapa 9, D38/D39)."""
+    cfg = clinica["settings"] or {}
+    seg = segmentos.segmento_de(cfg)
+    t = segmentos.termos(cfg)
+    # "paciente"/"cliente" servem aos dois gêneros: usa "o"; palavras próprias terminadas em "a" usam "a"
+    artigo = "a" if t["cliente"].endswith("a") and t["cliente"] not in ("paciente", "cliente") else "o"
+    return {
+        "tipo_negocio": seg.tipo_negocio, "area": seg.area, "nao_e": seg.nao_e,
+        "profissional": t["profissional"], "Profissional": segmentos.cap(t["profissional"]),
+        "profissionais": t["profissionais"],
+        "cliente": t["cliente"], "Cliente": segmentos.cap(t["cliente"]), "clientes": t["clientes"],
+        "o_cliente": f"{artigo} {t['cliente']}", "ao_cliente": f"{'ao' if artigo == 'o' else 'à'} {t['cliente']}",
+        "atendimento": t["atendimento"], "atendimentos": t["atendimentos"], "uma": t["uma"],
+        "no_atendimento_de": f"{'na' if t['genero'] == 'f' else 'no'} {t['atendimento']} de",
+        "bloco_urgencia": _bloco_urgencia(seg, _telefone_legivel(cfg.get("telefone_urgencia") or clinica["phone"])),
+    }
 
 
 def esta_aberta(conn, clinica: dict, agora: datetime) -> bool:
@@ -38,8 +70,8 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
         nome_assistente=cfg.get("nome_assistente", "Ísis"),
         clinica=clinica["name"],
         tratamento=cfg.get("tratamento", "você"),
-        telefone_urgencia=_telefone_legivel(cfg.get("telefone_urgencia") or clinica["phone"]),
-        aviso_horario="" if aberta else " no próximo horário de atendimento (a clínica está fechada agora)",
+        aviso_horario="" if aberta else " no próximo horário de atendimento (o lugar está fechado agora)",
+        **vocabulario(clinica),
     )
 
     # ---- camada 3: o momento
@@ -96,7 +128,7 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
         (clinica["id"],),
     ).fetchall()
     resumo_clinica = "\n".join(
-        [f"- Dentista {p['name']}" + (f" ({p['specialty']})" if p["specialty"] else "") + f": faz {p['faz']}" for p in profs]
+        [f"- {segmentos.cap(segmentos.termos(cfg)['profissional'])} {p['name']}" + (f" ({p['specialty']})" if p["specialty"] else "") + f": faz {p['faz']}" for p in profs]
         + [f"- Procedimento {x['name']}: {x['duration_min']} min" + ("" if x["bookable_by_ai"] else " — só a recepção marca (use chamar_humano)")
            for x in servs]
     )
@@ -114,23 +146,23 @@ Significado das expressões (já calculado — use exatamente estas datas):
 {chr(10).join(proximos)}
 - "semana que vem" = de {semana_que_vem}
 
-# Clínica (resumo — endereço, horários e preços em info_clinica)
+# {clinica['name']} (resumo — endereço, horários e preços em info_clinica)
 
 {resumo_clinica}
 
-# Paciente desta conversa
+# Pessoa desta conversa ({segmentos.termos(cfg)['cliente']})
 
 - Nome: {paciente.get('name') or 'ainda não informado (peça o nome completo antes de marcar)'}
 - Telefone: já identificado pelo canal — não peça o telefone.
-- Dentista de referência: {ref or 'nenhum ainda'}
-- Consultas futuras:
+- {segmentos.cap(segmentos.termos(cfg)['profissional'])} de referência: {ref or 'nenhum ainda'}
+- {segmentos.cap(segmentos.termos(cfg)['atendimentos'])} futuras (na ferramenta: "consultas"):
 {consultas}
 
-# Ações preparadas aguardando o "sim" do paciente
+# Ações preparadas aguardando o "sim" da pessoa
 
 {acoes}
 
-Se o paciente acabou de concordar com uma dessas ações, chame `confirmar_acao` com o token correspondente
+Se a pessoa acabou de concordar com uma dessas ações, chame `confirmar_acao` com o token correspondente
 (não prepare de novo). Se ele mudou de ideia, ignore o token e prepare a nova ação.
 """
     return persona + "\n" + momento
@@ -160,7 +192,7 @@ def dados_clinica(conn, clinica: dict) -> dict:
         "telefone": _telefone_legivel(clinica["phone"]),
         "horario": [f"{DIAS[h['weekday']]}: {h['start_time']:%H:%M}–{h['end_time']:%H:%M}" for h in horario],
         "pausas": [f"{DIAS[p['weekday']]}: {p['start_time']:%H:%M}–{p['end_time']:%H:%M}" for p in pausas],
-        "dentistas": [f"{p['name']}" + (f" ({p['specialty']})" if p["specialty"] else "") for p in profs],
+        "profissionais": [f"{p['name']}" + (f" ({p['specialty']})" if p["specialty"] else "") for p in profs],
         "procedimentos": [
             {
                 "nome": s["name"],

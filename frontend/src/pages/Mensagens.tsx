@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { PageHeader } from '../components/PageHeader'
 import { MensagensFeed } from '../components/MensagensFeed'
 import { RelogioTeste } from '../components/RelogioTeste'
+import { useTermos } from '../lib/termos'
 
 const FILTROS = [
   ['', 'Todas'],
@@ -13,10 +14,11 @@ const FILTROS = [
 ] as const
 
 export function Mensagens() {
+  const pal = useTermos()
   const [tipo, setTipo] = useState('')
   return (
     <>
-      <PageHeader titulo="Mensagens" subtitulo="Confirmações, lembretes e felicitações enviadas aos pacientes" />
+      <PageHeader titulo="Mensagens" subtitulo={`Confirmações, lembretes e felicitações enviadas aos ${pal.clientes}`} />
       <RelogioTeste />
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTROS.map(([valor, rotulo]) => (

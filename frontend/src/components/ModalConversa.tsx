@@ -6,6 +6,7 @@ import { useClinica } from '../lib/clinica'
 import { dataCurta, hora, telefone } from '../lib/formato'
 import { useAviso } from './Aviso'
 import { Botao, Entrada, Modal, Selo, Vazio } from './ui'
+import { useTermos } from '../lib/termos'
 
 type Conversa = { conversa: { id: string; channel: string; status: 'ativa' | 'humano' | 'encerrada' } | null; mensagens: MensagemChat[] }
 
@@ -14,6 +15,7 @@ const AUTOR: Record<string, string> = { paciente: '', isis: 'Ísis', recepcao: '
 /** Conversa do paciente + atendimento humano (RN-AT-06): assumir, responder, devolver para a Ísis. */
 export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | 'name' | 'phone'> | null; onFechar: () => void }) {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const tz = clinica.timezone
   const [texto, setTexto] = useState('')
@@ -59,7 +61,7 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
       </div>
 
       <div className="h-[46vh] space-y-2 overflow-y-auto rounded-2xl bg-surface-muted p-3">
-        {!q.data?.mensagens.length && <Vazio icone={<MessageSquareOff className="size-8" />} texto={q.isLoading ? 'Carregando…' : 'Este paciente ainda não conversou.'} />}
+        {!q.data?.mensagens.length && <Vazio icone={<MessageSquareOff className="size-8" />} texto={q.isLoading ? 'Carregando…' : `Este ${pal.cliente} ainda não conversou.`} />}
         {q.data?.mensagens.map((m) => (
           <div key={m.id} className={`flex ${m.direction === 'in' ? 'justify-start' : 'justify-end'}`}>
             <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${m.direction === 'in' ? 'bg-surface' : m.author === 'recepcao' ? 'bg-[#fcf1dc] text-[#5c4108]' : 'bg-primary-soft'}`}>

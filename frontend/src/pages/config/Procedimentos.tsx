@@ -5,6 +5,7 @@ import { useAviso } from '../../components/Aviso'
 import { Botao, Campo, Entrada, Modal, Selo } from '../../components/ui'
 import { api, type ProcedimentoCfg, type ProfissionalCfg } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
+import { useTermos } from '../../lib/termos'
 
 type Form = { nome: string; descricao: string; duracao_min: number; preco: string; ativo: boolean; ia_pode_marcar: boolean; profissionais: string[] }
 const vazio: Form = { nome: '', descricao: '', duracao_min: 60, preco: '', ativo: true, ia_pode_marcar: true, profissionais: [] }
@@ -13,6 +14,7 @@ const reais = (c: number | null) => (c == null ? '' : (c / 100).toFixed(2).repla
 /** Imagem 05: lista de procedimentos com liga/desliga, expandir, editar e excluir. */
 export function Procedimentos({ podeEditar }: { podeEditar: boolean }) {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const qc = useQueryClient()
   const base = `/clinics/${clinica.id}/config`
@@ -35,7 +37,7 @@ export function Procedimentos({ podeEditar }: { podeEditar: boolean }) {
   const alternar = (p: ProcedimentoCfg) => salvar.mutate({ id: p.id, f: { ...paraForm(p), ativo: !p.ativo } })
   const remover = useMutation({
     mutationFn: (id: string) => api.delete<{ resultado: string }>(`${base}/procedimentos/${id}`),
-    onSuccess: (r) => { aviso.ok(r.resultado === 'excluido' ? 'Procedimento excluído.' : 'Já foi usado em consultas: ficou desligado.'); setExcluir(null); atualizar() },
+    onSuccess: (r) => { aviso.ok(r.resultado === 'excluido' ? 'Procedimento excluído.' : `Já foi usado em ${pal.atendimentos}: ficou desligado.`); setExcluir(null); atualizar() },
     onError: aviso.erro,
   })
 
@@ -74,7 +76,7 @@ export function Procedimentos({ podeEditar }: { podeEditar: boolean }) {
               <dl className="mt-4 grid gap-2 border-t border-line pt-4 text-sm sm:grid-cols-3">
                 <div><dt className="text-muted">Duração</dt><dd>{p.duracao_min} min</dd></div>
                 <div><dt className="text-muted">Preço</dt><dd>{p.preco_centavos != null ? `R$ ${reais(p.preco_centavos)}` : '—'}</dd></div>
-                <div><dt className="text-muted">Consultas futuras</dt><dd>{p.consultas_futuras}</dd></div>
+                <div><dt className="text-muted">{pal.Atendimentos} futur{pal.o}s</dt><dd>{p.consultas_futuras}</dd></div>
                 <div className="sm:col-span-3"><dt className="text-muted">Quem faz</dt><dd>{p.profissionais.map((id) => nomeProf[id]).filter(Boolean).join(', ') || 'ninguém (a assistente não oferece)'}</dd></div>
               </dl>
             )}
@@ -89,7 +91,7 @@ export function Procedimentos({ podeEditar }: { podeEditar: boolean }) {
         </Modal>
       )}
       <Modal titulo="Excluir procedimento?" aberto={!!excluir} onFechar={() => setExcluir(null)}>
-        <p className="text-sm">Se <strong>{excluir?.nome}</strong> já foi usado em alguma consulta, ele só fica desligado (o histórico continua). Consultas já marcadas não mudam.</p>
+        <p className="text-sm">Se <strong>{excluir?.nome}</strong> já foi usado em {pal.atendimentos} anteriores, ele só fica desligado (o histórico continua). {pal.Atendimentos} já marcad{pal.o}s não mudam.</p>
         <div className="mt-6 flex justify-end gap-2">
           <Botao variante="fantasma" onClick={() => setExcluir(null)}>Cancelar</Botao>
           <Botao variante="perigo" onClick={() => excluir && remover.mutate(excluir.id)} disabled={remover.isPending}>Excluir</Botao>

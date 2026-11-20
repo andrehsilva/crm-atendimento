@@ -11,7 +11,8 @@ from psycopg.types.json import Jsonb
 from app.agenda.erros import AgendaError
 from app.auth.usuarios import criar_ou_ligar
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
-from app.demo import ALMOCO, HORARIO, PROCEDIMENTOS
+from app.demo import ALMOCO, HORARIO
+from app.segmentos import SEGMENTOS
 
 
 def _cur(conn):
@@ -21,7 +22,7 @@ def _cur(conn):
 def slug_de(nome: str) -> str:
     s = unicodedata.normalize("NFKD", nome).encode("ascii", "ignore").decode().lower()
     s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
-    s = re.sub(r"^(clinica|consultorio|odontologia)-", "", s) or s
+    s = re.sub(r"^(clinica|consultorio|odontologia|espaco|studio)-", "", s) or s
     return s[:40] or "clinica"
 
 
@@ -36,6 +37,7 @@ def listar_clinicas(conn) -> list[dict]:
     return _cur(conn).execute(
         """select c.id, c.name, c.phone, c.slug, c.status, c.timezone, c.address, c.created_at,
                   coalesce(c.settings->>'nome_assistente', 'Ísis') as nome_assistente,
+                  coalesce(c.settings->>'segmento', 'odontologia') as segmento,
                   w.session as whatsapp_sessao, w.status as whatsapp_status, w.phone as whatsapp_numero,
                   (select count(distinct m.conversation_id) from messages m
                      where m.clinic_id = c.id and m.created_at >= date_trunc('month', now())) as conversas_mes,
@@ -46,8 +48,11 @@ def listar_clinicas(conn) -> list[dict]:
 
 
 def criar_clinica(conn, *, nome: str, telefone: str, fuso: str, endereco: str | None, nome_assistente: str,
-                  admin_email: str, admin_nome: str | None, dentista: str | None) -> dict:
-    """Cria a clínica já pronta para usar: horários, procedimentos padrão e o 1º admin (senha provisória)."""
+                  admin_email: str, admin_nome: str | None, profissional: str | None,
+                  segmento: str = "odontologia") -> dict:
+    """Cria a clínica já pronta para usar: horários, procedimentos do segmento e o 1º admin (senha provisória)."""
+    if segmento not in SEGMENTOS:
+        raise AgendaError("DADOS_INVALIDOS", "Segmento desconhecido.")
     try:
         fone = normalizar_telefone(telefone)
     except TelefoneInvalido as e:
@@ -61,7 +66,7 @@ def criar_clinica(conn, *, nome: str, telefone: str, fuso: str, endereco: str | 
                 """insert into clinics (name, phone, slug, timezone, address, settings)
                    values (%s, %s, %s, %s, %s, %s) returning id""",
                 (nome.strip(), fone, slug, fuso, (endereco or "").strip() or None,
-                 Jsonb({"nome_assistente": nome_assistente.strip() or "Ísis"})),
+                 Jsonb({"nome_assistente": nome_assistente.strip() or "Ísis", "segmento": segmento})),
             ).fetchone()[0]
     except errors.UniqueViolation as e:
         raise AgendaError("DADOS_INVALIDOS", "Telefone ou endereço da página já em uso.") from e
@@ -75,11 +80,11 @@ def criar_clinica(conn, *, nome: str, telefone: str, fuso: str, endereco: str | 
             """insert into services (clinic_id, name, description, duration_min, bookable_by_ai)
                values (%s,%s,%s,%s,%s) returning id""", (cid, n, d, m, ia),
         ).fetchone()[0]
-        for n, d, m, ia in PROCEDIMENTOS
+        for n, d, m, ia in SEGMENTOS[segmento].procedimentos
     ]
-    if dentista and dentista.strip():
+    if profissional and profissional.strip():
         pid = conn.execute(
-            "insert into professionals (clinic_id, name, color) values (%s, %s, '#B85C74') returning id", (cid, dentista.strip())
+            "insert into professionals (clinic_id, name, color) values (%s, %s, '#B85C74') returning id", (cid, profissional.strip())
         ).fetchone()[0]
         for sid in servicos:
             conn.execute("insert into professional_services (clinic_id, professional_id, service_id) values (%s,%s,%s)", (cid, pid, sid))
@@ -94,9 +99,13 @@ def atualizar_clinica(conn, clinic_id: UUID, dados: dict) -> None:
     for coluna, valor in campos.items():
         if valor is not None:
             conn.execute(f"update clinics set {coluna} = %s, updated_at = now() where id = %s", (valor, clinic_id))  # noqa: S608 — coluna vem da lista fixa acima
+    novos = {}
     if dados.get("nome_assistente"):
-        conn.execute("update clinics set settings = settings || %s where id = %s",
-                      (Jsonb({"nome_assistente": dados["nome_assistente"].strip()}), clinic_id))
+        novos["nome_assistente"] = dados["nome_assistente"].strip()
+    if dados.get("segmento"):
+        novos["segmento"] = dados["segmento"]
+    if novos:
+        conn.execute("update clinics set settings = settings || %s where id = %s", (Jsonb(novos), clinic_id))
 
 
 def usuarios_da_clinica(conn, clinic_id: UUID) -> list[dict]:

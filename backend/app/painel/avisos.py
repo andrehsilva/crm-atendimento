@@ -7,25 +7,39 @@ também fica agendado o lembrete do dia útil anterior (RN-MS-02).
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
+from app import segmentos
 from app.eventos import avisar
 
 DIAS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"]
 
 MODELOS = {
     "confirmacao": (
-        "Olá, {nome}! Sua consulta na {clinica} está marcada ✅\n\n"
-        "📅 {quando}\n🦷 {procedimento} com {profissional}\n📍 {endereco}\n\n"
+        "Olá, {nome}! {Sua} {atendimento} na {clinica} está marcad{o} ✅\n\n"
+        "📅 {quando}\n{linha}\n📍 {endereco}\n\n"
         "Precisa remarcar ou cancelar? É só me chamar por aqui."
     ),
     "remarcacao": (
-        "Olá, {nome}! Sua consulta na {clinica} foi remarcada 🔄\n\n"
-        "Antes: {antes}\nAgora: 📅 {quando}\n🦷 {procedimento} com {profissional}"
+        "Olá, {nome}! {Sua} {atendimento} na {clinica} foi remarcad{o} 🔄\n\n"
+        "Antes: {antes}\nAgora: 📅 {quando}\n{linha}"
     ),
     "cancelamento": (
-        "Olá, {nome}. Sua consulta de {quando} com {profissional} na {clinica} foi cancelada.\n\n"
+        "Olá, {nome}. {Sua} {atendimento} de {quando} com {profissional} na {clinica} foi cancelad{o}.\n\n"
         "Quando quiser marcar uma nova data, é só me chamar. 💚"
     ),
 }
+
+
+def palavras(clinica: dict, consulta: dict) -> dict:
+    """Palavras da clínica para as mensagens automáticas (Etapa 9): "Sua consulta" / "Seu atendimento" / "Sua sessão".
+    Lembrete discreto (D41): a linha do serviço não cita o procedimento."""
+    cfg = clinica.get("settings") or {}
+    t = segmentos.termos(cfg)
+    if segmentos.lembrete_discreto(cfg):
+        linha = f"👤 com {consulta['profissional']}"
+    else:
+        linha = f"{segmentos.segmento_de(cfg).emoji} {consulta['procedimento']} com {consulta['profissional']}"
+    return {"atendimento": t["atendimento"], "Sua": segmentos.cap(t["sua"]), "da_sua": t["da_sua"], "o": t["o"],
+            "linha": linha}
 
 
 def quando(dt: datetime, tz: ZoneInfo) -> str:
@@ -48,6 +62,7 @@ def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | 
         procedimento=consulta["procedimento"],
         profissional=consulta["profissional"],
         endereco=clinica.get("address") or "",
+        **palavras(clinica, consulta),
     )
     # Uma consulta alterada antes do envio não deve gerar aviso velho (RN-MS-07)
     conn.execute(

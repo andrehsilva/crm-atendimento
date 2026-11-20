@@ -7,6 +7,7 @@ import { dataCurta, telefone } from '../lib/formato'
 import { useAviso } from '../components/Aviso'
 import { PageHeader } from '../components/PageHeader'
 import { Botao, Campo, Entrada, Modal, Selo, Vazio, type CorSelo } from '../components/ui'
+import { useTermos } from '../lib/termos'
 
 const ETAPA: Record<Etapa, [string, CorSelo]> = {
   novo_contato: ['Novo contato', 'rosa'],
@@ -17,6 +18,7 @@ const ETAPA: Record<Etapa, [string, CorSelo]> = {
 
 export function Clientes() {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const tz = clinica.timezone
   const [busca, setBusca] = useState('')
   const [termo, setTermo] = useState('')
@@ -34,14 +36,14 @@ export function Clientes() {
 
   return (
     <>
-      <PageHeader titulo="Leads / Clientes" subtitulo="Pacientes e contatos da clínica" />
+      <PageHeader titulo="Leads / Clientes" subtitulo={`${pal.Clientes} e contatos`} />
       <div className="rounded-3xl bg-surface p-5">
         <div className="relative mb-4 max-w-sm">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
           <Entrada className="w-full pl-9" placeholder="Buscar por nome ou telefone" value={busca} onChange={(e) => setBusca(e.target.value)} />
         </div>
         {!q.data?.length ? (
-          <Vazio icone={<Users className="size-8" />} texto={q.isLoading ? 'Carregando…' : 'Nenhum paciente encontrado.'} />
+          <Vazio icone={<Users className="size-8" />} texto={q.isLoading ? 'Carregando…' : `Nenhum ${pal.cliente} encontrado.`} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -51,8 +53,8 @@ export function Clientes() {
                   <th className="py-2 pr-4 font-medium">Telefone</th>
                   <th className="py-2 pr-4 font-medium">Etapa</th>
                   <th className="py-2 pr-4 font-medium">Nascimento</th>
-                  <th className="py-2 pr-4 font-medium">Próxima consulta</th>
-                  <th className="py-2 pr-4 font-medium">Dentista de referência</th>
+                  <th className="py-2 pr-4 font-medium">Próxim{pal.o} {pal.atendimento}</th>
+                  <th className="py-2 pr-4 font-medium">{pal.Profissional} de referência</th>
                   <th className="py-2 pr-4 font-medium">Origem</th>
                   <th />
                 </tr>
@@ -89,6 +91,7 @@ export function Clientes() {
 
 function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFechar: () => void }) {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const [nome, setNome] = useState('')
   const [nasc, setNasc] = useState('')
@@ -101,12 +104,12 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
 
   const salvar = useMutation({
     mutationFn: () => api.patch(`/clinics/${clinica.id}/patients/${paciente!.id}`, { name: nome || null, birth_date: nasc || null, notes: obs || null }),
-    onSuccess: () => { aviso.ok('Paciente atualizado'); onFechar() },
+    onSuccess: () => { aviso.ok(`${pal.Cliente} atualizado`); onFechar() },
     onError: aviso.erro,
   })
 
   return (
-    <Modal titulo="Editar paciente" aberto={!!paciente} onFechar={onFechar}>
+    <Modal titulo={`Editar ${pal.cliente}`} aberto={!!paciente} onFechar={onFechar}>
       <div className="space-y-4">
         <p className="text-sm text-muted">Telefone: {paciente && telefone(paciente.phone)} (é a chave do paciente e não muda)</p>
         <Campo rotulo="Nome completo"><Entrada value={nome} onChange={(e) => setNome(e.target.value)} /></Campo>

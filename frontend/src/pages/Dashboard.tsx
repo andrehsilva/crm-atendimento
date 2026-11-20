@@ -10,12 +10,14 @@ import { ModalConversa } from '../components/ModalConversa'
 import { TIPO_MENSAGEM } from '../components/tipoMensagem'
 import { SeloStatus } from '../components/agenda/status'
 import { Selo, Secao, Vazio } from '../components/ui'
+import { useTermos } from '../lib/termos'
 
 type Detalhe = 'consultas' | 'confirmacao' | 'esperando' | 'parados' | 'fila'
 type Contato = Pick<CardCrm, 'id' | 'name' | 'phone'>
 
 export function Dashboard() {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const tz = clinica.timezone
   const [aberta, setAberta] = useState<Consulta | null>(null)
   const [conversa, setConversa] = useState<Contato | null>(null)
@@ -50,7 +52,7 @@ export function Dashboard() {
     if (!d || !detalhe) return null
     switch (detalhe) {
       case 'consultas':
-        return { titulo: 'Consultas de hoje', icone: <CalendarClock className="size-5" />, corpo: listaConsultas(d.consultas_hoje, 'Nenhuma consulta hoje.') }
+        return { titulo: `${pal.Atendimentos} de hoje`, icone: <CalendarClock className="size-5" />, corpo: listaConsultas(d.consultas_hoje, `${pal.Nenhuma} ${pal.atendimento} hoje.`) }
       case 'confirmacao': {
         const confirmadas = d.consultas_hoje.filter((c) => c.status === 'confirmada' || c.status === 'realizada')
         const pendentes = d.consultas_hoje.filter((c) => c.status === 'agendada')
@@ -143,7 +145,7 @@ export function Dashboard() {
     <>
       <PageHeader titulo="Dashboard" subtitulo="Resumo do dia da clínica" />
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Indicador {...card('consultas')} icone={<CalendarClock />} rotulo="Consultas hoje" valor={d?.consultas_hoje.length} />
+        <Indicador {...card('consultas')} icone={<CalendarClock />} rotulo={`${pal.Atendimentos} hoje`} valor={d?.consultas_hoje.length} />
         <Indicador {...card('confirmacao')} icone={<CalendarCheck />} rotulo="Confirmadas × pendentes" valor={d ? `${d.confirmadas} × ${d.pendentes}` : undefined} />
         <Indicador {...card('esperando')} icone={<Hand />} rotulo="Esperando uma pessoa" valor={d?.precisando_humano} alerta={!!d?.precisando_humano} />
         <Indicador {...card('parados')} icone={<Hourglass />} rotulo="Leads parados +24h" valor={d?.leads_parados} alerta={!!d?.leads_parados} />
@@ -166,8 +168,8 @@ export function Dashboard() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <Secao titulo="Consultas de hoje" icone={<CalendarClock className="size-5" />}>
-          {listaConsultas(d?.consultas_hoje ?? [], 'Nenhuma consulta hoje.')}
+        <Secao titulo={`${pal.Atendimentos} de hoje`} icone={<CalendarClock className="size-5" />}>
+          {listaConsultas(d?.consultas_hoje ?? [], `${pal.Nenhuma} ${pal.atendimento} hoje.`)}
         </Secao>
         <Secao titulo="Aniversariantes do dia" icone={<Cake className="size-5" />}>
           {!d?.aniversariantes.length ? (

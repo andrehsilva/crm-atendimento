@@ -6,12 +6,14 @@ import { Botao, Entrada, Modal } from '../../components/ui'
 import { api, type ConsultaAfetada, type DiaHorario, type Horarios as THorarios } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
 import { dataHora } from '../../lib/formato'
+import { useTermos } from '../../lib/termos'
 
 const hm = (t: string) => t.slice(0, 5)
 
 /** Imagem 07: uma linha por dia (liga/desliga, início até fim, pausas), Salvar por linha. */
 export function Horarios({ podeEditar }: { podeEditar: boolean }) {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const q = useQuery({ queryKey: ['config', 'horarios', clinica.id], queryFn: () => api.get<THorarios>(`/clinics/${clinica.id}/config/horarios`) })
   if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
   return (
@@ -20,7 +22,7 @@ export function Horarios({ podeEditar }: { podeEditar: boolean }) {
         {q.data.dias.map((d) => <LinhaDia key={d.weekday} dia={d} podeEditar={podeEditar} />)}
       </section>
       <p className="mt-4 text-sm text-muted">
-        Consultas já marcadas não mudam: se um horário novo deixar alguma de fora, você vê a lista antes de salvar.
+        {pal.Atendimentos} já marcad{pal.o}s não mudam: se um horário novo deixar alguma de fora, você vê a lista antes de salvar.
         {q.data.profissionais_com_horario_proprio.length > 0 &&
           ` Atenção: ${q.data.profissionais_com_horario_proprio.join(', ')} tem horário próprio, que não muda por aqui.`}
       </p>
@@ -30,6 +32,7 @@ export function Horarios({ podeEditar }: { podeEditar: boolean }) {
 
 function LinhaDia({ dia, podeEditar }: { dia: DiaHorario; podeEditar: boolean }) {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const qc = useQueryClient()
   const inicial = () => ({ ativo: dia.ativo, inicio: hm(dia.inicio), fim: hm(dia.fim), pausas: dia.pausas.map((p) => ({ inicio: hm(p.inicio), fim: hm(p.fim) })) })
@@ -93,11 +96,11 @@ function LinhaDia({ dia, podeEditar }: { dia: DiaHorario; podeEditar: boolean })
           Salvar
         </Botao>
       )}
-      <Modal titulo="Consultas fora do novo horário" aberto={!!afetadas} onFechar={() => setAfetadas(null)}>
-        <p className="mb-3 text-sm">Estas consultas já marcadas ficam fora do novo horário. Elas <strong>continuam marcadas</strong>; avise os pacientes ou remarque pela agenda.</p>
+      <Modal titulo={`${pal.Atendimentos} fora do novo horário`} aberto={!!afetadas} onFechar={() => setAfetadas(null)}>
+        <p className="mb-3 text-sm">Est{pal.o === 'a' ? 'a' : 'e'}s {pal.atendimentos} já marcad{pal.o}s ficam fora do novo horário. Continuam <strong>marcad{pal.o}s</strong>: avise os {pal.clientes} ou remarque pela agenda.</p>
         <ul className="mb-5 flex max-h-64 flex-col gap-2 overflow-y-auto text-sm">
           {afetadas?.map((a) => (
-            <li key={a.id} className="rounded-xl bg-surface-muted px-3 py-2">{dataHora(a.quando, clinica.timezone)} — {a.paciente ?? 'paciente'} com {a.profissional}</li>
+            <li key={a.id} className="rounded-xl bg-surface-muted px-3 py-2">{dataHora(a.quando, clinica.timezone)} — {a.paciente ?? pal.cliente} com {a.profissional}</li>
           ))}
         </ul>
         <div className="flex justify-end gap-2">

@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader'
 import { ModalNovaConsulta, type Previa } from '../components/agenda/ModalNovaConsulta'
 import { ModalConversa } from '../components/ModalConversa'
 import { Botao, Modal, Selo, type CorSelo } from '../components/ui'
+import { useTermos } from '../lib/termos'
 
 // Colunas provisórias (D19)
 const COLUNAS: { etapa: Etapa; titulo: string; cor: CorSelo; bolinha: string }[] = [
@@ -21,6 +22,7 @@ const PARADO_ALERTA_H = 24 // RN-PN-08
 
 export function Crm() {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const [arrastando, setArrastando] = useState<CardCrm | null>(null)
   const [sobre, setSobre] = useState<Etapa | null>(null)
@@ -36,12 +38,12 @@ export function Crm() {
   })
   const confirmar = useMutation({
     mutationFn: (card: CardCrm) => api.post(`/clinics/${clinica.id}/appointments/${card.consulta_id}/status`, { status: 'confirmada' }),
-    onSuccess: () => aviso.ok('Consulta confirmada'),
+    onSuccess: () => aviso.ok(`${pal.Atendimento} confirmad${pal.o}`),
     onError: aviso.erro,
   })
   const cancelarConsulta = useMutation({
     mutationFn: (card: CardCrm) => api.post(`/clinics/${clinica.id}/appointments/${card.consulta_id}/cancel`, { motivo: 'Cancelado pelo CRM' }),
-    onSuccess: () => { aviso.ok('Consulta cancelada'); setCancelar(null) },
+    onSuccess: () => { aviso.ok(`${pal.Atendimento} cancelad${pal.o}`); setCancelar(null) },
     onError: aviso.erro,
   })
 
@@ -55,7 +57,7 @@ export function Crm() {
       setPrevia({ telefone: telefone(card.phone), nome: card.name ?? '' })
     } else if (etapa === 'confirmado') {
       if (card.consulta_id) confirmar.mutate(card)
-      else aviso.erro('Este paciente não tem consulta futura para confirmar. Arraste para "Agendados" para marcar.')
+      else aviso.erro(`Este ${pal.cliente} não tem ${pal.atendimento} futur${pal.o} para confirmar. Arraste para "Agendados" para marcar.`)
     } else if (etapa === 'cancelado' && card.consulta_id) {
       setCancelar(card)
     } else {
@@ -102,16 +104,16 @@ export function Crm() {
 
       <ModalConversa card={cards.find((c) => c.id === aberto) ?? null} onFechar={() => setAberto(null)} />
       <ModalNovaConsulta aberto={!!previa} previa={previa} onFechar={() => setPrevia(undefined)} />
-      <Modal titulo="Cancelar consulta?" aberto={!!cancelar} onFechar={() => setCancelar(null)}>
+      <Modal titulo={`Cancelar ${pal.atendimento}?`} aberto={!!cancelar} onFechar={() => setCancelar(null)}>
         {cancelar && (
           <>
             <p className="text-sm">
               Cancelar a consulta de <strong>{cancelar.name}</strong> ({cancelar.procedimento}, {dataHora(cancelar.proxima_consulta!, clinica.timezone)})?
-              O paciente recebe uma mensagem avisando.
+              {pal.Cliente} recebe uma mensagem avisando.
             </p>
             <div className="mt-6 flex justify-end gap-2">
               <Botao variante="fantasma" onClick={() => setCancelar(null)}>Voltar</Botao>
-              <Botao variante="perigo" disabled={cancelarConsulta.isPending} onClick={() => cancelarConsulta.mutate(cancelar)}>Cancelar consulta</Botao>
+              <Botao variante="perigo" disabled={cancelarConsulta.isPending} onClick={() => cancelarConsulta.mutate(cancelar)}>Cancelar {pal.atendimento}</Botao>
             </div>
           </>
         )}
@@ -123,6 +125,7 @@ export function Crm() {
 function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
   card: CardCrm; cor: CorSelo; titulo: string; tz: string; onDragStart: () => void; onDragEnd: () => void; onAbrir: () => void
 }) {
+  const pal = useTermos()
   const parado = horasDesde(card.last_activity_at) >= PARADO_ALERTA_H
   const dias = Math.floor(horasDesde(card.created_at) / 24)
   return (
@@ -132,7 +135,7 @@ function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
         {card.atendimento_manual
           ? <Selo cor="ambar"><Hand className="size-3" />Atendimento manual</Selo>
           : <Selo><Bot className="size-3" />Atendimento automático</Selo>}
-        {card.recorrente && <Selo cor="roxo"><RefreshCw className="size-3" />Paciente Recorrente</Selo>}
+        {card.recorrente && <Selo cor="roxo"><RefreshCw className="size-3" />{pal.Cliente} recorrente</Selo>}
       </div>
       <div className="flex items-center gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><User className="size-4" /></span>

@@ -47,7 +47,27 @@ export type Clinica = {
   address: string | null
   horario: { weekday: number; start_time: string; end_time: string }[]
   pausas: { weekday: number; start_time: string; end_time: string }[]
+  segmento: string
+  termos: Termos
 }
+
+/** Palavras do negócio da clínica (Etapa 9): "dentista/paciente/consulta", "profissional/cliente/atendimento"… */
+export type Termos = {
+  profissional: string
+  profissionais: string
+  cliente: string
+  clientes: string
+  atendimento: string
+  atendimentos: string
+  genero: 'f' | 'm'
+  o: string
+  sua: string
+  da_sua: string
+  uma: string
+  nova: string
+}
+export type TermosEditaveis = Partial<Pick<Termos, 'profissional' | 'profissionais' | 'cliente' | 'clientes' | 'atendimento' | 'atendimentos' | 'genero'>>
+export type Segmento = { codigo: string; nome: string; termos: TermosEditaveis; lembrete_discreto: boolean; procedimentos: string[] }
 
 export type Profissional = { id: string; name: string; specialty: string | null; color: string | null; service_ids: string[] }
 export type Procedimento = { id: string; name: string; description: string | null; duration_min: number; bookable_by_ai: boolean }
@@ -212,7 +232,10 @@ export type Plataforma = {
 }
 
 // ---------------------------------------------------------------- configurações da clínica (7C)
-export type PerfilClinica = { nome: string; telefone: string; endereco: string | null; slug: string; telefone_urgencia: string | null; sobre: string | null }
+export type PerfilClinica = {
+  nome: string; telefone: string; endereco: string | null; slug: string; telefone_urgencia: string | null; sobre: string | null
+  segmento: string; termos: Termos; termos_proprios: TermosEditaveis; termos_do_segmento: TermosEditaveis; lembrete_discreto: boolean
+}
 export type PausaDia = { inicio: string; fim: string }
 export type DiaHorario = { weekday: number; nome: string; ativo: boolean; inicio: string; fim: string; pausas: PausaDia[] }
 export type Horarios = { dias: DiaHorario[]; profissionais_com_horario_proprio: string[] }

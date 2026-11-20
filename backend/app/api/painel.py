@@ -28,6 +28,7 @@ from app.core import relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
+from app import segmentos
 
 router = APIRouter(prefix="/api", tags=["painel"], dependencies=[Depends(acesso)])
 Conn = psycopg.Connection
@@ -53,7 +54,13 @@ def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
     return {
         "id": c["id"], "name": c["name"], "phone": c["phone"], "slug": c["slug"], "timezone": c["timezone"],
         "address": c["address"], "horario": horario, "pausas": pausas,
+        "segmento": segmentos.segmento_de(c["settings"]).codigo, "termos": segmentos.termos(c["settings"]),
     }
+
+
+@router.get("/segmentos", summary="Segmentos de negócio disponíveis (Etapa 9)")
+def lista_segmentos():
+    return segmentos.publico()
 
 
 # ---------------------------------------------------------------------------

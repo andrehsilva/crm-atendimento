@@ -7,12 +7,14 @@ import { dataHora, diaLegivel, hora, partes, telefone } from '../../lib/formato'
 import { useAviso } from '../Aviso'
 import { Botao, Campo, Entrada, Modal, Selo } from '../ui'
 import { SeloStatus } from './status'
+import { useTermos } from '../../lib/termos'
 
 type Modo = 'ver' | 'remarcar' | 'cancelar'
 
 /** Detalhes de uma consulta + ações da recepção (mesmas regras da Ísis, RN-PN-03). */
 export function ModalConsulta({ consulta, onFechar }: { consulta: Consulta | null; onFechar: () => void }) {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const tz = clinica.timezone
   const [modo, setModo] = useState<Modo>('ver')
@@ -42,31 +44,31 @@ export function ModalConsulta({ consulta, onFechar }: { consulta: Consulta | nul
 
   const status = useMutation({
     mutationFn: (s: 'confirmada' | 'realizada' | 'faltou') => api.post(`${base}/status`, { status: s }),
-    onSuccess: (_, s) => fim({ confirmada: 'Consulta confirmada', realizada: 'Presença registrada', faltou: 'Falta registrada' }[s]),
+    onSuccess: (_, s) => fim({ confirmada: `${pal.Atendimento} confirmad${pal.o}`, realizada: 'Presença registrada', faltou: 'Falta registrada' }[s]),
     onError: aviso.erro,
   })
   const remarcar = useMutation({
     mutationFn: () => api.post<{ aviso_politica: boolean }>(`${base}/reschedule`, { novo_inicio: novo!.starts_at }),
-    onSuccess: (r) => fim(r.aviso_politica ? 'Remarcada (em cima da hora — confira a política da clínica)' : 'Consulta remarcada'),
+    onSuccess: (r) => fim(r.aviso_politica ? 'Remarcada (em cima da hora — confira a política da clínica)' : `${pal.Atendimento} remarcad${pal.o}`),
     onError: aviso.erro,
   })
   const cancelar = useMutation({
     mutationFn: () => api.post<{ aviso_politica: boolean }>(`${base}/cancel`, { motivo: motivo || null }),
-    onSuccess: (r) => fim(r.aviso_politica ? 'Cancelada com menos de 24h — confira a política da clínica' : 'Consulta cancelada'),
+    onSuccess: (r) => fim(r.aviso_politica ? 'Cancelada com menos de 24h — confira a política da clínica' : `${pal.Atendimento} cancelad${pal.o}`),
     onError: aviso.erro,
   })
   const ocupado = status.isPending || remarcar.isPending || cancelar.isPending
 
   if (!consulta) return null
   return (
-    <Modal titulo={consulta.paciente ?? 'Consulta'} aberto onFechar={onFechar}>
+    <Modal titulo={consulta.paciente ?? pal.Atendimento} aberto onFechar={onFechar}>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
         <dt className="text-muted">Quando</dt><dd>{dataHora(consulta.starts_at, tz)} – {hora(consulta.ends_at, tz)}</dd>
         <dt className="text-muted">Procedimento</dt><dd>{consulta.procedimento}</dd>
-        <dt className="text-muted">Dentista</dt><dd>{consulta.profissional}</dd>
+        <dt className="text-muted">{pal.Profissional}</dt><dd>{consulta.profissional}</dd>
         <dt className="text-muted">Telefone</dt><dd>{telefone(consulta.telefone)}</dd>
         <dt className="text-muted">Status</dt><dd><SeloStatus status={consulta.status} /></dd>
-        <dt className="text-muted">Marcada por</dt><dd><Selo>{{ isis: 'Ísis', recepcao: 'Recepção', paciente_botao: 'Paciente' }[consulta.source] ?? consulta.source}</Selo></dd>
+        <dt className="text-muted">Marcada por</dt><dd><Selo>{{ isis: 'Ísis', recepcao: 'Recepção', paciente_botao: pal.Cliente }[consulta.source] ?? consulta.source}</Selo></dd>
       </dl>
 
       {modo === 'ver' && ativa && (
@@ -103,8 +105,8 @@ export function ModalConsulta({ consulta, onFechar }: { consulta: Consulta | nul
 
       {modo === 'cancelar' && (
         <div className="mt-6 space-y-3">
-          <Campo rotulo="Motivo (opcional)"><Entrada value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: paciente pediu por telefone" /></Campo>
-          <p className="text-sm text-muted">O paciente recebe uma mensagem avisando do cancelamento.</p>
+          <Campo rotulo="Motivo (opcional)"><Entrada value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder={`Ex.: ${pal.cliente} pediu por telefone`} /></Campo>
+          <p className="text-sm text-muted">{pal.Cliente} recebe uma mensagem avisando do cancelamento.</p>
           <div className="flex justify-end gap-2">
             <Botao variante="fantasma" onClick={() => setModo('ver')}>Voltar</Botao>
             <Botao variante="perigo" disabled={ocupado} onClick={() => cancelar.mutate()}>Confirmar cancelamento</Botao>

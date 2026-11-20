@@ -12,15 +12,15 @@ from psycopg.rows import dict_row
 from app.agenda.erros import AgendaError
 from app.eventos import avisar
 from app.mensagens import regras as R
-from app.painel.avisos import primeiro_nome, quando
+from app.painel.avisos import palavras, primeiro_nome, quando
 
 MODELO_LEMBRETE = (
-    "Olá, {nome}! Passando para lembrar da sua consulta na {clinica} 😊\n\n"
-    "📅 {quando}\n🦷 {procedimento} com {profissional}\n\n"
+    "Olá, {nome}! Passando para lembrar {da_sua} {atendimento} na {clinica} 😊\n\n"
+    "📅 {quando}\n{linha}\n\n"
     "Responda com o número:\n1 - Confirmar\n2 - Remarcar\n3 - Cancelar"
 )
 MODELO_ANIVERSARIO = (
-    "Feliz aniversário, {nome}! 🎉 Toda a equipe da {clinica} deseja um novo ano cheio de saúde e muitos sorrisos. 💚"
+    "Feliz aniversário, {nome}! 🎉 Toda a equipe da {clinica} deseja um novo ano cheio de saúde e alegria. 💚"
 )
 LIMITE_TEXTO_ANIVERSARIO = 1000  # RN-DP-02
 JANELA_RESPOSTA = timedelta(hours=72)
@@ -69,7 +69,7 @@ def agendar_lembrete(conn, clinica: dict, consulta: dict, agora: datetime) -> da
         return None
     texto = MODELO_LEMBRETE.format(
         nome=primeiro_nome(consulta["paciente"]), clinica=clinica["name"], quando=quando(consulta["starts_at"], clinica["tz"]),
-        procedimento=consulta["procedimento"], profissional=consulta["profissional"],
+        **palavras(clinica, consulta),
     )
     conn.execute(
         """insert into outbound_messages (clinic_id, patient_id, appointment_id, kind, body, scheduled_for)
@@ -105,7 +105,7 @@ def tratar_resposta(conn, clinica: dict, paciente: dict, conversa: dict, texto: 
     if R.pediu_para_sair(texto):
         conn.execute("update patients set optout_disparos = true where id = %s", (paciente["id"],))
         return (f"Tudo bem, {nome}. Você não vai mais receber mensagens de felicitação da {clinica['name']}. "
-                "Os lembretes das suas consultas continuam chegando normalmente.")
+                "Os lembretes da sua agenda continuam chegando normalmente.")
 
     if R.resposta_ao_lembrete(texto) != "confirmar":
         return None
@@ -124,7 +124,8 @@ def tratar_resposta(conn, clinica: dict, paciente: dict, conversa: dict, texto: 
     except AgendaError:
         return None
     avisar(conn, clinica["id"], "agenda", c["id"])
-    return f"Obrigada, {nome}! Sua consulta de {quando(c['starts_at'], clinica['tz'])} está confirmada ✅ Até lá!"
+    p = palavras(clinica, c)
+    return f"Obrigada, {nome}! {p['Sua']} {p['atendimento']} de {quando(c['starts_at'], clinica['tz'])} está confirmad{p['o']} ✅ Até lá!"
 
 
 # ---------------------------------------------------------------------------

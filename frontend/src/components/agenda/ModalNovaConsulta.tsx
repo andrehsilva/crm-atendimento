@@ -5,12 +5,14 @@ import { useClinica } from '../../lib/clinica'
 import { diaLegivel, hora, partes } from '../../lib/formato'
 import { useAviso } from '../Aviso'
 import { Botao, Campo, Entrada, Modal, Seletor } from '../ui'
+import { useTermos } from '../../lib/termos'
 
 export type Previa = { telefone?: string; nome?: string; dia?: string; hora?: string; professionalId?: string }
 
 /** Marcar consulta pela recepção. Mostra só horários livres de verdade (o backend valida tudo de novo). */
 export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolean; onFechar: () => void; previa?: Previa }) {
   const { clinica, cadastros } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const [telefone, setTelefone] = useState('')
   const [nome, setNome] = useState('')
@@ -58,7 +60,7 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
         telefone, nome: nome || null, professional_id: escolhido!.professional_id, service_id: servico, inicio: escolhido!.starts_at,
       }),
     onSuccess: (c) => {
-      aviso.ok(`Consulta marcada: ${c.paciente}, ${diaLegivel(partes(c.starts_at, clinica.timezone).ymd)} às ${hora(c.starts_at, clinica.timezone)}`)
+      aviso.ok(`${pal.Atendimento} marcad${pal.o}: ${c.paciente}, ${diaLegivel(partes(c.starts_at, clinica.timezone).ymd)} às ${hora(c.starts_at, clinica.timezone)}`)
       onFechar()
     },
     onError: aviso.erro,
@@ -67,10 +69,10 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
   return (
     <Modal titulo="Marcar consulta" aberto={aberto} onFechar={onFechar} largura="max-w-2xl">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Campo rotulo="Telefone do paciente">
+        <Campo rotulo={`Telefone do ${pal.cliente}`}>
           <Entrada value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(11) 98765-4321" inputMode="tel" />
         </Campo>
-        <Campo rotulo="Nome completo" ajuda="Obrigatório para paciente novo">
+        <Campo rotulo="Nome completo" ajuda={`Obrigatório para ${pal.cliente} novo`}>
           <Entrada value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Maria da Silva" />
         </Campo>
         <Campo rotulo="Procedimento">
@@ -80,7 +82,7 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
             ))}
           </Seletor>
         </Campo>
-        <Campo rotulo="Dentista">
+        <Campo rotulo={pal.Profissional}>
           <Seletor value={prof} onChange={(e) => { setProf(e.target.value); setEscolhido(null) }}>
             <option value="">Qualquer um</option>
             {profsDoServico.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -115,7 +117,7 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
             )
           })}
         </div>
-        {slots.data?.some((s) => s.preferido) && <p className="mt-2 text-xs text-muted">★ dentista de referência do paciente</p>}
+        {slots.data?.some((s) => s.preferido) && <p className="mt-2 text-xs text-muted">★ {pal.profissional} de referência do {pal.cliente}</p>}
       </div>
 
       <div className="mt-6 flex justify-end gap-2">

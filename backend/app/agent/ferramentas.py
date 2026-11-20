@@ -79,7 +79,7 @@ def criar_ferramentas(s: Sessao) -> list:
             raise AgendaError("DADOS_INVALIDOS", "Procedimento não identificado. Opções: " + ", ".join(x["name"] for x in servs))
         return achados[0]
 
-    def _dentista(nome: str | None) -> dict | None:
+    def _profissional(nome: str | None) -> dict | None:
         if not nome or _sem_acento(nome) in ("", "tanto faz", "qualquer", "qualquer um", "sem preferencia"):
             return None
         profs = conn.cursor(row_factory=dict_row).execute(
@@ -88,7 +88,7 @@ def criar_ferramentas(s: Sessao) -> list:
         alvo = _sem_acento(nome).replace("dra.", "").replace("dr.", "").strip()
         achados = [p for p in profs if alvo and alvo in _sem_acento(p["name"])]
         if len(achados) != 1:
-            raise AgendaError("DADOS_INVALIDOS", "Dentista não identificado. Opções: " + ", ".join(p["name"] for p in profs))
+            raise AgendaError("DADOS_INVALIDOS", "Profissional não identificado. Opções: " + ", ".join(p["name"] for p in profs))
         return achados[0]
 
     def _data(texto: str) -> date:
@@ -136,24 +136,24 @@ def criar_ferramentas(s: Sessao) -> list:
 
     # ---------------------------------------------------------------- ferramentas
     def info_clinica() -> str:
-        """Dados da clínica: endereço, telefone, horário de funcionamento, dentistas e procedimentos (com duração e, se a clínica permitir, preço)."""
+        """Dados da clínica: endereço, telefone, horário de funcionamento, profissionais e procedimentos (com duração e, se a clínica permitir, preço)."""
         return log("info_clinica", {}, _json(dados_clinica(conn, s.clinica)))
 
     def horarios_livres(procedimento: str, data_inicio: str, data_fim: str | None = None,
-                        dentista: str | None = None, turno: str | None = None) -> str:
+                        profissional: str | None = None, turno: str | None = None) -> str:
         """Busca horários livres de verdade na agenda.
 
         Args:
             procedimento: nome do procedimento (ex.: "Limpeza").
             data_inicio: primeiro dia a buscar, formato AAAA-MM-DD.
             data_fim: último dia a buscar (AAAA-MM-DD). Se vazio, busca só data_inicio.
-            dentista: nome do dentista, ou vazio/"tanto faz" para qualquer um.
+            profissional: nome de quem atende, ou vazio/"tanto faz" para qualquer um.
             turno: "manha", "tarde" ou vazio para o dia todo.
         """
-        args = {"procedimento": procedimento, "data_inicio": data_inicio, "data_fim": data_fim, "dentista": dentista, "turno": turno}
+        args = {"procedimento": procedimento, "data_inicio": data_inicio, "data_fim": data_fim, "profissional": profissional, "turno": turno}
         try:
             serv = _procedimento(procedimento)
-            prof = _dentista(dentista)
+            prof = _profissional(profissional)
             ini = _data(data_inicio)
             fim = _data(data_fim) if data_fim else ini
             if (fim - ini).days > 14:
@@ -167,7 +167,7 @@ def criar_ferramentas(s: Sessao) -> list:
                 slots = [x for x in slots if x["starts_at"].hour >= 12]
             saida = [
                 {"inicio": x["starts_at"].strftime("%Y-%m-%dT%H:%M"), "quando": quando(x["starts_at"], s.tz),
-                 "dentista": x["profissional"], **({"dentista_de_referencia": True} if x["preferido"] else {})}
+                 "profissional": x["profissional"], **({"profissional_de_referencia": True} if x["preferido"] else {})}
                 for x in slots[:MAX_SLOTS]
             ]
             r = {"ok": True, "procedimento": serv["name"], "horarios": saida,
@@ -190,7 +190,7 @@ def criar_ferramentas(s: Sessao) -> list:
         """Lista as consultas futuras do paciente desta conversa (com o id de cada uma, para remarcar ou cancelar)."""
         cs = servico.consultas_do_paciente(conn, s.cid, s.paciente["phone"], agora=s.agora)
         r = [{"id": str(c["id"]), "quando": quando(c["starts_at"], s.tz), "procedimento": c["procedimento"],
-              "dentista": c["profissional"], "status": c["status"]} for c in cs]
+              "profissional": c["profissional"], "status": c["status"]} for c in cs]
         return log("minhas_consultas", {}, _json({"ok": True, "consultas": r}))
 
     def salvar_nome(nome_completo: str) -> str:
@@ -207,21 +207,21 @@ def criar_ferramentas(s: Sessao) -> list:
         avisar(conn, s.cid, "crm", s.paciente["id"])
         return log("salvar_nome", {"nome_completo": nome}, _json({"ok": True}))
 
-    def preparar_agendamento(procedimento: str, inicio: str, dentista: str) -> str:
+    def preparar_agendamento(procedimento: str, inicio: str, profissional: str) -> str:
         """PASSO 1 para marcar: valida tudo SEM gravar e devolve um resumo e um token.
         Mostre o resumo ao paciente e pergunte se pode confirmar.
 
         Args:
             procedimento: nome do procedimento.
             inicio: data e hora escolhidas, formato AAAA-MM-DDTHH:MM (use um "inicio" de horarios_livres).
-            dentista: nome do dentista do horário escolhido.
+            profissional: nome de quem atende no horário escolhido.
         """
-        args = {"procedimento": procedimento, "inicio": inicio, "dentista": dentista}
+        args = {"procedimento": procedimento, "inicio": inicio, "profissional": profissional}
         try:
             serv = _procedimento(procedimento)
-            prof = _dentista(dentista)
+            prof = _profissional(profissional)
             if prof is None:
-                raise AgendaError("DADOS_INVALIDOS", "Informe o dentista do horário escolhido.")
+                raise AgendaError("DADOS_INVALIDOS", "Informe o profissional do horário escolhido.")
             dt = _instante(inicio)
             c = _validar(lambda: servico.marcar(
                 conn, s.cid, telefone=s.paciente["phone"], nome=s.paciente.get("name"), professional_id=prof["id"],
@@ -239,18 +239,18 @@ def criar_ferramentas(s: Sessao) -> list:
         return (f"Atenção: faltam menos de {h} horas para a consulta; a política da clínica pede aviso com pelo menos "
                 f"{h} horas de antecedência")
 
-    def preparar_remarcacao(consulta_id: str, novo_inicio: str, dentista: str | None = None) -> str:
+    def preparar_remarcacao(consulta_id: str, novo_inicio: str, profissional: str | None = None) -> str:
         """PASSO 1 para remarcar: valida a troca SEM gravar e devolve resumo e token.
 
         Args:
             consulta_id: id da consulta (de minhas_consultas).
             novo_inicio: nova data e hora, formato AAAA-MM-DDTHH:MM (de horarios_livres).
-            dentista: nome do dentista do novo horário (vazio = o mesmo).
+            profissional: nome de quem atende no novo horário (vazio = o mesmo).
         """
-        args = {"consulta_id": consulta_id, "novo_inicio": novo_inicio, "dentista": dentista}
+        args = {"consulta_id": consulta_id, "novo_inicio": novo_inicio, "profissional": profissional}
         try:
             antiga = _consulta_minha(consulta_id)
-            prof = _dentista(dentista)
+            prof = _profissional(profissional)
             dt = _instante(novo_inicio)
             r = _validar(lambda: servico.remarcar(
                 conn, s.cid, appointment_id=antiga["id"], telefone=s.paciente["phone"], ator="isis",

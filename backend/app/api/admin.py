@@ -18,6 +18,7 @@ from app.canais.waha import ClienteWaha, WahaErro
 from app.config import get_settings
 from app.db import get_conn
 from app.eventos import avisar
+from app.segmentos import SEGMENTOS
 
 
 def _so_super_admin(request: Request, _=Depends(acesso)) -> None:
@@ -37,6 +38,9 @@ def _fuso(v: str) -> str:
     return v
 
 
+SEGMENTOS_RE = "^(" + "|".join(SEGMENTOS) + ")$"
+
+
 class NovaClinica(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     telefone: str = Field(min_length=8, max_length=30)
@@ -45,7 +49,8 @@ class NovaClinica(BaseModel):
     nome_assistente: str = Field("Ísis", min_length=1, max_length=40)
     admin_email: str = Field(min_length=3, max_length=200)
     admin_nome: str | None = Field(None, max_length=120)
-    dentista: str | None = Field(None, max_length=120)
+    segmento: str = Field("odontologia", pattern=SEGMENTOS_RE)
+    profissional: str | None = Field(None, max_length=120)
 
     _fuso_ok = field_validator("fuso")(_fuso)
 
@@ -55,6 +60,7 @@ class EdicaoClinica(BaseModel):
     endereco: str | None = Field(None, max_length=300)
     fuso: str | None = None
     nome_assistente: str | None = Field(None, min_length=1, max_length=40)
+    segmento: str | None = Field(None, pattern=SEGMENTOS_RE)
     status: str | None = Field(None, pattern="^(ativa|suspensa)$")
 
     @field_validator("fuso")

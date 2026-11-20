@@ -43,5 +43,14 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D33 | ✅ Sem WhatsApp oficial (Cloud API) na 1ª versão; templates da Meta não se aplicam. A Etapa 7 fica só com o admin multi-tenant | Q25, 20/11/2026 |
 | D34 | ✅ Login pelo **Supabase Auth** (e-mail + senha). O backend confere o token do Supabase e liga o usuário à clínica (`clinic_users`) ou à plataforma (`platform_admins`). Papéis: super_admin, clinic_admin, reception | Q30, 20/11/2026 |
 | D35 | ✅ Usuários da clínica criados pelo admin com **senha provisória** (mostrada uma vez, troca obrigatória no 1º acesso). Convite por e-mail depois | Q31, 20/11/2026 |
-| D36 | ⏸ IA em produção decidida depois. Até lá, OpenCode Go; trocar para API paga por uso é passo obrigatório do guia antes do 1º cliente real | Q26, 20/11/2026 |
+| D36 | ~~⏸ IA em produção decidida depois.~~ → substituída por D42–D46. Até lá, OpenCode Go; trocar para API paga por uso é passo obrigatório do guia antes do 1º cliente real | Q26, 20/11/2026 |
 | D37 | ✅ Produção no **mesmo servidor do WAHA**: Docker Compose + Caddy (HTTPS automático), backend com 1 processo (lembretes e tempo real rodam dentro dele) | Q32, 20/11/2026 |
+| D38 | ✅ **Multi-segmento:** cada clínica tem um segmento (odontologia, medicina, fisioterapia, psicologia, estética, outro) que define palavras, procedimentos iniciais, área de atuação e sinais de urgência da assistente. Clínicas antigas = odontologia | Q33, 20/11/2026 |
+| D39 | ✅ **Palavras ajustáveis** por clínica (profissional, cliente, atendimento — singular/plural) sobre o padrão do segmento; usadas nas telas, mensagens automáticas e assistente | Q34, 20/11/2026 |
+| D40 | ✅ **Aparência por clínica:** logo (PNG/JPG/WebP, até 512 KB, guardada no banco) e cor principal; o produto continua **Ísis** | Q35, 20/11/2026 |
+| D41 | ✅ Etapa 9 sem regras próprias de segmento, exceto o **lembrete discreto** (não cita procedimento; padrão ligado em psicologia). Sessões recorrentes e convênio (Q10) ficam para depois | Q36, 20/11/2026 |
+| D42 | ✅ **Chave de IA por clínica**, cadastrada pelo admin da clínica ou pelo admin geral em Configurações › Assistente. Guardada **criptografada** (chave-mestra no `.env`), nunca devolvida à tela (só os 4 últimos caracteres); botão "Testar conexão" | Q37, 20/11/2026 |
+| D43 | ✅ Provedores: **Google (Gemini), OpenAI, OpenCode e OpenRouter**. Modelo escolhido numa lista sugerida (só modelos aprovados na bateria de cenários) ou digitado livre | Q38, 20/11/2026 |
+| D44 | ✅ Cada resposta guarda os **tokens** usados; custo estimado pela tabela de preços mantida pelo admin geral; tela "Uso da IA" com US$ e R$ (cotação do admin geral). O valor oficial é o da conta no provedor | Q39, 20/11/2026 |
+| D45 | ✅ **Teto mensal** em US$ por clínica: aviso aos 80%; aos 100% a assistente pausa e as conversas vão para a equipe (paciente avisado). Lembretes, confirmações e aniversários continuam (não usam IA) | Q40, 20/11/2026 |
+| D46 | ✅ Clínica **sem chave** = assistente desligada. O admin geral pode ligar "usar a chave da plataforma" (teste grátis, demonstração); esse gasto aparece no Admin geral › Uso | Q41, 20/11/2026 |

@@ -10,7 +10,7 @@ from app.auth import supabase as sb
 from tests.test_acesso import _como, _usuario, cliente  # noqa: F401 — fixture reaproveitada
 
 NOVA = {"nome": "Clínica Sorriso Feliz", "telefone": "(11) 3333-4444", "nome_assistente": "Luna",
-        "admin_email": "dona@sorriso.com", "admin_nome": "Dona Sorriso", "dentista": "Dr. Caio"}
+        "admin_email": "dona@sorriso.com", "admin_nome": "Dona Sorriso", "profissional": "Dr. Caio"}
 
 
 @pytest.fixture

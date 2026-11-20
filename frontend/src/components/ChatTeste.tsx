@@ -6,10 +6,12 @@ import { useClinica } from '../lib/clinica'
 import { hora } from '../lib/formato'
 import { useAviso } from './Aviso'
 import { Botao, Entrada } from './ui'
+import { useTermos } from '../lib/termos'
 
 /** Chat de TESTE (D15): o "paciente" informa o telefone e conversa com a Ísis (IA). */
 export function ChatTeste() {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const qc = useQueryClient()
   const [telefone, setTelefone] = useState('')
@@ -60,7 +62,7 @@ export function ChatTeste() {
             <div className="text-xs text-muted">atendente virtual · {clinica.name}</div>
           </div>
         </div>
-        <p className="text-sm text-muted">Para começar, informe o telefone (com DDD) como se fosse o paciente.</p>
+        <p className="text-sm text-muted">Para começar, informe o telefone (com DDD) como se fosse o {pal.cliente}.</p>
         <Entrada value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(11) 98765-4321" inputMode="tel" required />
         <Entrada value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome (opcional)" />
         <Botao type="submit" disabled={entrar.isPending || telefone.replace(/\D/g, '').length < 10}>Começar conversa</Botao>
@@ -100,7 +102,7 @@ export function ChatTeste() {
         <div ref={fimRef} />
       </div>
       <form onSubmit={submeter} className="mt-3 flex gap-2">
-        <Entrada className="flex-1" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escreva como se fosse o paciente" maxLength={2000} />
+        <Entrada className="flex-1" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={`Escreva como se fosse o ${pal.cliente}`} maxLength={2000} />
         <Botao type="submit" aria-label="Enviar" disabled={!texto.trim() || enviar.isPending}><Send className="size-4" /></Botao>
       </form>
     </div>

@@ -21,6 +21,7 @@ from app.auth.usuarios import criar_ou_ligar
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
+from app import segmentos
 
 router = APIRouter(prefix="/api/clinics/{clinic_id}/config", tags=["configurações"], dependencies=[Depends(acesso)])
 
@@ -37,6 +38,10 @@ def _admin(request: Request, clinic_id: UUID, conn) -> dict:
     return servico.carregar_clinica(conn, clinic_id)
 
 
+def c_settings(conn, clinic_id: UUID) -> dict:
+    return conn.execute("select settings from clinics where id = %s", (clinic_id,)).fetchone()[0] or {}
+
+
 def _settings(conn, clinic_id: UUID, novos: dict) -> None:
     conn.execute("update clinics set settings = coalesce(settings, '{}'::jsonb) || %s, updated_at = now() where id = %s",
                  (Jsonb(novos), clinic_id))
@@ -45,19 +50,36 @@ def _settings(conn, clinic_id: UUID, novos: dict) -> None:
 # ---------------------------------------------------------------------------
 # Perfil
 # ---------------------------------------------------------------------------
+class Termos(BaseModel):
+    """Palavras do negócio (D39). Vazio = usa o padrão do segmento."""
+    profissional: str | None = Field(None, max_length=40)
+    profissionais: str | None = Field(None, max_length=40)
+    cliente: str | None = Field(None, max_length=40)
+    clientes: str | None = Field(None, max_length=40)
+    atendimento: str | None = Field(None, max_length=40)
+    atendimentos: str | None = Field(None, max_length=40)
+    genero: str | None = Field(None, pattern="^(f|m)$")
+
+
 class Perfil(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     endereco: str | None = Field(None, max_length=300)
     telefone_urgencia: str | None = Field(None, max_length=30)
     sobre: str | None = Field(None, max_length=1500)
+    segmento: str | None = Field(None, pattern="^(" + "|".join(segmentos.SEGMENTOS) + ")$")
+    termos: Termos | None = None
+    lembrete_discreto: bool | None = None
 
 
 @router.get("/perfil", summary="Perfil da clínica")
 def ver_perfil(clinic_id: UUID, conn=Depends(get_conn)):
     c = servico.carregar_clinica(conn, clinic_id)
     cfg = c["settings"] or {}
+    seg = segmentos.segmento_de(cfg)
     return {"nome": c["name"], "telefone": c["phone"], "endereco": c["address"], "slug": c["slug"],
-            "telefone_urgencia": cfg.get("telefone_urgencia"), "sobre": cfg.get("sobre_clinica")}
+            "telefone_urgencia": cfg.get("telefone_urgencia"), "sobre": cfg.get("sobre_clinica"),
+            "segmento": seg.codigo, "termos_proprios": cfg.get("termos") or {}, "termos": segmentos.termos(cfg),
+            "termos_do_segmento": seg.termos, "lembrete_discreto": segmentos.lembrete_discreto(cfg)}
 
 
 @router.put("/perfil", summary="Salvar perfil")
@@ -71,7 +93,16 @@ def salvar_perfil(clinic_id: UUID, body: Perfil, request: Request, conn=Depends(
             raise AgendaError("TELEFONE_INVALIDO", f"Telefone de urgência: {e}") from e
     conn.execute("update clinics set name = %s, address = %s, updated_at = now() where id = %s",
                  (body.nome.strip(), (body.endereco or "").strip() or None, clinic_id))
-    _settings(conn, clinic_id, {"telefone_urgencia": urg, "sobre_clinica": (body.sobre or "").strip() or None})
+    novos: dict = {"telefone_urgencia": urg, "sobre_clinica": (body.sobre or "").strip() or None}
+    if body.segmento:
+        novos["segmento"] = body.segmento
+    if body.termos is not None:  # só guarda o que difere do padrão do segmento
+        padrao = segmentos.SEGMENTOS[body.segmento or segmentos.segmento_de(c_settings(conn, clinic_id)).codigo].termos
+        novos["termos"] = {k: v.strip() for k, v in body.termos.model_dump().items()
+                           if v and v.strip() and v.strip() != padrao.get(k)}
+    if body.lembrete_discreto is not None:
+        novos["lembrete_discreto"] = body.lembrete_discreto
+    _settings(conn, clinic_id, novos)
     return ver_perfil(clinic_id, conn)
 
 

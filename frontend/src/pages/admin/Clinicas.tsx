@@ -7,6 +7,7 @@ import { useAviso } from '../../components/Aviso'
 import { Botao, Campo, Entrada, Modal, Seletor, Selo, Vazio } from '../../components/ui'
 import { api, type AdminClinica } from '../../lib/api'
 import { telefone } from '../../lib/formato'
+import { useSegmentos } from '../../lib/termos'
 import { SenhaProvisoria } from './SenhaProvisoria'
 
 export const FUSOS = [
@@ -88,12 +89,14 @@ function NovaClinica({ onFechar, onCriada }: { onFechar: () => void; onCriada: (
   const qc = useQueryClient()
   const aviso = useAviso()
   const [f, setF] = useState({ nome: '', telefone: '', endereco: '', fuso: 'America/Sao_Paulo', nome_assistente: 'Ísis',
-    dentista: '', admin_nome: '', admin_email: '' })
+    segmento: 'odontologia', profissional: '', admin_nome: '', admin_email: '' })
+  const segmentos = useSegmentos()
+  const seg = segmentos.data?.find((s) => s.codigo === f.segmento)
   const mudar = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
 
   const criar = useMutation({
     mutationFn: () => api.post<{ admin_email: string; senha_provisoria: string | null }>('/admin/clinicas', {
-      ...f, endereco: f.endereco || null, dentista: f.dentista || null, admin_nome: f.admin_nome || null,
+      ...f, endereco: f.endereco || null, profissional: f.profissional || null, admin_nome: f.admin_nome || null,
     }),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['admin'] })
@@ -114,7 +117,12 @@ function NovaClinica({ onFechar, onCriada }: { onFechar: () => void; onCriada: (
       <form onSubmit={enviar} className="flex flex-col gap-5">
         <fieldset className="grid gap-4 sm:grid-cols-2">
           <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Clínica</legend>
-          <Campo rotulo="Nome da clínica"><Entrada required value={f.nome} onChange={mudar('nome')} placeholder="Clínica Sorriso" /></Campo>
+          <Campo rotulo="Segmento" ajuda="Define as palavras, os procedimentos iniciais e o jeito da assistente.">
+            <Seletor value={f.segmento} onChange={mudar('segmento')}>
+              {(segmentos.data ?? [{ codigo: 'odontologia', nome: 'Odontologia' }]).map((s) => <option key={s.codigo} value={s.codigo}>{s.nome}</option>)}
+            </Seletor>
+          </Campo>
+          <Campo rotulo="Nome"><Entrada required value={f.nome} onChange={mudar('nome')} placeholder="Clínica Sorriso" /></Campo>
           <Campo rotulo="Telefone (WhatsApp)" ajuda="É a chave da clínica: não muda depois.">
             <Entrada required value={f.telefone} onChange={mudar('telefone')} placeholder="(11) 99999-0000" />
           </Campo>
@@ -124,11 +132,11 @@ function NovaClinica({ onFechar, onCriada }: { onFechar: () => void; onCriada: (
               {FUSOS.map(([v, r]) => <option key={v} value={v}>{r}</option>)}
             </Seletor>
           </Campo>
-          <Campo rotulo="Nome da assistente" ajuda="Como a IA se apresenta aos pacientes.">
+          <Campo rotulo="Nome da assistente" ajuda={`Como a IA se apresenta aos ${seg?.termos.clientes ?? 'clientes'}.`}>
             <Entrada required value={f.nome_assistente} onChange={mudar('nome_assistente')} />
           </Campo>
-          <Campo rotulo="Primeiro dentista (opcional)" ajuda="Faz todos os procedimentos; ajuste depois em Configurações.">
-            <Entrada value={f.dentista} onChange={mudar('dentista')} placeholder="Dra. Ana Lima" />
+          <Campo rotulo={`Primeiro(a) ${seg?.termos.profissional ?? 'profissional'} (opcional)`} ajuda="Faz todos os procedimentos; ajuste depois em Configurações.">
+            <Entrada value={f.profissional} onChange={mudar('profissional')} placeholder="Ana Lima" />
           </Campo>
         </fieldset>
         <fieldset className="grid gap-4 sm:grid-cols-2">
@@ -138,7 +146,10 @@ function NovaClinica({ onFechar, onCriada }: { onFechar: () => void; onCriada: (
             <Entrada required type="email" value={f.admin_email} onChange={mudar('admin_email')} />
           </Campo>
         </fieldset>
-        <p className="text-xs text-muted">A clínica já nasce com horário seg–sex 08–18 (sex até 17), sáb 09–13, almoço 12–13 e os procedimentos padrão.</p>
+        <p className="text-xs text-muted">
+          Já nasce com horário seg–sex 08–18 (sex até 17), sáb 09–13, almoço 12–13
+          {seg ? ` e os procedimentos: ${seg.procedimentos.join(', ')}.` : ' e os procedimentos do segmento.'}
+        </p>
         <div className="flex justify-end gap-2">
           <Botao variante="fantasma" onClick={onFechar}>Cancelar</Botao>
           <Botao type="submit" disabled={criar.isPending}>{criar.isPending ? 'Criando…' : 'Criar clínica'}</Botao>

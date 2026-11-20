@@ -4,6 +4,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api, type Consulta } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
 import { hojeYmd, hora, partes, segundaDaSemana, somarDias } from '../../lib/formato'
+import { useTermos } from '../../lib/termos'
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 const DIAS_LONGOS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo']
@@ -42,6 +43,7 @@ export function AgendaSemana({
   onConsulta?: (c: Consulta) => void
 }) {
   const { clinica, cadastros } = useClinica()
+  const pal = useTermos()
   const tz = clinica.timezone
   const hoje = hojeYmd(tz)
   const [modo, setModoBruto] = useState<Modo>(modoInicial)
@@ -144,7 +146,7 @@ export function AgendaSemana({
         <span className={`mt-0.5 grid size-9 place-items-center rounded-full text-lg font-bold leading-none ${
           ehHoje && !selecionado ? 'bg-primary text-primary-contrast' : ''}`}>{num(ymd)}</span>
         <span className={`mt-1 h-4 text-[11px] ${selecionado ? 'opacity-90' : 'text-muted'}`}>
-          {n > 0 ? `${n} ${n === 1 ? 'consulta' : 'consultas'}` : ''}
+          {n > 0 ? pal.contar(n) : ''}
         </span>
       </button>
     )
@@ -157,7 +159,7 @@ export function AgendaSemana({
         <div className="min-w-0">
           <h2 className={`font-semibold first-letter:uppercase ${compacta ? 'text-base' : 'text-xl'}`}>{titulo}</h2>
           <p className="text-sm text-muted">
-            {fechadoHoje ? 'Clínica fechada neste dia' : totalPeriodo === 0 ? 'Nenhuma consulta' : `${totalPeriodo} ${totalPeriodo === 1 ? 'consulta' : 'consultas'}`}
+            {fechadoHoje ? 'Clínica fechada neste dia' : totalPeriodo === 0 ? `${pal.Nenhuma} ${pal.atendimento}` : pal.contar(totalPeriodo)}
             {consultas.isFetching && <span className="ml-2 text-xs">atualizando…</span>}
           </p>
         </div>
@@ -225,7 +227,7 @@ export function AgendaSemana({
               <p>A clínica não abre neste dia.</p>
               <button type="button" onClick={() => setDia(proximoAberto(dia, 1))} className="mt-2 font-medium text-primary hover:underline">Ir para o próximo dia de atendimento</button>
             </div>
-          ) : 'Nenhum profissional cadastrado.'}
+          ) : `Nenhum ${pal.profissional} cadastrado.`}
         </div>
       ) : (
         <div className="flex-1 overflow-auto rounded-2xl border border-line">

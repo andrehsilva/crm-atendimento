@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 32 de 40 resolvidas (28 respondidas · 4 adiadas) — 20/11/2026.
+**Progresso:** 41 de 49 resolvidas (38 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -30,6 +30,14 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 ## ⚫ Bloqueia a Etapa 8 (Produção)
 
 ✅ Nada pendente — Etapa 8 liberada.
+
+## 🟢 Bloqueia a Etapa 9 (Outros segmentos e personalização)
+
+✅ Nada pendente — Etapa 9 liberada.
+
+## 🔵 Bloqueia a Etapa 10 (IA de cada clínica e controle de gastos)
+
+✅ Nada pendente — Etapa 10 liberada.
 
 ---
 
@@ -53,12 +61,21 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 - [ ] **Q10 — Convênios:** a Ísis pergunta/filtra convênio? → *"veremos depois"*. Por ora nada de convênio no sistema.
 - [ ] **Q17 — Selos/tags do cliente:** *"futuramente teremos tags por clientes, poucas: cliente novo / recorrente / em tratamento; ao sair de 'em tratamento' será colocado um 'volta em X tempo'"*. Registrado como ideia futura (D20).
 - [ ] **Q21 — Data de nascimento:** como entra no sistema? → *"veremos depois"*. Por ora: campo no cadastro, editável pela recepção.
-- [ ] **Q26 — IA em produção:** *"decidir depois"* (20/11). Por ora segue o OpenCode Go; o guia de produção traz a troca para uma API paga por uso como **passo obrigatório antes do 1º cliente** (D36).
 
 ---
 
 ## ✅ Respondidas
 
+- [x] **Q37 — Chave de IA:** ok — o admin da clínica (ou o admin geral) cadastra em Configurações › Assistente; chave criptografada no banco com chave-mestra no `.env`; só os 4 últimos caracteres aparecem; botão "Testar conexão". *(20/11 → D42)*
+- [x] **Q38 — Provedor e modelo:** ok — Google, OpenAI, OpenCode ou OpenRouter; modelo numa lista sugerida (só os aprovados na bateria de cenários) ou campo livre. *(20/11 → D43)*
+- [x] **Q39 — Gastos:** ok — tokens por resposta; custo estimado pela tabela de preços do admin geral; tela "Uso da IA" com US$ e R$ (cotação do admin geral). *(20/11 → D44)*
+- [x] **Q40 — Teto mensal:** ok — aviso aos 80%; aos 100% a assistente pausa e passa para a equipe; lembretes, confirmações e aniversários continuam. *(20/11 → D45)*
+- [x] **Q41 — Sem chave:** ok — assistente desligada; o admin geral pode liberar "usar a chave da plataforma" (gasto aparece no Admin geral › Uso). *(20/11 → D46)*
+- [x] **Q26 — IA em produção:** resolvida pela Etapa 10 — cada clínica usa a própria chave, paga por uso. *(20/11 → D36 substituída por D42–D46)*
+- [x] **Q33 — Segmentos da 1ª leva:** ok para a sugestão — a clínica escolhe o segmento ao ser criada (Odontologia, Medicina, Fisioterapia, Psicologia/Psiquiatria, Estética, Outro); o segmento preenche palavras, procedimentos iniciais e o jeito da assistente. *(20/11 → D38)*
+- [x] **Q34 — Palavras de cada negócio:** ok — o segmento preenche e o admin da clínica ajusta em Configurações › Perfil; valem nas telas, mensagens automáticas e assistente. *(20/11 → D39)*
+- [x] **Q35 — Aparência:** ok — logo e cor principal por clínica; o produto continua **Ísis**. *(20/11 → D40)*
+- [x] **Q36 — Regras por segmento:** ok — Etapa 9 traz palavras, textos, procedimentos iniciais, aparência e lembrete discreto; sessões repetidas e convênio ficam para depois. *(20/11 → D41)*
 - [x] **Q1 — Provedor e modelo de IA:** OpenCode Go com `gpt-6-luna`. *(16/11 → D13)*
 - [x] **Q3 — Nome da assistente:** sempre Ísis, nunca "Bia". *(16/11 → D12)*
 - [x] **Q4 — Banco:** Supabase na nuvem (plano gratuito). *(16/11 → D14)*

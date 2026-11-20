@@ -5,10 +5,12 @@ import { useAviso } from '../../components/Aviso'
 import { Botao, Campo, Entrada, Secao, Seletor } from '../../components/ui'
 import { api, type AssistenteCfg } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
+import { useTermos } from '../../lib/termos'
 
 /** Nome, tom e regras da agenda (RN marcadas como "Config"). Valem para ações novas. */
 export function Assistente({ podeEditar }: { podeEditar: boolean }) {
   const { clinica } = useClinica()
+  const pal = useTermos()
   const aviso = useAviso()
   const qc = useQueryClient()
   const url = `/clinics/${clinica.id}/config/assistente`
@@ -28,7 +30,7 @@ export function Assistente({ podeEditar }: { podeEditar: boolean }) {
       <Secao titulo="Como ela se apresenta" icone={<Bot className="size-5" />}>
         <fieldset disabled={!podeEditar} className="flex flex-col gap-4">
           <Campo rotulo="Nome da assistente"><Entrada required maxLength={40} value={f.nome_assistente} onChange={(e) => setF({ ...f, nome_assistente: e.target.value })} /></Campo>
-          <Campo rotulo="Como trata o paciente">
+          <Campo rotulo={`Como trata o ${pal.cliente}`}>
             <Seletor value={f.tratamento} onChange={(e) => setF({ ...f, tratamento: e.target.value as AssistenteCfg['tratamento'] })}>
               <option value="você">Você (mais próximo)</option>
               <option value="senhor(a)">Senhor(a) (mais formal)</option>
@@ -51,17 +53,17 @@ export function Assistente({ podeEditar }: { podeEditar: boolean }) {
           <Campo rotulo="Aviso de cancelamento (horas)" ajuda="Cancelar com menos que isso: avisa a política e sinaliza a recepção.">
             <Entrada type="number" min={0} max={168} value={f.aviso_cancelamento_horas} onChange={num('aviso_cancelamento_horas')} />
           </Campo>
-          <Campo rotulo="Consultas futuras por paciente">
+          <Campo rotulo={`${pal.Atendimentos} futur${pal.o}s por ${pal.cliente}`}>
             <Entrada type="number" min={1} max={10} value={f.limite_consultas_futuras} onChange={num('limite_consultas_futuras')} />
           </Campo>
-          <Campo rotulo="Horário do lembrete" ajuda="No dia útil anterior à consulta.">
+          <Campo rotulo="Horário do lembrete" ajuda={`No dia útil anterior ${pal.o === 'a' ? 'à' : 'ao'} ${pal.atendimento}.`}>
             <Entrada type="time" value={f.lembrete_hora} onChange={(e) => setF({ ...f, lembrete_hora: e.target.value })} />
           </Campo>
         </fieldset>
       </Secao>
       {podeEditar && (
         <div className="flex items-center justify-end gap-3 lg:col-span-2">
-          <p className="text-xs text-muted">As mudanças valem para novas ações; consultas já marcadas não mudam.</p>
+          <p className="text-xs text-muted">As mudanças valem para novas ações; {pal.atendimentos} já marcad{pal.o}s não mudam.</p>
           <Botao type="submit" disabled={salvar.isPending}>{salvar.isPending ? 'Salvando…' : 'Salvar'}</Botao>
         </div>
       )}
