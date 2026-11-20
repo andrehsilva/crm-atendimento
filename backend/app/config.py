@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     llm_model: str = "gpt-6-luna"
     llm_api_style: str = "responses"
 
+    # Etapa 5 — WhatsApp pelo WAHA (servidor do usuário, D28). Segredos só aqui no .env.
+    waha_api_url: str = ""            # ex.: https://waha.seudominio.com.br
+    waha_api_key: str = ""            # chave X-Api-Key do servidor WAHA
+    waha_webhook_hmac_key: str = ""   # segredo que assina os webhooks (HMAC SHA-512)
+    public_base_url: str = ""         # endereço público do backend (túnel em dev), ex.: https://xxx.trycloudflare.com
+    waha_simular_digitacao: bool = True  # "visto" + "digitando…" antes de responder (evita bloqueio)
+
 
 @lru_cache
 def get_settings() -> Settings:

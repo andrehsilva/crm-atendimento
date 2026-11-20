@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 25 de 37 resolvidas (22 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 26 de 37 resolvidas (23 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -29,9 +29,6 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
   - Resposta:
 - [ ] **Q25 — Templates do WhatsApp oficial:** no WhatsApp oficial, os disparos precisam de um modelo de mensagem aprovado pela Meta e são pagos. Você aceita usar modelos fixos da plataforma?
   - Sugestão: sim. Os modelos são fixos e a clínica personaliza só o trecho de texto livre.
-  - Resposta:
-- [ ] **Q15 — Criação de clínicas:** quem cria as clínicas? Só você (dono da plataforma) ou a clínica pode se cadastrar sozinha?
-  - Sugestão: só você, como super-admin.
   - Resposta:
 
 ## ⚫ Bloqueia a Etapa 8 (Produção)
@@ -89,3 +86,4 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 - [x] **Q28 — Dúvida que a Ísis não sabe:** continua transferindo para a equipe, mas **avisando claramente** o paciente que a equipe assume. *(20/11 → D27, RN-AT-06)*
 - [x] **Q12 — Números por clínica:** 1 número de WhatsApp = 1 clínica na primeira versão. *(20/11 → D29)*
 - [x] **Q29 — WAHA:** já roda num **servidor do usuário**; o webhook passa a apontar **direto para o nosso backend**, sem n8n. *(20/11 → D28)*
+- [x] **Q15 — Criação de clínicas:** só o dono da plataforma, num **painel de admin geral** (separado do painel das clínicas). Lá ele cria a instância e define nome da clínica, nome do agente, telefone, webhook/WAHA e demais configurações. *(20/11 → D30)*

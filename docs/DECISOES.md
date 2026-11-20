@@ -37,3 +37,5 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D27 | ✅ Quando a Ísis não sabe responder, ela **continua passando a conversa para a equipe** (e para de responder), mas o paciente **sempre recebe um aviso claro** de que a equipe assume dali em diante. O aviso é acrescentado pelo código | Q28, 20/11/2026 — no teste da Etapa 4 a Ísis ficou em silêncio sem avisar |
 | D28 | ✅ WAHA roda num **servidor do usuário** (não no Docker local). O webhook do WAHA aponta **direto para o backend** (sem n8n, D1); em desenvolvimento, via túnel até a máquina local | Q29, 20/11/2026 |
 | D29 | ✅ Primeira versão: **1 número de WhatsApp = 1 clínica** | Q12, 20/11/2026 |
+| D30 | ✅ Clínicas (instâncias) são criadas **só pelo dono da plataforma**, num **painel de admin geral** separado do painel da clínica: nome da clínica, nome do agente, telefone (chave), WAHA/webhook e demais configurações | Q15, 20/11/2026 |
+| D31 | ✅ Etapa 5 já guarda os dados do WAHA **por clínica no banco** (não no `.env`); a tela do admin geral para editá-los vem na Etapa 7 | 20/11/2026 |

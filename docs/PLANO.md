@@ -66,12 +66,13 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** pelo chat, marcar → remarcar → cancelar e ver a agenda mudar na hora. Testar "rosto inchado e febre": a Ísis deve orientar atendimento imediato, não marcar uma consulta normal.
 
-## Etapa 5 — WhatsApp (WAHA)
+## Etapa 5 — WhatsApp (WAHA) ✅ (20/11/2026)
 **Entrega:** a mesma Ísis respondendo no WhatsApp.
 - WAHA no servidor do usuário (D28), conectado por QR code; 1 número = 1 clínica (D29).
 - Webhook de entrada, envio de respostas e túnel para teste local (cloudflared).
 
 **O que testar:** ler o QR com um celular de teste, mandar "oi" de outro celular, marcar uma consulta pelo WhatsApp e ver a consulta na agenda.
+- Feito em 20/11/2026: tabela `whatsapp_instances`, rota `/webhooks/waha` com HMAC, envio com "digitando…", resposta da recepção pelo WhatsApp e script `scripts/whatsapp.py`. Testado pelo usuário com a sessão `what-andre` em 20/11/2026.
 
 ## Etapa 6 — Lembretes, avisos e aniversário
 **Entrega:** mensagens automáticas pelo WhatsApp.

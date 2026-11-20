@@ -4,7 +4,7 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 4 em teste** — Ísis conversando com IA (Agno + gpt-6-luna) no chat de teste, com ações em dois passos e atendimento humano. Próximo: **Etapa 5** — WhatsApp (WAHA).
+> Status: **Etapa 6 em andamento** — lembretes, avisos e aniversário. Etapa 5 (WhatsApp pelo WAHA) concluída.
 >
 > Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 
@@ -21,6 +21,7 @@ Pré-requisitos: `uv` (Python), Node 20+. Na pasta do projeto:
 - Testes do backend: `cd backend; uv run pytest`
 - Conversas de teste com a IA: `cd backend; uv run python scripts/conversa_teste.py` (gasta um pouco do plano)
 - Banco: `cd backend; uv run python scripts/migrar.py` (cria/atualiza tabelas) e `uv run python scripts/seed_demo.py --reset` (recria a clínica demo)
+- WhatsApp (WAHA): túnel `cloudflared tunnel --url http://localhost:8000` → copie o endereço `https://….trycloudflare.com` para `PUBLIC_BASE_URL` no `backend\.env` e rode `uv run python scripts/whatsapp.py webhook demo --confirmar`. O endereço do túnel muda a cada vez que ele é aberto.
 
 ## O que vamos ver na tela (resultado final)
 

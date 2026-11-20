@@ -20,6 +20,7 @@ from app.agenda.erros import AgendaError
 from app.config import get_settings
 from app.db import get_conn
 from app.eventos import avisar, distribuidor
+from app.canais import whatsapp
 from app.painel import chat, crm
 
 router = APIRouter(prefix="/api", tags=["painel"])
@@ -259,16 +260,20 @@ class RespostaEquipe(BaseModel):
 def responder_paciente(clinic_id: UUID, conversa_id: UUID, body: RespostaEquipe, conn: Conn = Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
     c = _cur(conn).execute(
-        "select id, patient_id, status from conversations where clinic_id = %s and id = %s", (clinic_id, conversa_id)
+        "select id, patient_id, status, channel, external_chat_id from conversations where clinic_id = %s and id = %s",
+        (clinic_id, conversa_id),
     ).fetchone()
     if not c:
         raise AgendaError("DADOS_INVALIDOS", "Conversa não encontrada.")
     if c["status"] != "humano":  # responder manualmente pausa a Ísis, para as duas não falarem juntas
         conn.execute("update conversations set status = 'humano' where id = %s", (conversa_id,))
+    texto = body.texto.strip()
+    # WhatsApp: envia primeiro; se falhar, nada é gravado e a recepção vê o erro (Etapa 5)
+    id_ext = whatsapp.enviar_da_equipe(conn, clinic_id, c, texto) if c["channel"] == "whatsapp" else None
     m = _cur(conn).execute(
-        """insert into messages (clinic_id, conversation_id, direction, author, content)
-           values (%s, %s, 'out', 'recepcao', %s) returning id, direction, author, content, created_at""",
-        (clinic_id, conversa_id, body.texto.strip()),
+        """insert into messages (clinic_id, conversation_id, direction, author, content, external_id)
+           values (%s, %s, 'out', 'recepcao', %s, %s) returning id, direction, author, content, created_at""",
+        (clinic_id, conversa_id, texto, id_ext),
     ).fetchone()
     conn.execute("update conversations set last_message_at = now() where id = %s", (conversa_id,))
     crm.registrar(conn, clinic_id, c["patient_id"], "recepcao_respondeu", "recepcao")

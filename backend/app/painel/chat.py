@@ -1,6 +1,6 @@
-"""Chat web de TESTE (D15): o paciente informa o telefone e conversa.
+"""Conversa paciente ↔ Ísis, para qualquer canal (web de teste e WhatsApp).
 
-Etapa 4: quem responde é a Ísis (IA). Com a conversa em atendimento humano, ela fica quieta.
+Quem responde é a Ísis (IA). Com a conversa em atendimento humano, ela fica quieta (RN-AT-06).
 """
 
 from uuid import UUID
@@ -50,25 +50,31 @@ def historico(conn, conversa_id: UUID, limite: int = 100) -> list[dict]:
     ).fetchall()[::-1]
 
 
-def _gravar(conn, clinic_id, conversa_id, direcao, autor, texto) -> dict:
+def _gravar(conn, clinic_id, conversa_id, direcao, autor, texto, external_id: str | None = None) -> dict | None:
+    """Grava uma mensagem. Com `external_id` repetido (webhook duplicado) não grava nada e devolve None."""
     m = conn.cursor(row_factory=dict_row).execute(
-        """insert into messages (clinic_id, conversation_id, direction, author, content)
-           values (%s, %s, %s, %s, %s) returning id, direction, author, content, created_at""",
-        (clinic_id, conversa_id, direcao, autor, texto),
+        """insert into messages (clinic_id, conversation_id, direction, author, content, external_id)
+           values (%s, %s, %s, %s, %s, %s)
+           on conflict (clinic_id, external_id) where external_id is not null do nothing
+           returning id, direction, author, content, created_at""",
+        (clinic_id, conversa_id, direcao, autor, texto, external_id),
     ).fetchone()
-    conn.execute("update conversations set last_message_at = now() where id = %s", (conversa_id,))
+    if m:
+        conn.execute("update conversations set last_message_at = now() where id = %s", (conversa_id,))
     return m
 
 
-def receber(conn, slug: str, telefone: str, texto: str, responder: bool = True) -> list[dict]:
-    """Grava a mensagem do paciente e a resposta da Ísis. Devolve as mensagens novas.
+def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
+              external_id: str | None = None, responder: bool = True) -> list[dict]:
+    """Grava a mensagem do paciente e, se a Ísis estiver ativa, a resposta dela. Vale para qualquer canal.
 
-    responder=False só grava a mensagem (usado pelo seed da demo, sem chamar a IA).
+    Devolve as mensagens novas: [] se a mensagem já tinha chegado antes (duplicada),
+    [paciente] se a Ísis está pausada, [paciente, isis] no caso normal.
     """
-    clinica = clinica_por_slug(conn, slug)
-    paciente = obter_ou_criar_paciente(conn, clinica["id"], telefone, None, origem="web")
-    conversa = _conversa(conn, clinica["id"], paciente["id"], "web")
-    novas = [_gravar(conn, clinica["id"], conversa["id"], "in", "paciente", texto)]
+    entrada = _gravar(conn, clinica["id"], conversa["id"], "in", "paciente", texto, external_id)
+    if entrada is None:
+        return []
+    novas = [entrada]
     crm.registrar(conn, clinica["id"], paciente["id"], "conversando", "paciente")
 
     if conversa["status"] == "humano" or not responder:  # RN-AT-06: Ísis pausada, a recepção responde
@@ -79,7 +85,15 @@ def receber(conn, slug: str, telefone: str, texto: str, responder: bool = True) 
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     conn.commit()
 
-    resposta = isis.responder(conn, clinica, paciente, conversa, texto.strip(), novas[0]["created_at"])
+    resposta = isis.responder(conn, clinica, paciente, conversa, texto.strip(), entrada["created_at"])
     novas.append(_gravar(conn, clinica["id"], conversa["id"], "out", "isis", resposta))
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     return novas
+
+
+def receber(conn, slug: str, telefone: str, texto: str, responder: bool = True) -> list[dict]:
+    """Chat web de teste. responder=False só grava a mensagem (usado pelo seed da demo, sem chamar a IA)."""
+    clinica = clinica_por_slug(conn, slug)
+    paciente = obter_ou_criar_paciente(conn, clinica["id"], telefone, None, origem="web")
+    conversa = _conversa(conn, clinica["id"], paciente["id"], "web")
+    return processar(conn, clinica, paciente, conversa, texto, responder=responder)
