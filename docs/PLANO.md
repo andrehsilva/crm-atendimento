@@ -6,7 +6,7 @@ Só seguimos depois do seu **"pode seguir"**. Perguntas pendentes: [PERGUNTAS.md
 ```
 0 Planejamento ✅ ─► 1 Fundação ─► 2 Banco + agenda ─► 3 Painel em tempo real
    ─► 4 Ísis (IA) ─► 5 WhatsApp WAHA ─► 6 Lembretes + aniversário
-   ─► 7 Admin multi-tenant (+ WhatsApp oficial) ─► 8 Testes + produção
+   ─► 7 Admin multi-tenant ─► 8 Testes + produção
 ```
 > Ordem revista em 16/11/2026 (D23): o WAHA é o canal principal, por isso vem antes dos lembretes.
 
@@ -83,12 +83,13 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** marcar uma consulta para depois de amanhã, avançar o relógio e ver o lembrete no WhatsApp e no painel. Responder "1" e ver o card ir para *Confirmado*. Repetir com um paciente que faz aniversário hoje.
 
-## Etapa 7 — Admin multi-tenant (+ WhatsApp oficial)
+## Etapa 7 — Admin multi-tenant
 **Entrega:** criar e configurar clínicas sem mexer no código.
 - Login de administrador e de usuários da clínica.
 - Configurações em abas (spec 07): Perfil, Horários de Funcionamento, Procedimentos, Mensagens e Usuários (+ Profissionais, Assistente e Canais).
 - Admin da plataforma: criar clínica (o telefone é a chave), suspender, entrar como.
-- Adaptador do WhatsApp oficial (Cloud API), se confirmado na Q2.
+- ~~Adaptador do WhatsApp oficial~~ → fora da 1ª versão (D32, D33); vai para o backlog.
+- Painel de **admin geral** separado (D30): criar instância com nome da clínica, nome do agente, telefone e sessão do WAHA (hoje feito pelo `scripts/whatsapp.py`, D31).
 
 **O que testar:** criar uma 2ª clínica, conversar com a Ísis de cada uma e confirmar que **uma não enxerga nada da outra**.
 

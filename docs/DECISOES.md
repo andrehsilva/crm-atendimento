@@ -39,3 +39,5 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D29 | ✅ Primeira versão: **1 número de WhatsApp = 1 clínica** | Q12, 20/11/2026 |
 | D30 | ✅ Clínicas (instâncias) são criadas **só pelo dono da plataforma**, num **painel de admin geral** separado do painel da clínica: nome da clínica, nome do agente, telefone (chave), WAHA/webhook e demais configurações | Q15, 20/11/2026 |
 | D31 | ✅ Etapa 5 já guarda os dados do WAHA **por clínica no banco** (não no `.env`); a tela do admin geral para editá-los vem na Etapa 7 | 20/11/2026 |
+| D32 | ✅ 1ª versão com duas entradas: página web (teste) e WhatsApp pelo WAHA. Terceira entrada fica para depois | Q2, 20/11/2026 |
+| D33 | ✅ Sem WhatsApp oficial (Cloud API) na 1ª versão; templates da Meta não se aplicam. A Etapa 7 fica só com o admin multi-tenant | Q25, 20/11/2026 |

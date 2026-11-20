@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 26 de 37 resolvidas (23 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 28 de 37 resolvidas (25 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -22,14 +22,9 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente — Etapa 5 liberada.
 
-## ⚪ Bloqueia a Etapa 7 (Admin multi-tenant e WhatsApp oficial)
+## ⚪ Bloqueia a Etapa 7 (Admin multi-tenant)
 
-- [ ] **Q2 — Terceira entrada:** você citou três opções de entrada para o chat. A terceira é (a) o WhatsApp oficial separado do WAHA, (b) o Telegram ou (c) outra?
-  - Sugestão: (a). As entradas ficam: página web (teste) · WhatsApp pelo WAHA (principal) · WhatsApp oficial (depois).
-  - Resposta:
-- [ ] **Q25 — Templates do WhatsApp oficial:** no WhatsApp oficial, os disparos precisam de um modelo de mensagem aprovado pela Meta e são pagos. Você aceita usar modelos fixos da plataforma?
-  - Sugestão: sim. Os modelos são fixos e a clínica personaliza só o trecho de texto livre.
-  - Resposta:
+✅ Nada pendente — Etapa 7 liberada.
 
 ## ⚫ Bloqueia a Etapa 8 (Produção)
 
@@ -87,3 +82,5 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 - [x] **Q12 — Números por clínica:** 1 número de WhatsApp = 1 clínica na primeira versão. *(20/11 → D29)*
 - [x] **Q29 — WAHA:** já roda num **servidor do usuário**; o webhook passa a apontar **direto para o nosso backend**, sem n8n. *(20/11 → D28)*
 - [x] **Q15 — Criação de clínicas:** só o dono da plataforma, num **painel de admin geral** (separado do painel das clínicas). Lá ele cria a instância e define nome da clínica, nome do agente, telefone, webhook/WAHA e demais configurações. *(20/11 → D30)*
+- [x] **Q2 — Terceira entrada:** nenhuma por agora. Entradas da 1ª versão: página web (teste) e WhatsApp pelo WAHA. *(20/11 → D32)*
+- [x] **Q25 — Templates do WhatsApp oficial:** não se aplica — sem WhatsApp oficial na 1ª versão. *(20/11 → D33)*
