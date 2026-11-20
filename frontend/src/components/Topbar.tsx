@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { aplicarTema, temaAtual, type Tema } from '../lib/tema'
 
-type Saude = { status: string; banco: string; ia: string }
+type Saude = { status: string; banco: { status: string }; ia: { status: string } }
 
 export function Topbar() {
   const [tema, setTema] = useState<Tema>(temaAtual)
@@ -29,7 +29,7 @@ export function Topbar() {
   const texto = erro
     ? 'Backend fora do ar'
     : saude
-      ? `Backend ok · banco: ${saude.banco} · IA: ${saude.ia}`
+      ? `Backend ok · banco: ${saude.banco.status} · IA: ${saude.ia.status}`
       : 'Verificando backend…'
 
   return (

@@ -4,7 +4,9 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 1A concluída** (estrutura básica). Próximo: **Etapa 1B** — conexão com Supabase e OpenCode Go.
+> Status: **Etapa 1 concluída** — estrutura básica + banco (Supabase, Postgres 17) e IA (OpenCode Go, `gpt-6-luna`) conectados. Próximo: **Etapa 2** — banco e motor de agenda.
+>
+> Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 
 ## Como rodar (Windows)
 

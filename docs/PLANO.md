@@ -15,7 +15,7 @@ Só seguimos depois do seu **"pode seguir"**. Perguntas pendentes: [PERGUNTAS.md
 ## Etapa 0 — Planejamento ✅
 Documentos, layout de referência e primeiras respostas registradas.
 
-## Etapa 1 — Fundação
+## Etapa 1 — Fundação ✅ (19/11/2026)
 Dividida em duas partes.
 
 ### 1A — Estrutura básica (sem banco, sem IA)
