@@ -39,7 +39,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** o `/health` mostrar `banco: ok` e `ia: ok`, e o script imprimir a resposta da Ísis.
 
-## Etapa 2 — Banco e motor de agenda (sem IA)
+## Etapa 2 — Banco e motor de agenda (sem IA) — 🧪 aguardando seu teste
 **Entrega:** o "caderno" da clínica funcionando pela API.
 - Tabelas (spec 08) e dados de exemplo: 1 clínica demo, 2 dentistas, procedimentos (60 min por padrão), horário da clínica com pausa de almoço.
 - Serviço de agenda: horários livres, marcar, remarcar e cancelar, **com todas as validações** (conflito, expediente, pausas, antecedência, telefone, dentista de referência).

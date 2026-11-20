@@ -10,13 +10,19 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 21 de 34 resolvidas (18 respondidas · 3 adiadas) — 16/11/2026.
+**Progresso:** 21 de 35 resolvidas (18 respondidas · 3 adiadas) — 16/11/2026.
 
 ---
 
 ## 🔴 Bloqueia a Etapa 1 (Fundação)
 
 ✅ Nada pendente — Etapa 1 liberada.
+
+## 🟡 Bloqueia a Etapa 3 (Telas e tempo real)
+
+- [ ] **Q27 — Região do banco:** cada consulta ao banco leva ~270 ms de ida e volta (abrir conexão ~2 s). O endereço do servidor indica que o projeto Supabase está nos **EUA (Oregon)**, e não em São Paulo. Confira em Supabase › Project Settings › General › *Region*. Quer recriar o projeto na região **South America (São Paulo)**? Agora é barato: só rodar `migrar.py` e `seed_demo.py` de novo.
+  - Sugestão: sim, recriar em São Paulo antes da Etapa 3 (o painel em tempo real fica bem mais rápido; e dados de saúde de pacientes brasileiros ficam no Brasil — melhor para a LGPD).
+  - Resposta:
 
 ## 🟣 Bloqueia a Etapa 5 (WhatsApp WAHA)
 

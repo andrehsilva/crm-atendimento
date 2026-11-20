@@ -19,6 +19,7 @@ Pré-requisitos: `uv` (Python), Node 20+. Na pasta do projeto:
 - Painel: http://localhost:5173
 - Backend: http://localhost:8000/health · documentação da API: http://localhost:8000/docs
 - Testes do backend: `cd backend; uv run pytest`
+- Banco: `cd backend; uv run python scripts/migrar.py` (cria/atualiza tabelas) e `uv run python scripts/seed_demo.py --reset` (recria a clínica demo)
 
 ## O que vamos ver na tela (resultado final)
 

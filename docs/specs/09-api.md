@@ -10,7 +10,23 @@ Prefixo `/api`. Rotas do painel exigem login e checam papel + clínica.
 | POST | `/web/{slug}/messages` | Envia mensagem |
 | GET | `/web/{slug}/stream` | SSE com respostas da Ísis |
 
-## Painel
+## Implementado na Etapa 2 (sem login — só localhost)
+| Método | Rota | Uso |
+|---|---|---|
+| GET | `/api/clinics` | Lista clínicas (achar o id da demo) |
+| GET | `/api/clinics/{id}/cadastros` | Dentistas e procedimentos |
+| GET | `/api/clinics/{id}/availability?service_id&de&ate&professional_id&telefone` | Horários livres |
+| GET | `/api/clinics/{id}/appointments?de&ate` | Consultas no período |
+| GET | `/api/clinics/{id}/patients/{telefone}/appointments` | Próximas consultas do paciente |
+| POST | `/api/clinics/{id}/appointments` | Marcar (recepção) |
+| POST | `/api/clinics/{id}/appointments/{aid}/reschedule` | Remarcar (recepção) |
+| POST | `/api/clinics/{id}/appointments/{aid}/cancel` | Cancelar (recepção) |
+| POST | `/api/clinics/{id}/appointments/{aid}/status` | confirmada / realizada / faltou |
+| POST | `/api/clinics/{id}/simular-paciente/{aid}/cancel` | Paciente cancela (telefone precisa bater) |
+
+Erros de regra: HTTP 4xx com `{"codigo": "HORARIO_OCUPADO", "mensagem": "..."}` (códigos em `backend/app/agenda/erros.py`).
+
+## Painel (planejado)
 | Método | Rota | Uso |
 |---|---|---|
 | GET | `/clinics/{id}/appointments?from&to&professional` | Agenda |

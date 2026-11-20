@@ -1,14 +1,26 @@
 """Ponto de entrada do backend. Rode com: uv run uvicorn app.main:app --reload"""
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
-from app.api import health
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.agenda.erros import AgendaError
+from app.api import agenda, health
 from app.config import get_settings
+from app.db import fechar_pool
 
 settings = get_settings()
 
-app = FastAPI(title="Ísis API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    yield
+    fechar_pool()
+
+
+app = FastAPI(title="Ísis API", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,4 +30,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(AgendaError)
+async def erro_de_agenda(_: Request, e: AgendaError) -> JSONResponse:
+    """Erros de regra viram resposta clara: {"codigo": "HORARIO_OCUPADO", "mensagem": "..."}."""
+    return JSONResponse(status_code=e.status_http, content={"codigo": e.codigo, "mensagem": e.mensagem})
+
+
 app.include_router(health.router)
+app.include_router(agenda.router)
