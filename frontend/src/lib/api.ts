@@ -34,6 +34,7 @@ export const api = {
   post: <T>(url: string, corpo?: unknown) => req<T>('POST', url, corpo ?? {}),
   patch: <T>(url: string, corpo: unknown) => req<T>('PATCH', url, corpo),
   put: <T>(url: string, corpo: unknown) => req<T>('PUT', url, corpo),
+  delete: <T>(url: string) => req<T>('DELETE', url),
 }
 
 // ---------------------------------------------------------------- tipos
@@ -146,4 +147,63 @@ export type Usuario = {
   super_admin: boolean
   trocar_senha: boolean
   clinicas: { clinic_id: string; papel: 'clinic_admin' | 'reception' }[]
+}
+
+// ---------------------------------------------------------------- admin geral (7B)
+export type AdminClinica = {
+  id: string
+  name: string
+  phone: string
+  slug: string
+  status: 'ativa' | 'suspensa'
+  timezone: string
+  address: string | null
+  created_at: string
+  nome_assistente: string
+  whatsapp_sessao: string | null
+  whatsapp_status: string | null
+  whatsapp_numero: string | null
+  conversas_mes: number
+  usuarios: number
+}
+
+export type UsuarioClinica = {
+  id: string
+  email: string
+  nome: string | null
+  papel: 'clinic_admin' | 'reception'
+  ativo: boolean
+  senha_provisoria: boolean
+}
+
+export type SessaoWaha = { sessao: string; status: string; numero: string | null; webhooks: string[]; clinic_id: string | null; clinica: string | null }
+
+export type StatusWhatsapp =
+  | { ligado: false }
+  | { ligado: true; sessao: string; status: string; numero: string | null; ativo: boolean; webhooks?: string[]; webhook_ok?: boolean; webhook_esperado?: string | null; erro?: string }
+
+export type UsoClinica = {
+  id: string
+  name: string
+  status: string
+  conversas: number
+  mensagens_recebidas: number
+  respostas_ia: number
+  tempo_medio_s: number | null
+  falhas_ia: number
+  automaticas_enviadas: number
+  consultas_pela_ia: number
+}
+
+export type Plataforma = {
+  ambiente: string
+  modelo_ia: string
+  ia_configurada: boolean
+  waha_servidor: string | null
+  waha_configurado: boolean
+  webhook_assinado: boolean
+  endereco_publico: string | null
+  mensagens_automaticas: boolean
+  modo_teste_numeros: number | null
+  supabase: string | null
 }

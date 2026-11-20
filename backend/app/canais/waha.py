@@ -157,15 +157,37 @@ class ClienteWaha:
             return None
         return _numero((d or {}).get("pn")) if isinstance(d, dict) else None
 
-    def configurar_webhook(self, sessao: str, url: str, chave_hmac: str) -> dict:
-        """Aponta o webhook da sessão para o nosso backend. ATENÇÃO: substitui os webhooks atuais da sessão."""
-        atual = self.sessao(sessao)
-        config = dict(atual.get("config") or {})
-        config["webhooks"] = [{
+    @staticmethod
+    def _webhook(url: str, chave_hmac: str) -> dict:
+        return {
             "url": url,
             "events": ["message", "session.status"],
             "hmac": {"key": chave_hmac},
             "retries": {"policy": "constant", "delaySeconds": 2, "attempts": 5},
-        }]
+        }
+
+    def configurar_webhook(self, sessao: str, url: str, chave_hmac: str) -> dict:
+        """Aponta o webhook da sessão para o nosso backend. ATENÇÃO: substitui os webhooks atuais da sessão."""
+        atual = self.sessao(sessao)
+        config = dict(atual.get("config") or {})
+        config["webhooks"] = [self._webhook(url, chave_hmac)]
         config.setdefault("ignore", {"status": True, "groups": True, "channels": True, "broadcast": True})
         return self._req("PUT", f"/api/sessions/{sessao}", json={"name": sessao, "config": config}).json()
+
+    def listar_sessoes(self) -> list[dict]:
+        return self._req("GET", "/api/sessions", params={"all": "true"}).json()
+
+    def criar_sessao(self, sessao: str, url: str, chave_hmac: str) -> dict:
+        """Cria e inicia uma sessão nova já com o nosso webhook (depois é só ler o QR code)."""
+        return self._req("POST", "/api/sessions", json={
+            "name": sessao, "start": True,
+            "config": {"webhooks": [self._webhook(url, chave_hmac)],
+                       "ignore": {"status": True, "groups": True, "channels": True, "broadcast": True}},
+        }).json()
+
+    def reiniciar(self, sessao: str) -> None:
+        self._req("POST", f"/api/sessions/{sessao}/restart")
+
+    def desconectar(self, sessao: str) -> None:
+        """Desliga o número da sessão (logout). Para conectar de novo, é preciso ler outro QR code."""
+        self._req("POST", f"/api/sessions/{sessao}/logout")

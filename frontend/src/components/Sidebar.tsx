@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   MonitorPlay,
+  ShieldCheck,
   Settings,
   Users,
 } from 'lucide-react'
@@ -72,7 +73,17 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-3 pb-3">
+      <div className="flex flex-col gap-2 px-3 pb-3">
+        {usuario.super_admin && (
+          <Link
+            to="/admin"
+            title="Painel de admin geral: clínicas, WhatsApp e usuários"
+            className="flex items-center gap-3 rounded-xl bg-text px-4 py-3 text-sm font-medium text-surface hover:opacity-90"
+          >
+            <ShieldCheck className="size-5 shrink-0" />
+            {!recolhida && 'Admin geral'}
+          </Link>
+        )}
         <Link
           to="/demo"
           title="Demonstração: chat + agenda + mensagens"

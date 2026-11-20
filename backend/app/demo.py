@@ -3,6 +3,8 @@
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
+from psycopg.types.json import Jsonb
+
 from app.agenda import servico
 from app.painel import chat
 
@@ -45,7 +47,14 @@ def criar_demo(conn, reset: bool = False) -> str:
     existente = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
     if existente and not reset:
         return str(existente[0])
+    guardados = {"whatsapp": [], "usuarios": [], "settings": None}
     if existente:
+        # O reset recria a clínica do zero, mas mantém o WhatsApp, os usuários e as configurações ligados a ela
+        guardados["whatsapp"] = conn.execute(
+            "select session, status, phone, enabled from whatsapp_instances where clinic_id = %s", existente).fetchall()
+        guardados["usuarios"] = conn.execute(
+            "select user_id, role, active from clinic_users where clinic_id = %s", existente).fetchall()
+        guardados["settings"] = conn.execute("select settings from clinics where id = %s", existente).fetchone()[0]
         conn.execute("delete from appointment_events where clinic_id = %s", existente)
         conn.execute("delete from outbound_messages where clinic_id = %s", existente)
         conn.execute("delete from appointments where clinic_id = %s", existente)
@@ -56,6 +65,13 @@ def criar_demo(conn, reset: bool = False) -> str:
            values (%s, %s, %s, %s, %s) returning id""",
         ("Clínica Dental Demo", TELEFONE_CLINICA, SLUG, "America/Sao_Paulo", "Rua das Flores, 123 — Centro, São Paulo/SP"),
     ).fetchone()[0]
+    if guardados["settings"]:
+        conn.execute("update clinics set settings = %s where id = %s", (Jsonb(guardados["settings"]), clinic_id))
+    for sessao, status, fone, ligado in guardados["whatsapp"]:
+        conn.execute("insert into whatsapp_instances (clinic_id, session, status, phone, enabled) values (%s,%s,%s,%s,%s)",
+                     (clinic_id, sessao, status, fone, ligado))
+    for uid, papel, ativo in guardados["usuarios"]:
+        conn.execute("insert into clinic_users (clinic_id, user_id, role, active) values (%s,%s,%s,%s)", (clinic_id, uid, papel, ativo))
 
     for wd, (ini, fim) in HORARIO.items():
         conn.execute("insert into clinic_hours (clinic_id, weekday, start_time, end_time) values (%s,%s,%s,%s)",

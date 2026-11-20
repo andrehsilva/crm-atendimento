@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from './auth'
 import { api, EVENTO_SESSAO, type Cadastros, type Clinica } from './api'
 
 type Contexto = { clinica: Clinica; cadastros: Cadastros }
@@ -48,10 +50,31 @@ function useTempoReal(clinicId: string | undefined) {
   }, [clinicId, qc])
 }
 
+const CHAVE_CLINICA = 'isis:clinica'
+
+/** Clínica escolhida neste navegador (o super admin troca pelo "Entrar como"). Só conveniência local. */
+export function escolherClinica(id: string) {
+  try {
+    localStorage.setItem(CHAVE_CLINICA, id)
+  } catch {
+    // navegador sem armazenamento: usa a primeira clínica da lista
+  }
+}
+
+function clinicaGuardada(): string | null {
+  try {
+    return localStorage.getItem(CHAVE_CLINICA)
+  } catch {
+    return null
+  }
+}
+
 export function ProvedorClinica({ children }: { children: ReactNode }) {
-  // Etapa 3: sem login ainda — usamos a primeira clínica (a demo). Login/escolha na Etapa 7.
+  // A lista já vem filtrada pelo backend: só as clínicas do usuário (super admin: todas)
+  const { usuario } = useAuth()
   const lista = useQuery({ queryKey: ['clinicas'], queryFn: () => api.get<{ id: string }[]>('/clinics') })
-  const id = lista.data?.[0]?.id
+  const guardada = clinicaGuardada()
+  const id = lista.data?.find((c) => c.id === guardada)?.id ?? lista.data?.[0]?.id
   const clinica = useQuery({ queryKey: ['clinica', id], queryFn: () => api.get<Clinica>(`/clinics/${id}`), enabled: !!id })
   const cadastros = useQuery({
     queryKey: ['cadastros', id],
@@ -68,6 +91,7 @@ export function ProvedorClinica({ children }: { children: ReactNode }) {
     )
   }
   if (lista.data && lista.data.length === 0) {
+    if (usuario.super_admin) return <Navigate to="/admin" replace />
     return (
       <Centro>
         Seu usuário ainda não está ligado a nenhuma clínica. Fale com o administrador.

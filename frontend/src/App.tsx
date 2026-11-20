@@ -4,6 +4,11 @@ import { ProvedorAvisos } from './components/Aviso'
 import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { ProvedorAuth } from './lib/auth'
+import { AdminLayout } from './pages/admin/AdminLayout'
+import { AdminClinicaDetalhe } from './pages/admin/ClinicaDetalhe'
+import { AdminClinicas } from './pages/admin/Clinicas'
+import { AdminPlataforma } from './pages/admin/Plataforma'
+import { AdminUso } from './pages/admin/Uso'
 import { ProvedorClinica } from './lib/clinica'
 import { Agenda } from './pages/Agenda'
 import { Clientes } from './pages/Clientes'
@@ -36,10 +41,17 @@ function Layout() {
 function AreaLogada() {
   return (
     <ProvedorAuth>
-      <ProvedorClinica>
-        <Outlet />
-      </ProvedorClinica>
+      <Outlet />
     </ProvedorAuth>
+  )
+}
+
+/** Painel de UMA clínica (a do usuário; o super admin escolhe pelo "Entrar como"). */
+function AreaClinica() {
+  return (
+    <ProvedorClinica>
+      <Outlet />
+    </ProvedorClinica>
   )
 }
 
@@ -51,14 +63,22 @@ export default function App() {
           <Routes>
             <Route path="redefinir-senha" element={<RedefinirSenha />} />
             <Route element={<AreaLogada />}>
-              <Route path="demo" element={<Demo />} />
-              <Route element={<Layout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="crm" element={<Crm />} />
-                <Route path="agenda" element={<Agenda />} />
-                <Route path="mensagens" element={<Mensagens />} />
-                <Route path="clientes" element={<Clientes />} />
-                <Route path="configuracoes" element={<Configuracoes />} />
+              <Route path="admin" element={<AdminLayout />}>
+                <Route index element={<AdminClinicas />} />
+                <Route path="clinicas/:id" element={<AdminClinicaDetalhe />} />
+                <Route path="uso" element={<AdminUso />} />
+                <Route path="plataforma" element={<AdminPlataforma />} />
+              </Route>
+              <Route element={<AreaClinica />}>
+                <Route path="demo" element={<Demo />} />
+                <Route element={<Layout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="crm" element={<Crm />} />
+                  <Route path="agenda" element={<Agenda />} />
+                  <Route path="mensagens" element={<Mensagens />} />
+                  <Route path="clientes" element={<Clientes />} />
+                  <Route path="configuracoes" element={<Configuracoes />} />
+                </Route>
               </Route>
             </Route>
           </Routes>

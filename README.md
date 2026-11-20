@@ -4,7 +4,7 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 7 em andamento** — 7A (login e proteção das rotas) pronta para teste.
+> Status: **Etapa 7 em andamento** — 7A (login) concluída; 7B (painel de admin geral em `/admin`) pronta para teste.
 >
 > Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 
