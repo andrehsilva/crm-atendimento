@@ -1,114 +1,48 @@
-import { useEffect, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Cake, Construction } from 'lucide-react'
+import { useState } from 'react'
 import { PageHeader } from '../components/PageHeader'
-import { useAviso } from '../components/Aviso'
-import { Botao, Campo, Entrada, Secao } from '../components/ui'
-import { api, type ConfigAniversario } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { useClinica } from '../lib/clinica'
+import { Assistente } from './config/Assistente'
+import { Horarios } from './config/Horarios'
+import { Mensagens } from './config/Mensagens'
+import { Perfil } from './config/Perfil'
+import { Procedimentos } from './config/Procedimentos'
+import { Profissionais } from './config/Profissionais'
+import { Usuarios } from './config/Usuarios'
 
-const ABAS = ['Perfil', 'Horários', 'Procedimentos', 'Mensagens', 'Usuários'] as const
+const ABAS = ['Perfil', 'Horários', 'Procedimentos', 'Profissionais', 'Assistente', 'Mensagens', 'Usuários'] as const
 type Aba = (typeof ABAS)[number]
 
+/** Spec 07-A: configurações da clínica em abas. Ver: toda a equipe. Mudar: só o administrador da clínica. */
 export function Configuracoes() {
-  const [aba, setAba] = useState<Aba>('Mensagens')
+  const { usuario } = useAuth()
+  const { clinica } = useClinica()
+  const papel = usuario.super_admin ? 'super_admin' : usuario.clinicas.find((c) => c.clinic_id === clinica.id)?.papel
+  const podeEditar = papel === 'clinic_admin' || papel === 'super_admin'
+  const abas = ABAS.filter((a) => a !== 'Usuários' || podeEditar)
+  const [aba, setAba] = useState<Aba>('Perfil')
+
   return (
     <>
-      <PageHeader titulo="Configurações" subtitulo="Gerencie o perfil, horários, procedimentos e mensagens da clínica" />
+      <PageHeader titulo="Configurações" subtitulo="Gerencie o perfil, horários e procedimentos da clínica" />
+      {!podeEditar && (
+        <p className="mb-4 rounded-2xl bg-surface px-4 py-3 text-sm text-muted">Você pode ver as configurações. Para mudar, fale com o administrador da clínica.</p>
+      )}
       <div role="tablist" className="mb-6 flex flex-wrap gap-2">
-        {ABAS.map((a) => (
+        {abas.map((a) => (
           <button key={a} type="button" role="tab" aria-selected={aba === a} onClick={() => setAba(a)}
             className={`rounded-full px-4 py-1.5 text-sm transition ${aba === a ? 'bg-primary text-primary-contrast' : 'bg-surface text-muted hover:text-text'}`}>
             {a}
           </button>
         ))}
       </div>
-      {aba === 'Mensagens' ? <Mensagens /> : <EmBreveAba />}
+      {aba === 'Perfil' && <Perfil podeEditar={podeEditar} />}
+      {aba === 'Horários' && <Horarios podeEditar={podeEditar} />}
+      {aba === 'Procedimentos' && <Procedimentos podeEditar={podeEditar} />}
+      {aba === 'Profissionais' && <Profissionais podeEditar={podeEditar} />}
+      {aba === 'Assistente' && <Assistente podeEditar={podeEditar} />}
+      {aba === 'Mensagens' && <Mensagens podeEditar={podeEditar} />}
+      {aba === 'Usuários' && podeEditar && <Usuarios />}
     </>
-  )
-}
-
-function EmBreveAba() {
-  return (
-    <section className="flex max-w-3xl flex-col items-center gap-3 rounded-3xl bg-surface px-6 py-16 text-center text-muted">
-      <Construction className="size-6 text-primary" />
-      Esta aba será construída na <strong className="text-text">Etapa 7</strong>.
-    </section>
-  )
-}
-
-function Mensagens() {
-  const { clinica } = useClinica()
-  const aviso = useAviso()
-  const qc = useQueryClient()
-  const url = `/clinics/${clinica.id}/mensagens/aniversario`
-  const q = useQuery({ queryKey: ['aniversario', clinica.id], queryFn: () => api.get<ConfigAniversario>(url) })
-
-  const [ativo, setAtivo] = useState(false)
-  const [texto, setTexto] = useState('')
-  const [hora, setHora] = useState('09:00')
-  const [previa, setPrevia] = useState('')
-
-  useEffect(() => {
-    if (!q.data) return
-    setAtivo(q.data.ativo)
-    setTexto(q.data.texto)
-    setHora(q.data.hora)
-    setPrevia(q.data.previa)
-  }, [q.data])
-
-  // RN-DP-02: prévia com dados reais, atualizada enquanto digita
-  useEffect(() => {
-    if (!texto.trim()) return
-    const t = setTimeout(() => {
-      api.post<{ previa: string }>(`${url}/previa`, { texto }).then((r) => setPrevia(r.previa)).catch(() => undefined)
-    }, 400)
-    return () => clearTimeout(t)
-  }, [texto, url])
-
-  const salvar = useMutation({
-    mutationFn: () => api.put<ConfigAniversario>(url, { ativo, texto, hora }),
-    onSuccess: () => {
-      aviso.ok('Mensagem de aniversário salva.')
-      qc.invalidateQueries({ queryKey: ['aniversario'] })
-    },
-    onError: aviso.erro,
-  })
-
-  if (q.isLoading || !q.data) return <p className="text-sm text-muted">Carregando…</p>
-  const limite = q.data.limite
-
-  return (
-    <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
-      <Secao titulo="Mensagem de aniversário" icone={<Cake className="size-5" />}>
-        <div className="flex flex-col gap-4">
-          <label className="flex items-center gap-3 text-sm">
-            <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="size-4 accent-[var(--primary)]" />
-            Enviar mensagem no dia do aniversário do paciente
-          </label>
-          <Campo rotulo="Horário de envio" ajuda="No fuso da clínica. Cada paciente recebe 1 vez por ano.">
-            <Entrada type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="w-32" />
-          </Campo>
-          <Campo rotulo="Texto" ajuda={`Use {nome} (primeiro nome) e {clinica}. ${texto.length}/${limite} caracteres.`}>
-            <textarea value={texto} maxLength={limite} rows={6} onChange={(e) => setTexto(e.target.value)}
-              className="rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-primary" />
-          </Campo>
-          <p className="text-xs text-muted">
-            Quem responder "PARAR" ou "SAIR" deixa de receber. Os lembretes de consulta continuam.
-          </p>
-          <div>
-            <Botao onClick={() => salvar.mutate()} disabled={salvar.isPending || !texto.trim()}>
-              {salvar.isPending ? 'Salvando…' : 'Salvar'}
-            </Botao>
-          </div>
-        </div>
-      </Secao>
-      <Secao titulo="Prévia">
-        <div className="rounded-2xl bg-surface-muted p-4">
-          <p className="max-w-[85%] whitespace-pre-line rounded-2xl rounded-tl-sm bg-surface p-3 text-sm shadow-sm">{previa}</p>
-        </div>
-        <p className="mt-3 text-xs text-muted">Exemplo com o nome de um paciente da clínica.</p>
-      </Secao>
-    </div>
   )
 }

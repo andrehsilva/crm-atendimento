@@ -168,4 +168,6 @@ def dados_clinica(conn, clinica: dict) -> dict:
             for s in servs
         ],
         "precos": "informe só os valores listados" if mostrar_precos else "a clínica não divulga preços pelo chat",
+        # Texto livre da clínica (Configurações › Perfil): convênios, estacionamento, acessibilidade...
+        **({"sobre_a_clinica": cfg["sobre_clinica"]} if cfg.get("sobre_clinica") else {}),
     }

@@ -83,7 +83,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** marcar uma consulta para depois de amanhã, avançar o relógio e ver o lembrete no WhatsApp e no painel. Responder "1" e ver o card ir para *Confirmado*. Repetir com um paciente que faz aniversário hoje.
 
-## Etapa 7 — Admin multi-tenant — 🔧 7A ✅, 7B ✅, 7C em andamento
+## Etapa 7 — Admin multi-tenant ✅ (20/11/2026)
 **Entrega:** criar e configurar clínicas sem mexer no código.
 - Login de administrador e de usuários da clínica.
 - Configurações em abas (spec 07): Perfil, Horários de Funcionamento, Procedimentos, Mensagens e Usuários (+ Profissionais, Assistente e Canais).
@@ -93,7 +93,8 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 - **7A ✅ feito (20/11/2026):** login pelo Supabase Auth com cookie httpOnly e renovação automática; papéis super_admin / clinic_admin / reception; todas as rotas do painel conferem a clínica (teste C16 varre todas); senha provisória com troca obrigatória; "Esqueci minha senha"; `scripts/usuarios.py`.
 - **7B ✅ feito (20/11/2026):** área `/admin` só para o super admin — Clínicas (lista, criar com padrões + 1º admin com senha provisória, editar, suspender/reativar, "Entrar como" registrado em `admin_audit`), WhatsApp por clínica (ligar sessão existente ou criar nova, status, QR code, apontar webhook, reiniciar, desligar), Usuários da clínica, Uso do mês e Configurações da plataforma (somente leitura).
-- 7C: abas de Configurações da clínica.
+- **7C ✅ feito (20/11/2026):** Configurações em abas — Perfil (nome, endereço, telefone de urgência, "sobre a clínica" usado pela assistente, troca de senha), Horários (dia a dia com pausas; avisa consultas que ficariam de fora), Procedimentos (duração, preço, quem faz, "IA pode marcar"; excluir usado = desligar), Profissionais (cor, procedimentos, ativo, férias/folgas), Assistente (nome, tratamento, preços, regras da agenda), Mensagens e Usuários. Ver: toda a equipe; mudar: só o admin da clínica.
+- Ficou para depois: logo da clínica (upload de imagem), aba "Canais" para o admin da clínica (hoje o WhatsApp é cuidado pelo admin geral) e horário próprio por profissional pela tela.
 
 **O que testar:** criar uma 2ª clínica, conversar com a Ísis de cada uma e confirmar que **uma não enxerga nada da outra**.
 

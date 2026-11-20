@@ -207,3 +207,42 @@ export type Plataforma = {
   modo_teste_numeros: number | null
   supabase: string | null
 }
+
+// ---------------------------------------------------------------- configurações da clínica (7C)
+export type PerfilClinica = { nome: string; telefone: string; endereco: string | null; slug: string; telefone_urgencia: string | null; sobre: string | null }
+export type PausaDia = { inicio: string; fim: string }
+export type DiaHorario = { weekday: number; nome: string; ativo: boolean; inicio: string; fim: string; pausas: PausaDia[] }
+export type Horarios = { dias: DiaHorario[]; profissionais_com_horario_proprio: string[] }
+export type ConsultaAfetada = { id: string; quando: string; paciente: string | null; profissional: string }
+export type ProcedimentoCfg = {
+  id: string
+  nome: string
+  descricao: string | null
+  duracao_min: number
+  preco_centavos: number | null
+  ativo: boolean
+  ia_pode_marcar: boolean
+  profissionais: string[]
+  consultas_futuras: number
+}
+export type Folga = { id: string; professional_id: string | null; inicio: string; fim: string; motivo: string | null }
+export type ProfissionalCfg = {
+  id: string
+  nome: string
+  especialidade: string | null
+  cor: string | null
+  ativo: boolean
+  procedimentos: string[]
+  horario_proprio: boolean
+  folgas: Folga[]
+}
+export type AssistenteCfg = {
+  nome_assistente: string
+  tratamento: 'você' | 'senhor(a)'
+  mostrar_precos: boolean
+  antecedencia_min_horas: number
+  horizonte_dias: number
+  aviso_cancelamento_horas: number
+  limite_consultas_futuras: number
+  lembrete_hora: string
+}
