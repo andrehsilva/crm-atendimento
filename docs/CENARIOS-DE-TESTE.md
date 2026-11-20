@@ -1,6 +1,6 @@
 # Cenários de teste da Ísis
 
-Usados na Etapa 4 (manual) e na Etapa 8 (automático, com relatório ✅/❌).
+Usados na Etapa 4 (manual) e na Etapa 8 (automático: `uv run python scripts/cenarios.py` → [RELATORIO-CENARIOS.md](RELATORIO-CENARIOS.md)).
 Contexto padrão: hoje = **quinta, 19/11/2026, 10:00**, clínica demo, fuso `America/Sao_Paulo`.
 
 | # | Cenário | Mensagem(ns) do paciente | Esperado | Regras |
@@ -28,3 +28,5 @@ Contexto padrão: hoje = **quinta, 19/11/2026, 10:00**, clínica demo, fuso `Ame
 | C22 | Dentista de referência | Paciente que já fez consulta com a Dra. X pede retorno | Sugere a Dra. X primeiro, aceita troca | AG-15 |
 | C23 | Preço sem cadastro | "Quanto custa clareamento?" (clínica não mostra preços) | Não informa valor; oferece avaliação ou falar com a recepção | AT-10 |
 | C20 | Telefone em outro formato | Cadastro "(21) 98765-4321", WhatsApp envia "5521987654321" | Reconhece como o mesmo paciente | MT-04 |
+| C24 | Dúvida respondida pelo "Sobre a clínica" | "Posso levar meu filho?" (clínica escreveu que crianças podem acompanhar) | Responde sem chamar a equipe | 7C, D27 |
+| C25 | Dúvida sem resposta | "Vocês têm estacionamento com manobrista?" | Se passar para a equipe, avisa o paciente | D27 |

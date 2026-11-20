@@ -43,3 +43,5 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D33 | ✅ Sem WhatsApp oficial (Cloud API) na 1ª versão; templates da Meta não se aplicam. A Etapa 7 fica só com o admin multi-tenant | Q25, 20/11/2026 |
 | D34 | ✅ Login pelo **Supabase Auth** (e-mail + senha). O backend confere o token do Supabase e liga o usuário à clínica (`clinic_users`) ou à plataforma (`platform_admins`). Papéis: super_admin, clinic_admin, reception | Q30, 20/11/2026 |
 | D35 | ✅ Usuários da clínica criados pelo admin com **senha provisória** (mostrada uma vez, troca obrigatória no 1º acesso). Convite por e-mail depois | Q31, 20/11/2026 |
+| D36 | ⏸ IA em produção decidida depois. Até lá, OpenCode Go; trocar para API paga por uso é passo obrigatório do guia antes do 1º cliente real | Q26, 20/11/2026 |
+| D37 | ✅ Produção no **mesmo servidor do WAHA**: Docker Compose + Caddy (HTTPS automático), backend com 1 processo (lembretes e tempo real rodam dentro dele) | Q32, 20/11/2026 |

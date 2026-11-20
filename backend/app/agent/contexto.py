@@ -64,6 +64,10 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
         f"- {quando(c['starts_at'], tz)}: {c['procedimento']} com {c['profissional']} ({c['status']}) [id {c['id']}]"
         for c in futuras
     ) or "- nenhuma"
+    limite = clinica["regras"].limite_consultas_futuras
+    if len(futuras) >= limite:  # RN-AG-08: a assistente já começa sabendo que não cabe consulta nova
+        consultas += (f"\n- ⚠️ Já atingiu o limite da clínica ({limite} consultas futuras): para marcar outra, "
+                      "precisa remarcar ou cancelar uma destas. Explique isso antes de buscar horários.")
 
     ref = None
     if paciente.get("preferred_professional_id"):

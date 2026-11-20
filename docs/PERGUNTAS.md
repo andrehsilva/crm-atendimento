@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 30 de 39 resolvidas (27 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 32 de 40 resolvidas (28 respondidas · 4 adiadas) — 20/11/2026.
 
 ---
 
@@ -29,9 +29,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## ⚫ Bloqueia a Etapa 8 (Produção)
 
-- [ ] **Q26 — IA em produção:** o OpenCode Go foi feito para ferramentas de programação, e o OpenCode monitora o uso que foge desse padrão. Para atender clínicas de verdade, você aceita trocar para uma API paga por uso (OpenCode Zen ou OpenAI direto)? O código continua o mesmo.
-  - Sugestão: usar o Go durante o desenvolvimento e reavaliar antes da Etapa 8.
-  - Resposta:
+✅ Nada pendente — Etapa 8 liberada.
 
 ---
 
@@ -55,6 +53,7 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 - [ ] **Q10 — Convênios:** a Ísis pergunta/filtra convênio? → *"veremos depois"*. Por ora nada de convênio no sistema.
 - [ ] **Q17 — Selos/tags do cliente:** *"futuramente teremos tags por clientes, poucas: cliente novo / recorrente / em tratamento; ao sair de 'em tratamento' será colocado um 'volta em X tempo'"*. Registrado como ideia futura (D20).
 - [ ] **Q21 — Data de nascimento:** como entra no sistema? → *"veremos depois"*. Por ora: campo no cadastro, editável pela recepção.
+- [ ] **Q26 — IA em produção:** *"decidir depois"* (20/11). Por ora segue o OpenCode Go; o guia de produção traz a troca para uma API paga por uso como **passo obrigatório antes do 1º cliente** (D36).
 
 ---
 
@@ -87,3 +86,4 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 - [x] **Q25 — Templates do WhatsApp oficial:** não se aplica — sem WhatsApp oficial na 1ª versão. *(20/11 → D33)*
 - [x] **Q30 — Login:** **Supabase Auth** (e-mail + senha, "Esqueci minha senha" por e-mail). *(20/11 → D34)*
 - [x] **Q31 — Usuários da clínica:** o admin cria com **senha provisória**, que a pessoa troca no 1º acesso; convite por e-mail fica para depois. *(20/11 → D35)*
+- [x] **Q32 — Hospedagem:** no **mesmo servidor do WAHA** (servidor do usuário), com Docker e HTTPS automático. *(20/11 → D37)*

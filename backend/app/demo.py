@@ -43,36 +43,13 @@ def _dia_util(d: date, n: int, evitar_sexta: bool = False) -> date:
     return d
 
 
-def criar_demo(conn, reset: bool = False) -> str:
-    existente = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
-    if existente and not reset:
-        return str(existente[0])
-    guardados = {"whatsapp": [], "usuarios": [], "settings": None}
-    if existente:
-        # O reset recria a clínica do zero, mas mantém o WhatsApp, os usuários e as configurações ligados a ela
-        guardados["whatsapp"] = conn.execute(
-            "select session, status, phone, enabled from whatsapp_instances where clinic_id = %s", existente).fetchall()
-        guardados["usuarios"] = conn.execute(
-            "select user_id, role, active from clinic_users where clinic_id = %s", existente).fetchall()
-        guardados["settings"] = conn.execute("select settings from clinics where id = %s", existente).fetchone()[0]
-        conn.execute("delete from appointment_events where clinic_id = %s", existente)
-        conn.execute("delete from outbound_messages where clinic_id = %s", existente)
-        conn.execute("delete from appointments where clinic_id = %s", existente)
-        conn.execute("delete from clinics where id = %s", existente)
-
+def criar_estrutura(conn, nome: str, telefone: str, slug: str, endereco: str | None) -> tuple:
+    """Clínica com horários, procedimentos e os 2 dentistas de exemplo (usada pela demo e pela bateria de cenários)."""
     clinic_id = conn.execute(
         """insert into clinics (name, phone, slug, timezone, address)
            values (%s, %s, %s, %s, %s) returning id""",
-        ("Clínica Dental Demo", TELEFONE_CLINICA, SLUG, "America/Sao_Paulo", "Rua das Flores, 123 — Centro, São Paulo/SP"),
+        (nome, telefone, slug, "America/Sao_Paulo", endereco),
     ).fetchone()[0]
-    if guardados["settings"]:
-        conn.execute("update clinics set settings = %s where id = %s", (Jsonb(guardados["settings"]), clinic_id))
-    for sessao, status, fone, ligado in guardados["whatsapp"]:
-        conn.execute("insert into whatsapp_instances (clinic_id, session, status, phone, enabled) values (%s,%s,%s,%s,%s)",
-                     (clinic_id, sessao, status, fone, ligado))
-    for uid, papel, ativo in guardados["usuarios"]:
-        conn.execute("insert into clinic_users (clinic_id, user_id, role, active) values (%s,%s,%s,%s)", (clinic_id, uid, papel, ativo))
-
     for wd, (ini, fim) in HORARIO.items():
         conn.execute("insert into clinic_hours (clinic_id, weekday, start_time, end_time) values (%s,%s,%s,%s)",
                      (clinic_id, wd, ini, fim))
@@ -106,6 +83,36 @@ def criar_demo(conn, reset: bool = False) -> str:
                 "insert into professional_hours (clinic_id, professional_id, weekday, start_time, end_time) values (%s,%s,%s,%s,%s)",
                 (clinic_id, prof["Dr. Bruno Costa"], wd, ini, fim),
             )
+
+    return clinic_id, serv, prof
+
+
+def criar_demo(conn, reset: bool = False) -> str:
+    existente = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
+    if existente and not reset:
+        return str(existente[0])
+    guardados = {"whatsapp": [], "usuarios": [], "settings": None}
+    if existente:
+        # O reset recria a clínica do zero, mas mantém o WhatsApp, os usuários e as configurações ligados a ela
+        guardados["whatsapp"] = conn.execute(
+            "select session, status, phone, enabled from whatsapp_instances where clinic_id = %s", existente).fetchall()
+        guardados["usuarios"] = conn.execute(
+            "select user_id, role, active from clinic_users where clinic_id = %s", existente).fetchall()
+        guardados["settings"] = conn.execute("select settings from clinics where id = %s", existente).fetchone()[0]
+        conn.execute("delete from appointment_events where clinic_id = %s", existente)
+        conn.execute("delete from outbound_messages where clinic_id = %s", existente)
+        conn.execute("delete from appointments where clinic_id = %s", existente)
+        conn.execute("delete from clinics where id = %s", existente)
+
+    clinic_id, serv, prof = criar_estrutura(
+        conn, "Clínica Dental Demo", TELEFONE_CLINICA, SLUG, "Rua das Flores, 123 — Centro, São Paulo/SP")
+    if guardados["settings"]:
+        conn.execute("update clinics set settings = %s where id = %s", (Jsonb(guardados["settings"]), clinic_id))
+    for sessao, status, fone, ligado in guardados["whatsapp"]:
+        conn.execute("insert into whatsapp_instances (clinic_id, session, status, phone, enabled) values (%s,%s,%s,%s,%s)",
+                     (clinic_id, sessao, status, fone, ligado))
+    for uid, papel, ativo in guardados["usuarios"]:
+        conn.execute("insert into clinic_users (clinic_id, user_id, role, active) values (%s,%s,%s,%s)", (clinic_id, uid, papel, ativo))
 
     hoje = datetime.now(TZ).date()
 

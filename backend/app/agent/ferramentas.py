@@ -174,6 +174,14 @@ def criar_ferramentas(s: Sessao) -> list:
                  "observacao": "ofereça no máximo 3" if saida else "sem horários livres nesse período; sugira outros dias"}
             if not serv["bookable_by_ai"]:
                 r["aviso"] = "este procedimento é marcado só pela recepção: use chamar_humano"
+            # RN-AG-08 (achado da Etapa 8): avisa o limite ANTES de oferecer horários para uma consulta NOVA
+            limite = s.clinica["regras"].limite_consultas_futuras
+            futuras = len(servico.consultas_do_paciente(conn, s.cid, s.paciente["phone"], agora=s.agora))
+            if futuras >= limite:
+                r["limite_de_consultas"] = (
+                    f"o paciente já tem {futuras} consulta(s) futura(s) e o limite da clínica é {limite}: "
+                    "uma consulta NOVA não pode ser marcada. Se ele quer marcar mais uma, explique o limite e ofereça "
+                    "remarcar ou cancelar uma das que já tem. (Se ele está remarcando, pode seguir.)")
             return log("horarios_livres", args, _json(r))
         except AgendaError as e:
             return log("horarios_livres", args, _erro(e))
@@ -225,6 +233,12 @@ def criar_ferramentas(s: Sessao) -> list:
         except AgendaError as e:
             return log("preparar_agendamento", args, _erro(e))
 
+    def _aviso_politica() -> str:
+        h = s.clinica["regras"].aviso_cancelamento_horas
+        h = int(h) if float(h).is_integer() else h
+        return (f"Atenção: faltam menos de {h} horas para a consulta; a política da clínica pede aviso com pelo menos "
+                f"{h} horas de antecedência")
+
     def preparar_remarcacao(consulta_id: str, novo_inicio: str, dentista: str | None = None) -> str:
         """PASSO 1 para remarcar: valida a troca SEM gravar e devolve resumo e token.
 
@@ -244,12 +258,14 @@ def criar_ferramentas(s: Sessao) -> list:
             nova = r["consulta"]
             resumo = (f"Remarcar {antiga['procedimento']} de {quando(antiga['starts_at'], s.tz)} "
                       f"para {quando(nova['starts_at'], s.tz)} com {nova['profissional']}")
+            if r["aviso_politica"]:  # RN-AG-07: o aviso vai DENTRO do resumo, para o paciente ver (achado da Etapa 8)
+                resumo = f"{resumo}. {_aviso_politica()}"
             payload = {"consulta_id": str(antiga["id"]), "novo_inicio": dt.isoformat(),
                        "professional_id": str(prof["id"]) if prof else None}
             out = {"ok": True, "resumo": resumo, "token": _token("remarcar", payload, resumo),
                    "proximo_passo": "mostre o resumo e pergunte se pode confirmar"}
             if r["aviso_politica"]:
-                out["aviso_politica"] = "a consulta original é em menos de 24h: avise a política da clínica"
+                out["proximo_passo"] = "mostre o resumo COM o aviso da política e pergunte se pode confirmar"
             return log("preparar_remarcacao", args, _json(out))
         except AgendaError as e:
             return log("preparar_remarcacao", args, _erro(e))
@@ -267,11 +283,13 @@ def criar_ferramentas(s: Sessao) -> list:
             r = _validar(lambda: servico.cancelar(conn, s.cid, appointment_id=c["id"], telefone=s.paciente["phone"],
                                                   ator="isis", motivo=motivo, agora=s.agora))
             resumo = f"Cancelar {c['procedimento']} com {c['profissional']} de {quando(c['starts_at'], s.tz)}"
+            if r["aviso_politica"]:  # RN-AG-07: o aviso vai DENTRO do resumo, para o paciente ver (achado da Etapa 8)
+                resumo = f"{resumo}. {_aviso_politica()}"
             out = {"ok": True, "resumo": resumo,
                    "token": _token("cancelar", {"consulta_id": str(c["id"]), "motivo": motivo}, resumo),
                    "proximo_passo": "mostre o resumo e pergunte se pode confirmar"}
             if r["aviso_politica"]:
-                out["aviso_politica"] = "cancelamento com menos de 24h: avise a política da clínica"
+                out["proximo_passo"] = "mostre o resumo COM o aviso da política e pergunte se pode confirmar"
             return log("preparar_cancelamento", args, _json(out))
         except AgendaError as e:
             return log("preparar_cancelamento", args, _erro(e))

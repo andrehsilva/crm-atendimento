@@ -4,7 +4,7 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 7 concluída** — login, admin geral e configurações da clínica. Próximo: **Etapa 8** — bateria de testes e produção.
+> Status: **Etapa 8 em andamento** — 8A (bateria de cenários: 25 de 25) pronta; próximo: 8B (produção).
 >
 > Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 
@@ -23,6 +23,7 @@ Pré-requisitos: `uv` (Python), Node 20+. Na pasta do projeto:
 - Banco: `cd backend; uv run python scripts/migrar.py` (cria/atualiza tabelas) e `uv run python scripts/seed_demo.py --reset` (recria a clínica demo)
 - WhatsApp (WAHA): túnel `cloudflared tunnel --url http://localhost:8000` → copie o endereço `https://….trycloudflare.com` para `PUBLIC_BASE_URL` no `backend\.env` e rode `uv run python scripts/whatsapp.py webhook demo --confirmar`. O endereço do túnel muda a cada vez que ele é aberto.
 - Usuários do painel: `uv run python scripts/usuarios.py` (super-admin, clínica, listar). A senha provisória aparece uma vez e é trocada no 1º acesso.
+- Bateria de cenários com a IA de verdade: `uv run python scripts/cenarios.py` (gera `docs/RELATORIO-CENARIOS.md`).
 
 ## O que vamos ver na tela (resultado final)
 

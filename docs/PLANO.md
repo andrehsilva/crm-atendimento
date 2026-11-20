@@ -98,10 +98,12 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 
 **O que testar:** criar uma 2ª clínica, conversar com a Ísis de cada uma e confirmar que **uma não enxerga nada da outra**.
 
-## Etapa 8 — Bateria de testes e produção
+## Etapa 8 — Bateria de testes e produção — 🔧 8A ✅, 8B em andamento
 **Entrega:** relatório de cenários (`CENARIOS-DE-TESTE.md`) rodado automaticamente + `GUIA-PRODUCAO.md`.
 
 **O que testar:** ler o relatório, em que cada cenário aparece com ✅/❌ e o motivo.
+- **8A ✅ feito (20/11/2026):** `scripts/cenarios.py` conversa com a IA de verdade numa clínica de teste e confere no banco; C16/C17/C18/C20 pelos testes automáticos. Resultado: 25 de 25. Achados corrigidos: transferência sem texto virava "problema técnico"; aviso da política de cancelamento não chegava ao paciente; limite de consultas só era avisado no fim; impasse (deadlock) em marcações simultâneas.
+- 8B: preparação para produção (Docker, HTTPS, proteções) + `GUIA-PRODUCAO.md`.
 
 ---
 

@@ -120,3 +120,26 @@ def test_remarcar_em_dois_passos(conn, clinica):
     _paciente_responde(conn, s)
     assert json.loads(f["confirmar_acao"](r["token"]))["ok"]
     assert S.detalhar(conn, clinica.id, c["id"])["status"] == "cancelada"
+
+
+class _IAQueChamaEquipeEFicaCalada:
+    """Simula o achado da Etapa 8: o modelo chama chamar_humano e não escreve nada."""
+
+    def __init__(self, tools, **_):
+        self.tools = {f.__name__: f for f in tools}
+
+    def run(self, _entrada):
+        self.tools["chamar_humano"]("pediu atendente")
+        return type("R", (), {"content": ""})()
+
+
+def test_chamou_equipe_sem_texto_nao_pede_para_repetir(conn, clinica, monkeypatch):
+    from app.agent import isis
+
+    monkeypatch.setattr(isis, "Agent", _IAQueChamaEquipeEFicaCalada)
+    s, _ = _sessao(conn, clinica)
+    c = S.carregar_clinica(conn, clinica.id)
+    saida = isis.responder(conn, c, s.paciente, s.conversa, "Quero falar com uma pessoa", AGORA)
+    assert saida.startswith(isis.TEXTO_TRANSFERENCIA) and isis.AVISO_EQUIPE in saida
+    assert isis.MSG_FALHA not in saida
+    assert conn.execute("select status from conversations where id = %s", (s.conversa["id"],)).fetchone()[0] == "humano"

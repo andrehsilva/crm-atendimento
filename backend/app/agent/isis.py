@@ -29,10 +29,17 @@ AVISO_EQUIPE = "A partir de agora, quem continua seu atendimento é a nossa equi
 AVISO_FECHADA = " Como estamos fora do horário, a resposta vem no próximo horário de atendimento."
 
 
+TEXTO_TRANSFERENCIA = "Tudo bem! Já chamei alguém da nossa equipe para continuar com você."
+
+
+def chamou_equipe(chamadas: list[dict]) -> bool:
+    return any(c.get("ferramenta") == "chamar_humano" for c in chamadas)
+
+
 def com_aviso_de_transferencia(saida: str, chamadas: list[dict], aberta: bool) -> str:
     """RN-AT-06 (D27): se a Ísis passou a conversa para a equipe, o paciente SEMPRE é avisado de que
     ela parou de responder. O aviso vem do código, não depende da IA lembrar."""
-    if not any(c.get("ferramenta") == "chamar_humano" for c in chamadas):
+    if not chamou_equipe(chamadas):
         return saida
     return f"{saida}\n\n{AVISO_EQUIPE}{'' if aberta else AVISO_FECHADA}"
 
@@ -85,13 +92,18 @@ def responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, r
         r = agente.run(entrada)
         saida = (r.content or "").strip() if isinstance(r.content, str) else str(r.content or "").strip()
         if not saida:
-            raise RuntimeError("resposta vazia do modelo")
+            if not chamou_equipe(sessao.chamadas):
+                raise RuntimeError("resposta vazia do modelo")
+            saida = TEXTO_TRANSFERENCIA  # chamou a equipe e não escreveu nada: o código completa (achado da Etapa 8)
         saida = com_aviso_de_transferencia(saida, sessao.chamadas, esta_aberta(conn, clinica, agora))
     except Exception as e:  # noqa: BLE001 — qualquer falha vira resposta padrão
         erro = f"{type(e).__name__}: {e}"[:500]
         log.warning("falha da Ísis: %s", erro)
         saida = None
 
+    if saida is None and chamou_equipe(sessao.chamadas):
+        # A conversa já foi para a equipe: nunca pedir para o paciente repetir
+        saida = com_aviso_de_transferencia(TEXTO_TRANSFERENCIA, sessao.chamadas, esta_aberta(conn, clinica, agora))
     if saida is None:
         anterior = conn.execute(
             "select content from messages where conversation_id = %s and author = 'isis' order by created_at desc limit 1",

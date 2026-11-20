@@ -282,6 +282,9 @@ def marcar(
                 "LIMITE_CONSULTAS", f"O paciente já tem {ativas} consulta(s) marcada(s); o limite é {limite}."
             )
 
+        # C17 (Etapa 8): pedidos simultâneos para o mesmo dentista entram na fila, um de cada vez.
+        # Sem isso, o banco às vezes detecta um impasse (deadlock) em vez de responder "horário ocupado".
+        conn.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"agenda:{professional_id}",))
         try:
             with conn.transaction():
                 consulta = _cur(conn).execute(
@@ -293,7 +296,7 @@ def marcar(
                         "paciente_botao" if ator == "paciente" else ator, _remarcando,
                     ),
                 ).fetchone()
-        except errors.ExclusionViolation as e:
+        except (errors.ExclusionViolation, errors.DeadlockDetected) as e:
             raise AgendaError("HORARIO_OCUPADO", "Esse horário acabou de ser ocupado. Escolha outro.") from e
 
         _registrar(conn, clinic_id, consulta["id"], ator, "marcada", depois=_foto(consulta))
