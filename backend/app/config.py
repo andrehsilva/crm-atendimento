@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    env: str = "dev"
+    env: str = "dev"  # "dev" (sua máquina) ou "prod" (servidor) — ver docs/GUIA-PRODUCAO.md
     app_name: str = "Ísis"
     frontend_origin: str = "http://localhost:5173"
     timezone_default: str = "America/Sao_Paulo"
@@ -35,6 +35,17 @@ class Settings(BaseSettings):
     # Etapa 6 — mensagens automáticas (lembretes, avisos, aniversário)
     mensagens_automaticas: bool = True  # liga o envio automático da fila
     envio_somente_para: str = ""  # ENV=dev: só envia para estes telefones (separados por vírgula); vazio = não envia
+
+    # Etapa 8B — produção
+    chat_teste: bool | None = None  # chat web de TESTE (D15) aberto? Padrão: só em dev (em produção expõe conversas)
+
+    @property
+    def producao(self) -> bool:
+        return self.env != "dev"
+
+    @property
+    def chat_teste_liberado(self) -> bool:
+        return (not self.producao) if self.chat_teste is None else self.chat_teste
 
 
 @lru_cache

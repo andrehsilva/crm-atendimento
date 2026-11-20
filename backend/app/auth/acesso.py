@@ -48,7 +48,7 @@ class Usuario:
 
 
 def gravar_cookies(response: Response, sessao: sb.Sessao) -> None:
-    seguro = get_settings().env != "dev"  # em produção só por HTTPS
+    seguro = get_settings().producao  # em produção o cookie só viaja por HTTPS
     response.set_cookie(COOKIE_ACESSO, sessao.access_token, max_age=sessao.expires_in, httponly=True,
                         secure=seguro, samesite="lax", path="/")
     response.set_cookie(COOKIE_RENOVACAO, sessao.refresh_token, max_age=RENOVACAO_DIAS * 86400, httponly=True,

@@ -1,0 +1,35 @@
+# Endereço do site:
+#   - domínio (ex.: isis.seudominio.com.br) → o Caddy tira o certificado HTTPS sozinho (portas 80 e 443 livres);
+#   - ":80" → atrás de um proxy que já existe no servidor (Nginx/Traefik), que cuida do HTTPS.
+# Vem da variável ENDERECO_SITE (arquivo .env da raiz). Ver docs/GUIA-PRODUCAO.md.
+{$ENDERECO_SITE::80} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# API, webhooks e saúde → backend. flush_interval -1: o tempo real (SSE) chega na hora.
+	@backend path /api/* /webhooks/* /health
+	handle @backend {
+		reverse_proxy backend:8000 {
+			flush_interval -1
+		}
+	}
+
+	# Arquivos do painel com nome versionado: cache longo
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+
+	# Painel (aplicação de página única): qualquer outra rota abre o index.html
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

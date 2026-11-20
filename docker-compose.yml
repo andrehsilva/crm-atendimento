@@ -1,0 +1,42 @@
+# Produção da Ísis (Etapa 8B, D37). Passo a passo em docs/GUIA-PRODUCAO.md.
+#   docker compose up -d --build
+name: isis
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: backend/.env          # segredos ficam só no servidor (nunca no git)
+    environment:
+      ENV: prod
+    expose:
+      - "8000"
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    environment:
+      ENDERECO_SITE: ${ENDERECO_SITE:-:80}
+    ports:
+      - "${PORTA_HTTP:-80}:80"
+      - "${PORTA_HTTPS:-443}:443"
+    volumes:
+      - caddy_data:/data            # certificados HTTPS (não apague)
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+volumes:
+  caddy_data:
+  caddy_config:

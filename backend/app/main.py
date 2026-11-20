@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app.agenda.erros import AgendaError
 from app.api import admin, agenda, auth, configuracoes, health, painel, webhooks
 from app.config import get_settings
+from app.core.producao import problemas
 from app.db import fechar_pool
 from app.eventos import distribuidor
 from app.mensagens.agendador import agendador
@@ -18,6 +19,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    if erros := problemas(settings):  # Etapa 8B: em produção, configuração ruim = não sobe
+        raise RuntimeError("Configuração de produção incompleta:\n- " + "\n- ".join(erros))
     if settings.database_url:
         distribuidor.iniciar(settings.database_url)  # tempo real: escuta avisos do banco
         if settings.mensagens_automaticas and settings.waha_api_url:
@@ -28,7 +31,13 @@ async def lifespan(_: FastAPI):
     fechar_pool()
 
 
-app = FastAPI(title="Ísis API", version="0.3.0", lifespan=lifespan)
+app = FastAPI(
+    title="Ísis API", version="0.8.0", lifespan=lifespan,
+    # Em produção a documentação interativa da API fica desligada (não expõe o mapa das rotas)
+    docs_url=None if settings.producao else "/docs",
+    redoc_url=None if settings.producao else "/redoc",
+    openapi_url=None if settings.producao else "/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,

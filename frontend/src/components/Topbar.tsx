@@ -1,23 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
+import { useSaude } from '../lib/saude'
 import { aplicarTema, temaAtual, type Tema } from '../lib/tema'
-
-type Saude = { status: string; banco: { status: string }; ia: { status: string } }
 
 export function Topbar() {
   const [tema, setTema] = useState<Tema>(temaAtual)
-  const [saude, setSaude] = useState<Saude | null>(null)
-  const [erro, setErro] = useState(false)
-
-  useEffect(() => {
-    fetch('/health')
-      .then((r) => {
-        if (!r.ok) throw new Error(String(r.status))
-        return r.json()
-      })
-      .then(setSaude)
-      .catch(() => setErro(true))
-  }, [])
+  const q = useSaude()
+  const saude = q.data ?? null
+  const erro = q.isError
 
   function alternar() {
     const novo: Tema = tema === 'claro' ? 'escuro' : 'claro'

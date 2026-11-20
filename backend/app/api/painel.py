@@ -11,7 +11,7 @@ from typing import Literal
 from uuid import UUID
 
 import psycopg
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
@@ -287,7 +287,14 @@ def responder_paciente(clinic_id: UUID, conversa_id: UUID, body: RespostaEquipe,
     return m
 
 
-@router.get("/web/{slug}/history", summary="Chat de teste: histórico (o paciente vê respostas da equipe)")
+def _chat_teste() -> None:
+    """D15: o chat web é só para TESTE (qualquer um digita qualquer telefone). Em produção fica desligado."""
+    if not get_settings().chat_teste_liberado:
+        raise HTTPException(404, "Não encontrado")
+
+
+@router.get("/web/{slug}/history", summary="Chat de teste: histórico (o paciente vê respostas da equipe)",
+            dependencies=[Depends(_chat_teste)])
 def chat_historico(slug: str, telefone: str, conn: Conn = Depends(get_conn)):
     clin = chat.clinica_por_slug(conn, slug)
     p = servico.buscar_paciente(conn, clin["id"], telefone)
@@ -311,12 +318,12 @@ class MensagemChat(BaseModel):
     texto: str = Field(min_length=1, max_length=2000)
 
 
-@router.post("/web/{slug}/session", summary="Chat de teste: entrar com o telefone")
+@router.post("/web/{slug}/session", summary="Chat de teste: entrar com o telefone", dependencies=[Depends(_chat_teste)])
 def chat_inicio(slug: str, body: InicioChat, conn: Conn = Depends(get_conn)):
     return chat.iniciar(conn, slug, body.telefone, body.nome)
 
 
-@router.post("/web/{slug}/messages", summary="Chat de teste: enviar mensagem")
+@router.post("/web/{slug}/messages", summary="Chat de teste: enviar mensagem", dependencies=[Depends(_chat_teste)])
 def chat_mensagem(slug: str, body: MensagemChat, conn: Conn = Depends(get_conn)):
     return chat.receber(conn, slug, body.telefone, body.texto)
 

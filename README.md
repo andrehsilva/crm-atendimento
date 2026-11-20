@@ -4,7 +4,7 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 8 em andamento** — 8A (bateria de cenários: 25 de 25) pronta; próximo: 8B (produção).
+> Status: **1ª versão concluída (Etapas 0–8)** — bateria 25 de 25, pronta para produção. Para colocar no ar: [docs/GUIA-PRODUCAO.md](docs/GUIA-PRODUCAO.md).
 >
 > Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 

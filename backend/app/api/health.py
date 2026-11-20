@@ -16,4 +16,5 @@ async def health(ia: bool = Query(False, description="Também testa o modelo de 
         ia_info = await run_in_threadpool(checar_ia, s)
     else:
         ia_info = {"status": "configurada" if s.llm_api_key else "não configurada"}
-    return {"status": "ok", "app": s.app_name, "env": s.env, "banco": banco, "ia": ia_info}
+    return {"status": "ok", "app": s.app_name, "env": s.env, "banco": banco, "ia": ia_info,
+            "chat_teste": s.chat_teste_liberado}

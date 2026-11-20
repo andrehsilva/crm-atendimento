@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { nomePapel, useAuth } from '../lib/auth'
 import { useClinica } from '../lib/clinica'
+import { useSaude } from '../lib/saude'
 import {
   CalendarDays,
   ChevronLeft,
@@ -29,6 +30,7 @@ export function Sidebar() {
   const [recolhida, setRecolhida] = useState(false)
   const { clinica } = useClinica()
   const { usuario, sair } = useAuth()
+  const saude = useSaude() // em produção o chat de teste fica desligado (8B)
   const papel = usuario.super_admin ? 'super_admin' : (usuario.clinicas.find((c) => c.clinic_id === clinica.id)?.papel ?? '')
   const iniciais = (usuario.nome || usuario.email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('')
 
@@ -84,14 +86,16 @@ export function Sidebar() {
             {!recolhida && 'Admin geral'}
           </Link>
         )}
-        <Link
-          to="/demo"
-          title="Demonstração: chat + agenda + mensagens"
-          className="flex items-center gap-3 rounded-xl border border-dashed border-line px-4 py-3 text-sm text-muted hover:border-primary hover:text-primary"
-        >
-          <MonitorPlay className="size-5 shrink-0" />
-          {!recolhida && 'Abrir demonstração'}
-        </Link>
+        {saude.data?.chat_teste && (
+          <Link
+            to="/demo"
+            title="Demonstração: chat + agenda + mensagens"
+            className="flex items-center gap-3 rounded-xl border border-dashed border-line px-4 py-3 text-sm text-muted hover:border-primary hover:text-primary"
+          >
+            <MonitorPlay className="size-5 shrink-0" />
+            {!recolhida && 'Abrir demonstração'}
+          </Link>
+        )}
       </div>
 
       <div className="flex items-center gap-3 border-t border-line px-5 py-4">
