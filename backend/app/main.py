@@ -11,6 +11,7 @@ from app.api import agenda, health, painel, webhooks
 from app.config import get_settings
 from app.db import fechar_pool
 from app.eventos import distribuidor
+from app.mensagens.agendador import agendador
 
 settings = get_settings()
 
@@ -19,7 +20,10 @@ settings = get_settings()
 async def lifespan(_: FastAPI):
     if settings.database_url:
         distribuidor.iniciar(settings.database_url)  # tempo real: escuta avisos do banco
+        if settings.mensagens_automaticas and settings.waha_api_url:
+            agendador.iniciar()  # lembretes, avisos e aniversários (Etapa 6)
     yield
+    agendador.parar()
     distribuidor.parar()
     fechar_pool()
 

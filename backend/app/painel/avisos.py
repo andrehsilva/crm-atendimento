@@ -1,9 +1,10 @@
 """Mensagens automáticas da agenda (RN-MS-01, D18): entram na fila de saída.
 
-Nesta etapa só ficam registradas ("na fila"). O envio pelo WhatsApp entra nas Etapas 5/6.
+O envio pelo WhatsApp é feito por app/mensagens/envio.py (Etapa 6). Ao marcar ou remarcar,
+também fica agendado o lembrete do dia útil anterior (RN-MS-02).
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from app.eventos import avisar
@@ -36,7 +37,8 @@ def primeiro_nome(nome: str | None) -> str:
     return (nome or "").split(" ")[0] or "tudo bem"
 
 
-def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | None = None) -> None:
+def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | None = None,
+               agora: datetime | None = None) -> None:
     tz = clinica["tz"]
     texto = MODELOS[tipo].format(
         nome=primeiro_nome(consulta["paciente"]),
@@ -58,4 +60,8 @@ def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | 
            values (%s, %s, %s, %s, %s)""",
         (clinica["id"], consulta["patient_id"], consulta["id"], tipo, texto),
     )
+    if tipo in ("confirmacao", "remarcacao"):
+        from app.mensagens.lembretes import agendar_lembrete  # import aqui para evitar import circular
+
+        agendar_lembrete(conn, clinica, consulta, agora or datetime.now(UTC))
     avisar(conn, clinica["id"], "mensagens", consulta["id"])

@@ -13,6 +13,7 @@ import psycopg
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
 
 from app.agenda import servico
@@ -21,6 +22,9 @@ from app.config import get_settings
 from app.db import get_conn
 from app.eventos import avisar, distribuidor
 from app.canais import whatsapp
+from app.core import relogio
+from app.mensagens import lembretes
+from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
 
 router = APIRouter(prefix="/api", tags=["painel"])
@@ -326,3 +330,109 @@ def reset_demo(conn: Conn = Depends(get_conn)):
 
     clinic_id = criar_demo(conn, reset=True)
     return {"clinic_id": clinic_id}
+
+
+def _so_dev() -> None:
+    if get_settings().env != "dev":
+        raise AgendaError("SO_HUMANO", "Disponível só em desenvolvimento.")
+
+
+def _estado_relogio(conn, clinic_id: UUID | None) -> dict:
+    agora = relogio.agora()
+    prox = None
+    if clinic_id:
+        r = conn.execute(
+            """select min(scheduled_for) from outbound_messages
+               where clinic_id = %s and status = 'agendada' and kind = 'lembrete' and scheduled_for > %s""",
+            (clinic_id, agora),
+        ).fetchone()
+        prox = r[0] if r else None
+    return {
+        "agora": agora,
+        "simulado": relogio.deslocamento() > timedelta(0),
+        "adiantado_min": round(relogio.deslocamento().total_seconds() / 60),
+        "proximo_lembrete": prox,
+        "envio_automatico": agendador._thread is not None,
+    }
+
+
+@router.get("/dev/relogio", summary="Relógio de teste: horário simulado e próximo lembrete (só com ENV=dev)")
+def ver_relogio(clinic_id: UUID | None = None, conn: Conn = Depends(get_conn)):
+    _so_dev()
+    return _estado_relogio(conn, clinic_id)
+
+
+@router.post("/dev/relogio/proximo-lembrete", summary="Adianta o relógio até o próximo lembrete e envia a fila")
+def relogio_proximo_lembrete(clinic_id: UUID, conn: Conn = Depends(get_conn)):
+    _so_dev()
+    prox = _estado_relogio(conn, clinic_id)["proximo_lembrete"]
+    if not prox:
+        raise AgendaError("DADOS_INVALIDOS", "Não há lembrete na fila desta clínica.")
+    relogio.avancar_para(prox + timedelta(seconds=1))
+    conn.commit()
+    return {"rodada": rodada(), **_estado_relogio(conn, clinic_id)}
+
+
+@router.post("/dev/relogio/zerar", summary="Volta o relógio para o horário real")
+def relogio_zerar(clinic_id: UUID | None = None, conn: Conn = Depends(get_conn)):
+    _so_dev()
+    relogio.zerar()
+    return _estado_relogio(conn, clinic_id)
+
+
+@router.post("/dev/mensagens/rodar", summary="Envia agora a fila vencida (sem esperar os 30 s)")
+def mensagens_rodar():
+    _so_dev()
+    return rodada()
+
+
+# ---------------------------------------------------------------------------
+# Configurações › Mensagens: aniversário (RN-DP-01/02)
+# ---------------------------------------------------------------------------
+class ConfigAniversario(BaseModel):
+    ativo: bool
+    texto: str = Field(min_length=1, max_length=lembretes.LIMITE_TEXTO_ANIVERSARIO)
+    hora: str = Field("09:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+class PreviaAniversario(BaseModel):
+    texto: str = Field(min_length=1, max_length=lembretes.LIMITE_TEXTO_ANIVERSARIO)
+
+
+def _exemplo_nome(conn, clinic_id: UUID) -> str:
+    r = conn.execute(
+        "select name from patients where clinic_id = %s and name is not null order by birth_date is null, created_at limit 1",
+        (clinic_id,),
+    ).fetchone()
+    return r[0] if r else "Maria Souza"
+
+
+@router.get("/clinics/{clinic_id}/mensagens/aniversario", summary="Configuração da mensagem de aniversário")
+def ver_aniversario(clinic_id: UUID, conn: Conn = Depends(get_conn)):
+    c = servico.carregar_clinica(conn, clinic_id)
+    cfg = c["settings"] or {}
+    texto = lembretes.texto_aniversario(cfg)
+    return {
+        "ativo": bool(cfg.get("aniversario_ativo", False)),
+        "texto": texto,
+        "hora": c["regras"].aniversario_hora,
+        "previa": lembretes.montar_aniversario(texto, _exemplo_nome(conn, clinic_id), c["name"]),
+        "limite": lembretes.LIMITE_TEXTO_ANIVERSARIO,
+    }
+
+
+@router.post("/clinics/{clinic_id}/mensagens/aniversario/previa", summary="Prévia com dados reais (sem salvar)")
+def previa_aniversario(clinic_id: UUID, body: PreviaAniversario, conn: Conn = Depends(get_conn)):
+    c = servico.carregar_clinica(conn, clinic_id)
+    return {"previa": lembretes.montar_aniversario(body.texto, _exemplo_nome(conn, clinic_id), c["name"])}
+
+
+@router.put("/clinics/{clinic_id}/mensagens/aniversario", summary="Salvar a mensagem de aniversário")
+def salvar_aniversario(clinic_id: UUID, body: ConfigAniversario, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    conn.execute(
+        "update clinics set settings = coalesce(settings, '{}'::jsonb) || %s where id = %s",
+        (Jsonb({"aniversario_ativo": body.ativo, "aniversario_texto": body.texto.strip(), "aniversario_hora": body.hora}),
+         clinic_id),
+    )
+    return ver_aniversario(clinic_id, conn)

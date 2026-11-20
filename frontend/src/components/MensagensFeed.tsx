@@ -13,13 +13,21 @@ const TIPO: Record<Mensagem['kind'], [string, CorSelo]> = {
   aniversario: ['Aniversário', 'roxo'],
 }
 
-const STATUS: Record<Mensagem['status'], string> = {
-  agendada: '⏳ na fila (envio pelo WhatsApp na Etapa 6)',
-  enviada: '✓ enviada',
-  entregue: '✓✓ entregue',
-  lida: '✓✓ lida',
-  falhou: '⚠ falhou',
-  cancelada: '— cancelada',
+function situacao(m: Mensagem, tz: string): string {
+  switch (m.status) {
+    case 'agendada':
+      return `⏳ agendada para ${dataCurta(m.scheduled_for, tz)}, ${hora(m.scheduled_for, tz)}`
+    case 'enviada':
+      return `✓ enviada${m.sent_at ? ` em ${dataCurta(m.sent_at, tz)}, ${hora(m.sent_at, tz)}` : ''}`
+    case 'entregue':
+      return '✓✓ entregue'
+    case 'lida':
+      return '✓✓ lida'
+    case 'falhou':
+      return `⚠ falhou${m.error ? ` — ${m.error}` : ''}`
+    case 'cancelada':
+      return `— cancelada${m.error ? ` (${m.error})` : ''}`
+  }
 }
 
 /** Painel "Mensagens enviadas" (imagem 03, coluna direita). */
@@ -46,7 +54,7 @@ export function MensagensFeed({ tipo, limite = 100 }: { tipo?: string; limite?: 
             </div>
             <p className="mb-2 text-xs text-muted">Para {m.paciente ?? 'paciente'} · {telefone(m.telefone)}</p>
             <p className="whitespace-pre-line text-sm">{m.body}</p>
-            <p className="mt-2 text-xs text-muted">{STATUS[m.status]}</p>
+            <p className={`mt-2 text-xs ${m.status === 'falhou' ? 'text-red-600' : 'text-muted'}`}>{situacao(m, tz)}</p>
           </li>
         )
       })}

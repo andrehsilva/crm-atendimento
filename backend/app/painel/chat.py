@@ -10,7 +10,9 @@ from psycopg.rows import dict_row
 from app.agenda.erros import AgendaError
 from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
 from app.agent import isis
+from app.core import relogio
 from app.eventos import avisar
+from app.mensagens import lembretes
 from app.painel import crm
 
 
@@ -76,6 +78,12 @@ def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
         return []
     novas = [entrada]
     crm.registrar(conn, clinica["id"], paciente["id"], "conversando", "paciente")
+
+    # RN-MS-04 / RN-DP-04: "1" confirma o lembrete e "PARAR" desliga disparos — resolvidos no código, sem IA
+    if responder and (direta := lembretes.tratar_resposta(conn, clinica, paciente, conversa, texto, relogio.agora())):
+        novas.append(_gravar(conn, clinica["id"], conversa["id"], "out", "isis", direta))
+        avisar(conn, clinica["id"], "conversa", conversa["id"])
+        return novas
 
     if conversa["status"] == "humano" or not responder:  # RN-AT-06: Ísis pausada, a recepção responde
         avisar(conn, clinica["id"], "conversa", conversa["id"])

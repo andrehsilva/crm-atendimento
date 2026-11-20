@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     public_base_url: str = ""         # endereço público do backend (túnel em dev), ex.: https://xxx.trycloudflare.com
     waha_simular_digitacao: bool = True  # "visto" + "digitando…" antes de responder (evita bloqueio)
 
+    # Etapa 6 — mensagens automáticas (lembretes, avisos, aniversário)
+    mensagens_automaticas: bool = True  # liga o envio automático da fila
+    envio_somente_para: str = ""  # ENV=dev: só envia para estes telefones (separados por vírgula); vazio = não envia
+
 
 @lru_cache
 def get_settings() -> Settings:

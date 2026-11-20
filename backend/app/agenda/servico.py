@@ -300,7 +300,7 @@ def marcar(
         detalhe = detalhar(conn, clinic_id, consulta["id"])
         if not _remarcando:  # na remarcação, quem avisa é remarcar()
             crm.registrar(conn, clinic_id, paciente["id"], "consulta_agendada", ator, "agendado")
-            avisos.enfileirar(conn, clinica, detalhe, "confirmacao")
+            avisos.enfileirar(conn, clinica, detalhe, "confirmacao", agora=agora)
     return detalhe
 
 
@@ -337,7 +337,7 @@ def cancelar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | Non
     detalhe = detalhar(conn, clinic_id, appointment_id)
     crm.registrar(conn, clinic_id, c["patient_id"], "consulta_cancelada", ator,
                   crm.etapa_apos_cancelar(conn, clinic_id, c["patient_id"], agora))
-    avisos.enfileirar(conn, clinica, detalhe, "cancelamento")
+    avisos.enfileirar(conn, clinica, detalhe, "cancelamento", agora=agora)
     # RN-AG-07: cancela, mas avisa a política e sinaliza a recepção
     return {"consulta": detalhe, "aviso_politica": _aviso_politica(clinica, c["starts_at"], agora)}
 
@@ -364,7 +364,7 @@ def remarcar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | Non
         )
         _registrar(conn, clinic_id, appointment_id, ator, "remarcada", _foto(antiga), {"nova_consulta": str(nova["id"])})
         crm.registrar(conn, clinic_id, antiga["patient_id"], "consulta_remarcada", ator, "agendado")
-        avisos.enfileirar(conn, clinica, nova, "remarcacao", anterior=antiga)
+        avisos.enfileirar(conn, clinica, nova, "remarcacao", anterior=antiga, agora=agora)
     return {"consulta": nova, "anterior_id": appointment_id, "aviso_politica": _aviso_politica(clinica, antiga["starts_at"], agora)}
 
 

@@ -9,7 +9,7 @@ import { Clientes } from './pages/Clientes'
 import { Crm } from './pages/Crm'
 import { Dashboard } from './pages/Dashboard'
 import { Demo } from './pages/Demo'
-import { EmBreve } from './pages/EmBreve'
+import { Configuracoes } from './pages/Configuracoes'
 import { Mensagens } from './pages/Mensagens'
 
 const queryClient = new QueryClient({
@@ -44,10 +44,7 @@ export default function App() {
                 <Route path="agenda" element={<Agenda />} />
                 <Route path="mensagens" element={<Mensagens />} />
                 <Route path="clientes" element={<Clientes />} />
-                <Route
-                  path="configuracoes"
-                  element={<EmBreve titulo="Configurações" subtitulo="Gerencie o perfil, horários e procedimentos da clínica" etapa="Etapa 7" />}
-                />
+                <Route path="configuracoes" element={<Configuracoes />} />
               </Route>
             </Routes>
           </BrowserRouter>

@@ -19,13 +19,21 @@ se dia_lembrete/hora já passou → não cria (RN-MS-03)
 ajusta para fora da janela de silêncio (RN-MS-09)
 ```
 
-## Envio
-- APScheduler a cada 1 min: pega `status='agendada' AND scheduled_for <= agora` com `FOR UPDATE SKIP LOCKED` → envia pelo canal da conversa → `enviada` / `falhou` (até 3 tentativas).
-- Webhooks de status do WhatsApp atualizam para `entregue`/`lida`.
-- Cada mudança publica evento para o painel "Mensagens enviadas".
+## Envio (implementado na Etapa 6)
+- Processo em segundo plano dentro do backend (`app/mensagens/agendador.py`), a cada 30 s: gera os aniversários do dia e envia a fila vencida (`status='agendada' AND scheduled_for <= agora`), uma por vez, com `FOR UPDATE SKIP LOCKED`.
+- Envia pelo WAHA da clínica (`whatsapp_instances`), com "visto" + "digitando…". Sucesso → `enviada`; falha → tenta de novo em alguns minutos, até 3 vezes → `falhou`.
+- Travas no código: silêncio 21h–08h (RN-MS-09), 20/min e 300/dia por clínica (RN-DP-07), PARAR/SAIR só afeta aniversário (RN-DP-04).
+- A mensagem enviada também entra na conversa do paciente: aparece no painel e a Ísis vê no histórico (RN-DP-09).
+- **Modo de teste (ENV=dev):** só envia para os telefones de `ENVIO_SOMENTE_PARA`; os demais ficam `cancelada` com o motivo. Os dados de exemplo têm telefones inventados que podem ser de pessoas reais.
+- Status `entregue`/`lida` pelo WhatsApp: ainda não (depois).
+
+## Resposta ao lembrete (sem IA)
+- "1" (ou "confirmo") → consulta `confirmada` e card em *Confirmado*, com resposta fixa. Só vale se o lembrete for a **última mensagem enviada** na conversa e tiver no máximo 72 h.
+- "2" e "3" → vão para a Ísis, que vê o lembrete no histórico e remarca/cancela em dois passos.
+- "PARAR"/"SAIR" → desliga os disparos (aniversário).
 
 ## Relógio simulado (desenvolvimento)
-Variável `FAKE_NOW` + botão no painel "avançar para o horário do próximo lembrete" — testar sem esperar.
+Na tela **Mensagens**: "Avançar até o próximo lembrete" adianta o relógio do envio até o horário do lembrete e envia a fila na hora. "Voltar ao horário real" desfaz. O ajuste vale só para o envio automático e some quando o backend reinicia.
 
 ## Textos (templates editáveis por clínica)
 ```

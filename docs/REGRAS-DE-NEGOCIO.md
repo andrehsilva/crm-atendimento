@@ -58,13 +58,13 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 |---|---|---|---|
 | RN-MS-01 | Ao marcar, remarcar ou cancelar — **pela Ísis ou pela recepção** — enviar mensagem imediata ao paciente com data, hora, profissional e endereço. | Código | ✅ |
 | RN-MS-02 | Lembrete no **dia útil anterior** à consulta, às **09:00** no fuso da clínica (segunda → sexta). Config: dias de antecedência e horário. | Código + Config | ✅ |
-| RN-MS-03 | Consulta marcada depois do horário do lembrete do dia anterior → não envia lembrete (a confirmação já cobre). | Código | 🟡 |
-| RN-MS-04 | Lembrete traz opções: **Confirmar · Remarcar · Cancelar**. "Confirmar" muda status para `confirmada` sem passar pela IA. | Código | 🟡 |
+| RN-MS-03 | Consulta marcada depois do horário do lembrete do dia anterior → não envia lembrete (a confirmação já cobre). | Código | ✅ |
+| RN-MS-04 | Lembrete traz opções: **Confirmar · Remarcar · Cancelar**. "Confirmar" muda status para `confirmada` sem passar pela IA. | Código | ✅ |
 | RN-MS-05 | Lembrete não respondido até **X h** antes (config) → aparece em destaque no painel para a recepção ligar. | Código + Config | 🟡 |
-| RN-MS-06 | Cada mensagem automática é registrada (`outbound_messages`) com status: `agendada`, `enviada`, `entregue`, `lida`, `falhou`. | Código | 🟡 |
-| RN-MS-07 | Se a consulta for cancelada/remarcada, lembretes pendentes dela são cancelados. | Código | 🟡 |
+| RN-MS-06 | Cada mensagem automática é registrada (`outbound_messages`) com status: `agendada`, `enviada`, `entregue`, `lida`, `falhou`. | Código | ✅ |
+| RN-MS-07 | Se a consulta for cancelada/remarcada, lembretes pendentes dela são cancelados. | Código | ✅ |
 | RN-MS-08 | WhatsApp oficial: fora da janela de 24h só se envia por **template aprovado**. | Código | 🟡 |
-| RN-MS-09 | Não enviar mensagens automáticas entre **21h e 08h** (config). | Código + Config | 🟡 |
+| RN-MS-09 | Não enviar mensagens automáticas entre **21h e 08h** (config). | Código + Config | ✅ |
 
 ## Painel operacional (RN-PN)
 
@@ -85,11 +85,11 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | Código | Regra | Onde | Status |
 |---|---|---|---|
 | RN-DP-01 | Aniversário: se ativado, todo dia às **09:00** (config) envia a mensagem para pacientes com nascimento hoje; **1× por ano** por paciente. | Código + Config | ✅ |
-| RN-DP-02 | Variáveis disponíveis: `{nome}` (primeiro nome), `{clinica}`; limite de **1000** caracteres; prévia com dados reais antes de salvar. | Código | ✅ (layout) |
-| RN-DP-03 | Nascido em 29/02: em ano não bissexto recebe em 28/02. | Código | 🟡 |
-| RN-DP-04 | Paciente que responder "PARAR"/"SAIR" (ou marcado no cadastro) não recebe mais disparos; confirmações/lembretes de consulta continuam. | Código | 🟡 |
+| RN-DP-02 | Variáveis disponíveis: `{nome}` (primeiro nome), `{clinica}`; limite de **1000** caracteres; prévia com dados reais antes de salvar. | Código | ✅ |
+| RN-DP-03 | Nascido em 29/02: em ano não bissexto recebe em 28/02. | Código | ✅ |
+| RN-DP-04 | Paciente que responder "PARAR"/"SAIR" (ou marcado no cadastro) não recebe mais disparos; confirmações/lembretes de consulta continuam. | Código | ✅ |
 | RN-DP-05 | ⏸ Mensagens programadas (ex.: férias coletivas): público filtrado, contagem e prévia; 1× por paciente. **Depois da 1ª versão** (D24). | Código | ⏸ |
-| RN-DP-06 | Disparos só por WhatsApp e só para quem tem telefone válido; respeitam silêncio noturno (RN-MS-09). | Código | 🟡 |
-| RN-DP-07 | WAHA: no máximo **20 msgs/min** e **300/dia** por clínica (config), com intervalo aleatório — reduz risco de banimento. | Código + Config | 🟡 |
+| RN-DP-06 | Disparos só por WhatsApp e só para quem tem telefone válido; respeitam silêncio noturno (RN-MS-09). | Código | ✅ |
+| RN-DP-07 | WAHA: no máximo **20 msgs/min** e **300/dia** por clínica (config), com intervalo aleatório — reduz risco de banimento. | Código + Config | ✅ |
 | RN-DP-08 | API oficial: disparos usam **template aprovado**; sem template aprovado o disparo não é liberado. | Código | 🟡 |
-| RN-DP-09 | Resposta a um disparo vai para a Ísis com o contexto da mensagem enviada. | Código | 🟡 |
+| RN-DP-09 | Resposta a um disparo vai para a Ísis com o contexto da mensagem enviada. | Código | ✅ |

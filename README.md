@@ -4,7 +4,7 @@
 consultas e **dispara confirmações e lembretes**. A plataforma é **multi-tenant**: uma
 mesma instalação atende várias clínicas, cada uma com layout, regras e canais próprios.
 
-> Status: **Etapa 6 em andamento** — lembretes, avisos e aniversário. Etapa 5 (WhatsApp pelo WAHA) concluída.
+> Status: **Etapa 6 concluída** — lembretes, avisos e aniversário pelo WhatsApp. Próximo: **Etapa 7** — admin multi-tenant.
 >
 > Teste das conexões: `cd backend; uv run python scripts/teste_conexoes.py`
 

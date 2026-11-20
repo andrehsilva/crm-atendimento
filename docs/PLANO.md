@@ -74,7 +74,7 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 **O que testar:** ler o QR com um celular de teste, mandar "oi" de outro celular, marcar uma consulta pelo WhatsApp e ver a consulta na agenda.
 - Feito em 20/11/2026: tabela `whatsapp_instances`, rota `/webhooks/waha` com HMAC, envio com "digitando…", resposta da recepção pelo WhatsApp e script `scripts/whatsapp.py`. Testado pelo usuário com a sessão `what-andre` em 20/11/2026.
 
-## Etapa 6 — Lembretes, avisos e aniversário
+## Etapa 6 — Lembretes, avisos e aniversário ✅ (20/11/2026)
 **Entrega:** mensagens automáticas pelo WhatsApp.
 - Aviso imediato ao marcar, remarcar ou cancelar, **pela Ísis ou pela recepção** (D18).
 - Lembrete às 09:00 do dia útil anterior. O paciente responde: 1 Confirmar · 2 Remarcar · 3 Cancelar.

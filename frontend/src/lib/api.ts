@@ -27,6 +27,7 @@ export const api = {
   get: <T>(url: string) => req<T>('GET', url),
   post: <T>(url: string, corpo?: unknown) => req<T>('POST', url, corpo ?? {}),
   patch: <T>(url: string, corpo: unknown) => req<T>('PATCH', url, corpo),
+  put: <T>(url: string, corpo: unknown) => req<T>('PUT', url, corpo),
 }
 
 // ---------------------------------------------------------------- tipos
@@ -89,7 +90,9 @@ export type Mensagem = {
   body: string
   status: 'agendada' | 'enviada' | 'entregue' | 'lida' | 'falhou' | 'cancelada'
   created_at: string
+  scheduled_for: string
   sent_at: string | null
+  error: string | null
   paciente: string | null
   telefone: string
 }
@@ -119,3 +122,13 @@ export type Dashboard = {
 }
 
 export type MensagemChat = { id: string; direction: 'in' | 'out'; author: string; content: string; created_at: string }
+
+export type Relogio = {
+  agora: string
+  simulado: boolean
+  adiantado_min: number
+  proximo_lembrete: string | null
+  envio_automatico: boolean
+}
+
+export type ConfigAniversario = { ativo: boolean; texto: string; hora: string; previa: string; limite: number }

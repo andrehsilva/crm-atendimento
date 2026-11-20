@@ -19,6 +19,14 @@ class RegrasClinica:
     aviso_cancelamento_horas: float = 24  # RN-AG-07
     limite_consultas_futuras: int = 2  # RN-AG-08
     passo_slot_min: int = 30  # grade de horários oferecidos
+    # Mensagens automáticas (Etapa 6)
+    lembrete_hora: str = "09:00"  # RN-MS-02
+    lembrete_dias_uteis: int = 1  # RN-MS-02: quantos dias úteis antes
+    silencio_inicio: str = "21:00"  # RN-MS-09
+    silencio_fim: str = "08:00"
+    aniversario_hora: str = "09:00"  # RN-DP-01
+    envio_por_minuto: int = 20  # RN-DP-07
+    envio_por_dia: int = 300
 
     @classmethod
     def de_settings(cls, settings: dict | None) -> "RegrasClinica":

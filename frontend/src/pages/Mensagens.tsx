@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PageHeader } from '../components/PageHeader'
 import { MensagensFeed } from '../components/MensagensFeed'
+import { RelogioTeste } from '../components/RelogioTeste'
 
 const FILTROS = [
   ['', 'Todas'],
@@ -16,6 +17,7 @@ export function Mensagens() {
   return (
     <>
       <PageHeader titulo="Mensagens" subtitulo="Confirmações, lembretes e felicitações enviadas aos pacientes" />
+      <RelogioTeste />
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTROS.map(([valor, rotulo]) => (
           <button key={valor} type="button" onClick={() => setTipo(valor)}
