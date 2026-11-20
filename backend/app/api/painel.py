@@ -1,6 +1,7 @@
 """API do painel da clínica: dashboard, CRM, clientes, mensagens, chat de teste e tempo real.
 
-⚠️ Ainda SEM login (Etapa 7). Só rode em localhost.
+Login obrigatório (Etapa 7A): o router inteiro passa por `acesso`, que confere a clínica de cada rota.
+Exceção proposital: o chat web de TESTE (/api/web/..., D15).
 """
 
 import asyncio
@@ -19,6 +20,7 @@ from pydantic import BaseModel, Field
 from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.config import get_settings
+from app.auth.acesso import acesso, exigir_admin_clinica, exigir_super_admin
 from app.db import get_conn
 from app.eventos import avisar, distribuidor
 from app.canais import whatsapp
@@ -27,7 +29,7 @@ from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
 
-router = APIRouter(prefix="/api", tags=["painel"])
+router = APIRouter(prefix="/api", tags=["painel"], dependencies=[Depends(acesso)])
 Conn = psycopg.Connection
 
 
@@ -323,7 +325,8 @@ def chat_mensagem(slug: str, body: MensagemChat, conn: Conn = Depends(get_conn))
 # Desenvolvimento
 # ---------------------------------------------------------------------------
 @router.post("/dev/reset-demo", summary="Recria a clínica demo (só com ENV=dev)")
-def reset_demo(conn: Conn = Depends(get_conn)):
+def reset_demo(request: Request, conn: Conn = Depends(get_conn)):
+    exigir_super_admin(request)
     if get_settings().env != "dev":
         raise AgendaError("SO_HUMANO", "Disponível só em desenvolvimento.")
     from app.demo import criar_demo
@@ -428,7 +431,8 @@ def previa_aniversario(clinic_id: UUID, body: PreviaAniversario, conn: Conn = De
 
 
 @router.put("/clinics/{clinic_id}/mensagens/aniversario", summary="Salvar a mensagem de aniversário")
-def salvar_aniversario(clinic_id: UUID, body: ConfigAniversario, conn: Conn = Depends(get_conn)):
+def salvar_aniversario(clinic_id: UUID, body: ConfigAniversario, request: Request, conn: Conn = Depends(get_conn)):
+    exigir_admin_clinica(request, clinic_id)
     servico.carregar_clinica(conn, clinic_id)
     conn.execute(
         "update clinics set settings = coalesce(settings, '{}'::jsonb) || %s where id = %s",

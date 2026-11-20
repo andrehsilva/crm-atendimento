@@ -8,6 +8,8 @@ export class ErroApi extends Error {
   }
 }
 
+export const EVENTO_SESSAO = 'isis:sessao'
+
 async function req<T>(metodo: string, url: string, corpo?: unknown): Promise<T> {
   const r = await fetch(`/api${url}`, {
     method: metodo,
@@ -16,6 +18,10 @@ async function req<T>(metodo: string, url: string, corpo?: unknown): Promise<T> 
   })
   const dados = await r.json().catch(() => null)
   if (!r.ok) {
+    // Sessão vencida ou senha provisória: avisa o ProvedorAuth para mostrar a tela certa
+    if (dados?.codigo === 'NAO_AUTENTICADO' || dados?.codigo === 'TROCAR_SENHA') {
+      if (!url.startsWith('/auth/')) window.dispatchEvent(new Event(EVENTO_SESSAO))
+    }
     if (dados?.codigo) throw new ErroApi(dados.codigo, dados.mensagem)
     const detalhe = Array.isArray(dados?.detail) ? dados.detail.map((d: { msg: string }) => d.msg).join('; ') : dados?.detail
     throw new ErroApi('ERRO', detalhe || `Erro ${r.status}`)
@@ -132,3 +138,12 @@ export type Relogio = {
 }
 
 export type ConfigAniversario = { ativo: boolean; texto: string; hora: string; previa: string; limite: number }
+
+export type Usuario = {
+  id: string
+  email: string
+  nome: string | null
+  super_admin: boolean
+  trocar_senha: boolean
+  clinicas: { clinic_id: string; papel: 'clinic_admin' | 'reception' }[]
+}

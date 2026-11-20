@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.agenda.erros import AgendaError
-from app.api import agenda, health, painel, webhooks
+from app.api import agenda, auth, health, painel, webhooks
 from app.config import get_settings
 from app.db import fechar_pool
 from app.eventos import distribuidor
@@ -46,6 +46,7 @@ async def erro_de_agenda(_: Request, e: AgendaError) -> JSONResponse:
 
 
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(agenda.router)
 app.include_router(painel.router)
 app.include_router(webhooks.router)

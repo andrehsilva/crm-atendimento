@@ -8,23 +8,27 @@ from typing import Literal
 from uuid import UUID
 
 import psycopg
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from psycopg.rows import dict_row
 
 from app.agenda import servico
 from app.agenda.erros import AgendaError
+from app.auth.acesso import acesso, usuario_da_requisicao
 from app.db import get_conn
 
-router = APIRouter(prefix="/api", tags=["agenda"])
+router = APIRouter(prefix="/api", tags=["agenda"], dependencies=[Depends(acesso)])  # login obrigatório (7A)
 
 Conn = psycopg.Connection
 
 
-@router.get("/clinics", summary="Lista clínicas (para descobrir o id da clínica demo)")
-def listar_clinicas(conn: Conn = Depends(get_conn)):
+@router.get("/clinics", summary="Clínicas que o usuário logado pode ver (super admin: todas)")
+def listar_clinicas(request: Request, conn: Conn = Depends(get_conn)):
+    u = usuario_da_requisicao(request)
     return conn.cursor(row_factory=dict_row).execute(
-        "select id, name, phone, slug, timezone, status from clinics order by name"
+        """select id, name, phone, slug, timezone, status from clinics
+           where %s or id = any(%s) order by name""",
+        (u.super_admin, list(u.clinicas)),
     ).fetchall()
 
 

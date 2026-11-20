@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ProvedorAvisos } from './components/Aviso'
 import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
+import { ProvedorAuth } from './lib/auth'
 import { ProvedorClinica } from './lib/clinica'
 import { Agenda } from './pages/Agenda'
 import { Clientes } from './pages/Clientes'
@@ -11,6 +12,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Demo } from './pages/Demo'
 import { Configuracoes } from './pages/Configuracoes'
 import { Mensagens } from './pages/Mensagens'
+import { RedefinirSenha } from './pages/RedefinirSenha'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 } },
@@ -30,13 +32,25 @@ function Layout() {
   )
 }
 
+/** Tudo que exige login: painel da clínica e demonstração. */
+function AreaLogada() {
+  return (
+    <ProvedorAuth>
+      <ProvedorClinica>
+        <Outlet />
+      </ProvedorClinica>
+    </ProvedorAuth>
+  )
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ProvedorAvisos>
-        <ProvedorClinica>
-          <BrowserRouter>
-            <Routes>
+        <BrowserRouter>
+          <Routes>
+            <Route path="redefinir-senha" element={<RedefinirSenha />} />
+            <Route element={<AreaLogada />}>
               <Route path="demo" element={<Demo />} />
               <Route element={<Layout />}>
                 <Route index element={<Dashboard />} />
@@ -46,9 +60,9 @@ export default function App() {
                 <Route path="clientes" element={<Clientes />} />
                 <Route path="configuracoes" element={<Configuracoes />} />
               </Route>
-            </Routes>
-          </BrowserRouter>
-        </ProvedorClinica>
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </ProvedorAvisos>
     </QueryClientProvider>
   )

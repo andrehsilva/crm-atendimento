@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 28 de 37 resolvidas (25 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 30 de 39 resolvidas (27 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -25,6 +25,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 ## ⚪ Bloqueia a Etapa 7 (Admin multi-tenant)
 
 ✅ Nada pendente — Etapa 7 liberada.
+
 
 ## ⚫ Bloqueia a Etapa 8 (Produção)
 
@@ -84,3 +85,5 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 - [x] **Q15 — Criação de clínicas:** só o dono da plataforma, num **painel de admin geral** (separado do painel das clínicas). Lá ele cria a instância e define nome da clínica, nome do agente, telefone, webhook/WAHA e demais configurações. *(20/11 → D30)*
 - [x] **Q2 — Terceira entrada:** nenhuma por agora. Entradas da 1ª versão: página web (teste) e WhatsApp pelo WAHA. *(20/11 → D32)*
 - [x] **Q25 — Templates do WhatsApp oficial:** não se aplica — sem WhatsApp oficial na 1ª versão. *(20/11 → D33)*
+- [x] **Q30 — Login:** **Supabase Auth** (e-mail + senha, "Esqueci minha senha" por e-mail). *(20/11 → D34)*
+- [x] **Q31 — Usuários da clínica:** o admin cria com **senha provisória**, que a pessoa troca no 1º acesso; convite por e-mail fica para depois. *(20/11 → D35)*

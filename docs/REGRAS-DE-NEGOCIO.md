@@ -13,7 +13,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 |---|---|---|---|
 | RN-MT-01 | Cada clínica é identificada pelo seu telefone (E.164), que é único na plataforma. | Código | ✅ |
 | RN-MT-02 | Um paciente é identificado pelo par (clínica, telefone do paciente). O mesmo telefone em duas clínicas são dois pacientes distintos. | Código | ✅ |
-| RN-MT-03 | Toda leitura/escrita é filtrada pela clínica da sessão. Nenhum dado cruza clínicas. | Código | 🟡 |
+| RN-MT-03 | Toda leitura/escrita é filtrada pela clínica da sessão. Nenhum dado cruza clínicas. | Código | ✅ |
 | RN-MT-04 | Telefones são normalizados para E.164 antes de comparar (aceita +55, parênteses, traço, espaços; trata 9º dígito). | Código | 🟡 |
 | RN-MT-05 | O telefone do paciente vem do canal (WhatsApp) ou do formulário (Web); nunca do que ele digita no meio da conversa. | Código | 🟡 |
 

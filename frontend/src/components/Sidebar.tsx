@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import { nomePapel, useAuth } from '../lib/auth'
 import { useClinica } from '../lib/clinica'
 import {
   CalendarDays,
   ChevronLeft,
   KanbanSquare,
+  LogOut,
   LayoutDashboard,
   MessageSquare,
   MonitorPlay,
@@ -25,6 +27,9 @@ const itens = [
 export function Sidebar() {
   const [recolhida, setRecolhida] = useState(false)
   const { clinica } = useClinica()
+  const { usuario, sair } = useAuth()
+  const papel = usuario.super_admin ? 'super_admin' : (usuario.clinicas.find((c) => c.clinic_id === clinica.id)?.papel ?? '')
+  const iniciais = (usuario.nome || usuario.email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('')
 
   return (
     <aside
@@ -79,15 +84,19 @@ export function Sidebar() {
       </div>
 
       <div className="flex items-center gap-3 border-t border-line px-5 py-4">
-        <div className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium">
-          SE
+        <div className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium uppercase">
+          {iniciais}
         </div>
         {!recolhida && (
-          <div className="leading-tight">
-            <div className="text-sm font-medium">Usuário de teste</div>
-            <div className="text-xs text-muted">Secretária</div>
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-sm font-medium" title={usuario.email}>{usuario.nome || usuario.email}</div>
+            <div className="text-xs text-muted">{nomePapel(papel)}</div>
           </div>
         )}
+        <button type="button" onClick={sair} title="Sair" aria-label="Sair"
+          className="rounded-lg p-2 text-muted hover:bg-surface-muted hover:text-text">
+          <LogOut className="size-4" />
+        </button>
       </div>
     </aside>
   )
