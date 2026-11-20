@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building, KeyRound, Shapes } from 'lucide-react'
+import { Building, Check, KeyRound, Palette, Shapes } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
 import { Botao, Campo, Entrada, Secao, Seletor } from '../../components/ui'
-import { api, type PerfilClinica, type Segmento, type TermosEditaveis, type Usuario } from '../../lib/api'
+import { api, type Aparencia, type PerfilClinica, type Segmento, type TermosEditaveis, type Usuario } from '../../lib/api'
 import { useSegmentos } from '../../lib/termos'
 import { useClinica } from '../../lib/clinica'
 import { telefone } from '../../lib/formato'
 import { problemaSenha } from '../TrocarSenha'
+import { useAuth } from '../../lib/auth'
+import { EnviarImagem, Retrato } from '../../components/Imagem'
+import { CORES_SUGERIDAS, corValida, legivel, tons } from '../../lib/marca'
 
 export function Perfil({ podeEditar }: { podeEditar: boolean }) {
   const { clinica } = useClinica()
@@ -67,6 +70,7 @@ export function Perfil({ podeEditar }: { podeEditar: boolean }) {
         </form>
       </Secao>
       <TrocarMinhaSenha />
+      <AparenciaClinica podeEditar={podeEditar} />
       <SeuNegocio valor={negocio} onMudar={setNegocio} segmentos={segmentos.data ?? []} podeEditar={podeEditar}
         enviando={salvar.isPending} onSalvar={() => salvar.mutate()} />
     </div>
@@ -91,7 +95,8 @@ function TrocarMinhaSenha() {
   })
   const tipo = mostrar ? 'text' : 'password'
   return (
-    <Secao titulo="Minha senha" icone={<KeyRound className="size-5" />}>
+    <Secao titulo="Minha conta" icone={<KeyRound className="size-5" />}>
+      <MinhaFoto />
       <form onSubmit={(e) => { e.preventDefault(); trocar.mutate() }} className="flex flex-col gap-4">
         <Campo rotulo="Senha atual"><Entrada type={tipo} autoComplete="current-password" value={f.atual} onChange={(e) => setF({ ...f, atual: e.target.value })} /></Campo>
         <Campo rotulo="Nova senha" ajuda="Mínimo de 8 caracteres, com letras e números.">
@@ -170,6 +175,133 @@ function SeuNegocio({ valor, onMudar, segmentos, podeEditar, enviando, onSalvar 
           </div>
         )}
       </form>
+    </Secao>
+  )
+}
+
+/** Foto de perfil de quem está logado (aparece no rodapé da barra lateral). */
+function MinhaFoto() {
+  const { usuario } = useAuth()
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const mudar = useMutation({
+    mutationFn: (f: File | null) => (f ? api.put<Usuario>('/auth/foto', f) : api.delete<Usuario>('/auth/foto')),
+    onSuccess: (u) => qc.setQueryData(['me'], u),
+    onError: aviso.erro,
+  })
+  return (
+    <div className="mb-5 flex items-center gap-4 border-b border-line pb-5">
+      <Retrato tamanho="size-16" nome={usuario.nome || usuario.email}
+        src={usuario.foto_versao ? `/api/auth/foto?v=${usuario.foto_versao}` : null} />
+      <div className="space-y-1">
+        <EnviarImagem tem={!!usuario.foto_versao} enviando={mudar.isPending} rotulo="Enviar foto"
+          onArquivo={(f) => mudar.mutate(f)} onRemover={() => mudar.mutate(null)} onProblema={aviso.erro} />
+        <p className="text-xs text-muted">Sua foto de perfil. PNG, JPG ou WebP até 512 KB.</p>
+      </div>
+    </div>
+  )
+}
+
+const inicial = (nome: string) => nome.replace(/^Clínica\s+/i, '').charAt(0)
+
+/** Etapa 9B (D40): logo ao lado do nome da clínica e cor principal do painel. */
+function AparenciaClinica({ podeEditar }: { podeEditar: boolean }) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const url = `/clinics/${clinica.id}/config/aparencia`
+  const q = useQuery({ queryKey: ['config', 'aparencia', clinica.id], queryFn: () => api.get<Aparencia>(url) })
+  const [cor, setCor] = useState('')
+  useEffect(() => { if (q.data) setCor(q.data.cor) }, [q.data])
+  const depois = (a: Aparencia) => {
+    qc.setQueryData(['config', 'aparencia', clinica.id], a)
+    qc.invalidateQueries({ queryKey: ['clinica'] })
+  }
+  const salvarCor = useMutation({
+    mutationFn: (c: string | null) => api.put<Aparencia>(url, { cor: c }),
+    onSuccess: (a) => { depois(a); aviso.ok('Cor salva.') },
+    onError: aviso.erro,
+  })
+  const logo = useMutation({
+    mutationFn: (f: File | null) => (f ? api.put<Aparencia>(`/clinics/${clinica.id}/config/logo`, f)
+      : api.delete<Aparencia>(`/clinics/${clinica.id}/config/logo`)),
+    onSuccess: depois,
+    onError: aviso.erro,
+  })
+  if (!q.data) return null
+  const valida = corValida(cor)
+  const ok = valida && legivel(cor)
+  const mudou = valida && cor.toLowerCase() !== q.data.cor
+  const logoSrc = q.data.logo_versao ? `/api/clinics/${clinica.id}/logo?v=${q.data.logo_versao}` : null
+
+  return (
+    <Secao titulo="Aparência" icone={<Palette className="size-5" />} className="lg:col-span-2">
+      <div className="grid gap-8 lg:grid-cols-[1fr_1.3fr_1fr]">
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium">Logo</h3>
+          <div className="flex items-center gap-4">
+            <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl border border-line bg-white">
+              {logoSrc
+                ? <img src={logoSrc} alt="Logo atual" className="size-full object-contain p-1" />
+                : <span className="text-2xl font-semibold text-primary">{inicial(clinica.name)}</span>}
+            </div>
+            <EnviarImagem tem={!!logoSrc} enviando={logo.isPending} rotulo="Enviar logo" desabilitado={!podeEditar}
+              onArquivo={(f) => logo.mutate(f)} onRemover={() => logo.mutate(null)} onProblema={aviso.erro} />
+          </div>
+          <p className="text-xs text-muted">Fica ao lado do nome da clínica, na barra lateral. PNG, JPG ou WebP até 512 KB; quadrada fica melhor.</p>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium">Cor principal</h3>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Cores sugeridas">
+            {CORES_SUGERIDAS.map((c) => {
+              const ativa = c.cor === cor.toLowerCase()
+              return (
+                <button key={c.cor} type="button" role="radio" aria-checked={ativa} title={c.nome} aria-label={c.nome}
+                  disabled={!podeEditar} onClick={() => setCor(c.cor)} style={{ background: c.cor }}
+                  className={`grid size-9 place-items-center rounded-full text-white outline-offset-2 transition-transform hover:scale-105 disabled:cursor-not-allowed ${ativa ? 'outline-2 outline-text' : ''}`}>
+                  {ativa && <Check className="size-4" />}
+                </button>
+              )
+            })}
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="color" aria-label="Escolher outra cor" disabled={!podeEditar} value={valida ? cor.toLowerCase() : '#000000'}
+              onChange={(e) => setCor(e.target.value)} className="h-9 w-12 cursor-pointer rounded-lg border border-line bg-surface p-1" />
+            <Entrada aria-label="Código da cor" disabled={!podeEditar} value={cor} maxLength={7} className="w-28 font-mono"
+              onChange={(e) => setCor(e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`)} />
+          </div>
+          {valida && !ok && (
+            <p className="text-xs text-red-600 dark:text-red-400">Cor clara demais: textos e botões ficariam difíceis de ler. Escolha um tom mais escuro.</p>
+          )}
+          {podeEditar && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Botao disabled={!ok || !mudou || salvarCor.isPending} onClick={() => salvarCor.mutate(cor)}>Salvar cor</Botao>
+              {q.data.cor !== q.data.cor_padrao && (
+                <Botao variante="fantasma" disabled={salvarCor.isPending} onClick={() => salvarCor.mutate(null)}>Voltar à cor da Ísis</Botao>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium">Prévia</h3>
+          <div className="marca-escopo space-y-3 rounded-2xl border border-line bg-bg p-4"
+            style={tons(valida ? cor.toLowerCase() : q.data.cor) as CSSProperties}>
+            <div className="flex items-center gap-2">
+              {logoSrc
+                ? <img src={logoSrc} alt="" className="size-8 rounded-lg border border-line bg-white object-contain p-0.5" />
+                : <span className="grid size-8 place-items-center rounded-lg bg-primary text-sm font-semibold text-primary-contrast">{inicial(clinica.name)}</span>}
+              <span className="truncate text-sm font-medium">{clinica.name}</span>
+            </div>
+            <div className="rounded-xl bg-primary-soft px-3 py-2 text-sm text-primary">Agenda</div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-primary-contrast">Salvar</span>
+              <span className="text-sm text-primary underline">Ver detalhes</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </Secao>
   )
 }

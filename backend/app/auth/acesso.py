@@ -33,6 +33,7 @@ class Usuario:
     super_admin: bool
     trocar_senha: bool
     clinicas: dict[UUID, str] = field(default_factory=dict)  # clinic_id → papel
+    foto_versao: int | None = None  # muda a cada foto nova (vai na URL da imagem)
 
     def papel(self, clinic_id: UUID) -> str | None:
         if self.super_admin:
@@ -42,7 +43,7 @@ class Usuario:
     def publico(self) -> dict:
         return {
             "id": str(self.id), "email": self.email, "nome": self.nome, "super_admin": self.super_admin,
-            "trocar_senha": self.trocar_senha,
+            "trocar_senha": self.trocar_senha, "foto_versao": self.foto_versao,
             "clinicas": [{"clinic_id": str(c), "papel": p} for c, p in self.clinicas.items()],
         }
 
@@ -60,9 +61,11 @@ def apagar_cookies(response: Response) -> None:
     response.delete_cookie(COOKIE_RENOVACAO, path="/")
 
 
-def _carregar(conn, user_id: str) -> Usuario:
+def carregar_usuario(conn, user_id: str) -> Usuario:
     r = conn.execute(
-        "select user_id, email, name, must_change_password, active from app_users where user_id = %s", (user_id,)
+        """select u.user_id, u.email, u.name, u.must_change_password, u.active,
+                  (select (extract(epoch from f.updated_at) * 1000)::bigint from user_photos f where f.user_id = u.user_id)
+           from app_users u where u.user_id = %s""", (user_id,)
     ).fetchone()
     if not r or not r[4]:
         raise AgendaError("SEM_ACESSO", "Seu usuário não tem acesso ao sistema. Fale com o administrador.")
@@ -73,7 +76,8 @@ def _carregar(conn, user_id: str) -> Usuario:
                where cu.user_id = %s and cu.active and c.status = 'ativa'""", (user_id,)
         ).fetchall()
     }
-    return Usuario(id=r[0], email=r[1], nome=r[2], super_admin=admin, trocar_senha=r[3], clinicas=clinicas)
+    return Usuario(id=r[0], email=r[1], nome=r[2], super_admin=admin, trocar_senha=r[3], clinicas=clinicas,
+                   foto_versao=r[5])
 
 
 def obter_usuario(request: Request, response: Response | None, conn, pode_renovar: bool = True) -> Usuario:
@@ -97,7 +101,7 @@ def obter_usuario(request: Request, response: Response | None, conn, pode_renova
             raise AgendaError("NAO_AUTENTICADO", e.mensagem) from e
         gravar_cookies(response, nova)
         claims = sb.conferir_token(nova.access_token)
-    return _carregar(conn, claims["sub"])
+    return carregar_usuario(conn, claims["sub"])
 
 
 def _clinica_pedida(request: Request) -> UUID | None:

@@ -126,6 +126,7 @@ function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
   card: CardCrm; cor: CorSelo; titulo: string; tz: string; onDragStart: () => void; onDragEnd: () => void; onAbrir: () => void
 }) {
   const pal = useTermos()
+  const clinicaId = useClinica().clinica.id
   const parado = horasDesde(card.last_activity_at) >= PARADO_ALERTA_H
   const dias = Math.floor(horasDesde(card.created_at) / 24)
   return (
@@ -138,7 +139,9 @@ function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
         {card.recorrente && <Selo cor="roxo"><RefreshCw className="size-3" />{pal.Cliente} recorrente</Selo>}
       </div>
       <div className="flex items-center gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><User className="size-4" /></span>
+        {card.foto_versao
+          ? <img src={`/api/clinics/${clinicaId}/patients/${card.id}/foto?v=${card.foto_versao}`} alt="" className="size-9 shrink-0 rounded-full object-cover" />
+          : <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"><User className="size-4" /></span>}
         <div className="min-w-0">
           <div className="truncate font-semibold">{card.name ?? 'Sem nome'}</div>
           <div className="text-xs text-muted">{telefone(card.phone)}</div>

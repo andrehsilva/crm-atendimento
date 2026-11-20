@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from './auth'
+import { aplicarMarca } from './marca'
 import { api, EVENTO_SESSAO, type Cadastros, type Clinica } from './api'
 
 type Contexto = { clinica: Clinica; cadastros: Cadastros }
@@ -82,6 +83,12 @@ export function ProvedorClinica({ children }: { children: ReactNode }) {
     enabled: !!id,
   })
   useTempoReal(id)
+  // Cor da clínica no painel todo; ao sair (ex.: admin geral) volta para a cor da Ísis
+  const cor = clinica.data?.cor ?? null
+  useEffect(() => {
+    aplicarMarca(cor)
+    return () => aplicarMarca(null)
+  }, [cor])
 
   if (lista.isError || clinica.isError) {
     return (

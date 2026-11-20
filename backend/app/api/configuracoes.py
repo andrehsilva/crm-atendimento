@@ -21,7 +21,7 @@ from app.auth.usuarios import criar_ou_ligar
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
-from app import segmentos
+from app import aparencia, segmentos
 
 router = APIRouter(prefix="/api/clinics/{clinic_id}/config", tags=["configurações"], dependencies=[Depends(acesso)])
 
@@ -104,6 +104,50 @@ def salvar_perfil(clinic_id: UUID, body: Perfil, request: Request, conn=Depends(
         novos["lembrete_discreto"] = body.lembrete_discreto
     _settings(conn, clinic_id, novos)
     return ver_perfil(clinic_id, conn)
+
+
+# ---------------------------------------------------------------------------
+# Aparência: cor principal e logo (Etapa 9B, D40)
+# ---------------------------------------------------------------------------
+class Aparencia(BaseModel):
+    cor: str | None = Field(None, description="#RRGGBB; vazio volta para a cor padrão da Ísis")
+
+
+def _aparencia(conn, clinic_id: UUID) -> dict:
+    return {"cor": aparencia.cor_da_clinica(c_settings(conn, clinic_id)),
+            "cor_padrao": aparencia.COR_PADRAO, "logo_versao": aparencia.versao_da_logo(conn, clinic_id)}
+
+
+@router.get("/aparencia", summary="Cor e logo da clínica")
+def ver_aparencia(clinic_id: UUID, conn=Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    return _aparencia(conn, clinic_id)
+
+
+@router.put("/aparencia", summary="Salvar a cor principal")
+def salvar_aparencia(clinic_id: UUID, body: Aparencia, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    _settings(conn, clinic_id, {"cor": aparencia.validar_cor(body.cor) if body.cor else None})
+    return _aparencia(conn, clinic_id)
+
+
+@router.put("/logo", summary="Enviar a logo (o corpo é a própria imagem: PNG, JPG ou WebP até 512 KB)")
+async def enviar_logo(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
+    exigir_admin_clinica(request, clinic_id)
+    dados, mime = await aparencia.ler_imagem(request)
+    servico.carregar_clinica(conn, clinic_id)
+    conn.execute(
+        """insert into clinic_logos (clinic_id, mime, data) values (%s, %s, %s)
+           on conflict (clinic_id) do update set mime = excluded.mime, data = excluded.data, updated_at = now()""",
+        (clinic_id, mime, dados))
+    return _aparencia(conn, clinic_id)
+
+
+@router.delete("/logo", summary="Remover a logo")
+def remover_logo(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    conn.execute("delete from clinic_logos where clinic_id = %s", (clinic_id,))
+    return _aparencia(conn, clinic_id)
 
 
 # ---------------------------------------------------------------------------

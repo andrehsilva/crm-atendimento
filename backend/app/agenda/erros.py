@@ -25,6 +25,8 @@ STATUS_HTTP = {
     "SEM_ACESSO": 403,
     "TROCAR_SENHA": 403,
     "SENHA_FRACA": 422,
+    "LOGO_INVALIDA": 422,
+    "LOGO_GRANDE": 413,
 }
 
 

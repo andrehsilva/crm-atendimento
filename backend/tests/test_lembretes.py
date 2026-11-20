@@ -178,7 +178,10 @@ def test_modo_de_teste_nao_envia_para_numero_fora_da_lista(conn, ligada):
 def test_producao_envia_sem_lista(conn, ligada):
     _marcar(conn, ligada, as_(24, 9))
     _so_lembrete(conn, ligada)
-    assert envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), WahaFalso(), s=_cfg(lista="", env="prod")) == 1
+    # o banco de desenvolvimento pode ter lembretes de outras clínicas na fila: confere só os desta
+    w = WahaFalso()
+    assert envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), w, s=_cfg(lista="", env="prod")) >= 1
+    assert _status(conn, ligada)[0] == "enviada"
 
 
 def test_clinica_sem_whatsapp_marca_falha(conn, clinica):

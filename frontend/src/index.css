@@ -20,8 +20,11 @@
   --text: #1f1f22;
   --text-muted: #77737a;
   --border: #ece8e4;
-  --primary: #b85c74; /* cor da clínica (configurável no futuro) */
-  --primary-soft: #f6e4ea;
+  /* Cor da clínica (Etapa 9B): o painel troca estes 4 tons pela cor escolhida (lib/marca.ts) */
+  --marca: #b85c74;
+  --marca-soft: #f6e4ea;
+  --marca-escuro: #c66c84;
+  --marca-escuro-soft: #4a2e37;
   --primary-contrast: #ffffff;
   color-scheme: light;
 }
@@ -34,8 +37,6 @@
     --text: #f2f2f2;
     --text-muted: #a09ca3;
     --border: #3a3a3f;
-    --primary: #c66c84;
-    --primary-soft: #4a2e37;
     color-scheme: dark;
   }
 }
@@ -47,9 +48,28 @@
   --text: #f2f2f2;
   --text-muted: #a09ca3;
   --border: #3a3a3f;
-  --primary: #c66c84;
-  --primary-soft: #4a2e37;
   color-scheme: dark;
+}
+
+/* .marca-escopo: a prévia da tela de Aparência recalcula a cor com os tons dela */
+:root,
+.marca-escopo {
+  --primary: var(--marca);
+  --primary-soft: var(--marca-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]),
+  :root:not([data-theme="light"]) .marca-escopo {
+    --primary: var(--marca-escuro);
+    --primary-soft: var(--marca-escuro-soft);
+  }
+}
+
+:root[data-theme="dark"],
+:root[data-theme="dark"] .marca-escopo {
+  --primary: var(--marca-escuro);
+  --primary-soft: var(--marca-escuro-soft);
 }
 
 @theme inline {

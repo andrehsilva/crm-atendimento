@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
 
+from app import aparencia
 from app.agenda.erros import AgendaError
 from app.auth import acesso as A
 from app.auth import supabase as sb
@@ -51,7 +52,7 @@ def entrar(body: Login, response: Response, conn=Depends(get_conn)):
         sessao = sb.login(body.email.strip().lower(), body.senha)
     except sb.AuthErro as e:
         raise _erro(e) from e
-    usuario = A._carregar(conn, sessao.user_id)  # sem perfil no sistema → SEM_ACESSO
+    usuario = A.carregar_usuario(conn, sessao.user_id)  # sem perfil no sistema → SEM_ACESSO
     A.gravar_cookies(response, sessao)
     return usuario.publico()
 
@@ -107,3 +108,33 @@ def redefinir(body: Redefinir, conn=Depends(get_conn)):
         raise _erro(e) from e
     conn.execute("update app_users set must_change_password = false where user_id = %s", (claims["sub"],))
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Foto de perfil (Etapa 9B): cada usuário cuida só da própria
+# ---------------------------------------------------------------------------
+@router.get("/foto", summary="Minha foto de perfil")
+def ver_foto(request: Request, response: Response, conn=Depends(get_conn)):
+    u = A.obter_usuario(request, response, conn)
+    r = conn.execute("select mime, data from user_photos where user_id = %s", (u.id,)).fetchone()
+    if not r:
+        return Response(status_code=404)
+    return aparencia.resposta_imagem(r[0], bytes(r[1]))
+
+
+@router.put("/foto", summary="Enviar minha foto (o corpo é a própria imagem: PNG, JPG ou WebP até 512 KB)")
+async def enviar_foto(request: Request, response: Response, conn=Depends(get_conn)):
+    u = A.obter_usuario(request, response, conn)
+    dados, mime = await aparencia.ler_imagem(request)
+    conn.execute(
+        """insert into user_photos (user_id, mime, data) values (%s, %s, %s)
+           on conflict (user_id) do update set mime = excluded.mime, data = excluded.data, updated_at = now()""",
+        (u.id, mime, dados))
+    return A.carregar_usuario(conn, str(u.id)).publico()
+
+
+@router.delete("/foto", summary="Remover minha foto")
+def remover_foto(request: Request, response: Response, conn=Depends(get_conn)):
+    u = A.obter_usuario(request, response, conn)
+    conn.execute("delete from user_photos where user_id = %s", (u.id,))
+    return A.carregar_usuario(conn, str(u.id)).publico()

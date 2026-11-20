@@ -11,10 +11,12 @@ export class ErroApi extends Error {
 export const EVENTO_SESSAO = 'isis:sessao'
 
 async function req<T>(metodo: string, url: string, corpo?: unknown): Promise<T> {
+  // Arquivo (logo, foto): vai cru no corpo, com o tipo do próprio arquivo
+  const arquivo = corpo instanceof Blob
   const r = await fetch(`/api${url}`, {
     method: metodo,
-    headers: corpo ? { 'Content-Type': 'application/json' } : undefined,
-    body: corpo ? JSON.stringify(corpo) : undefined,
+    headers: corpo ? { 'Content-Type': arquivo ? corpo.type || 'application/octet-stream' : 'application/json' } : undefined,
+    body: corpo ? (arquivo ? corpo : JSON.stringify(corpo)) : undefined,
   })
   const dados = await r.json().catch(() => null)
   if (!r.ok) {
@@ -49,7 +51,12 @@ export type Clinica = {
   pausas: { weekday: number; start_time: string; end_time: string }[]
   segmento: string
   termos: Termos
+  cor: string
+  logo_versao: number | null
 }
+
+/** Etapa 9B: cor principal e logo da clínica */
+export type Aparencia = { cor: string; cor_padrao: string; logo_versao: number | null }
 
 /** Palavras do negócio da clínica (Etapa 9): "dentista/paciente/consulta", "profissional/cliente/atendimento"… */
 export type Termos = {
@@ -108,6 +115,7 @@ export type CardCrm = {
   consulta_id: string | null
   proxima_consulta: string | null
   procedimento: string | null
+  foto_versao: number | null
 }
 
 export type Mensagem = {
@@ -135,6 +143,7 @@ export type Paciente = {
   dentista_referencia: string | null
   ultima_consulta: string | null
   proxima_consulta: string | null
+  foto_versao: number | null
 }
 
 export type Dashboard = {
@@ -169,6 +178,7 @@ export type Usuario = {
   nome: string | null
   super_admin: boolean
   trocar_senha: boolean
+  foto_versao: number | null
   clinicas: { clinic_id: string; papel: 'clinic_admin' | 'reception' }[]
 }
 

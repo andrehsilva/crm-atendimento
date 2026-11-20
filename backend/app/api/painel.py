@@ -12,7 +12,7 @@ from uuid import UUID
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
@@ -28,7 +28,7 @@ from app.core import relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
-from app import segmentos
+from app import aparencia, segmentos
 
 router = APIRouter(prefix="/api", tags=["painel"], dependencies=[Depends(acesso)])
 Conn = psycopg.Connection
@@ -55,7 +55,16 @@ def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         "id": c["id"], "name": c["name"], "phone": c["phone"], "slug": c["slug"], "timezone": c["timezone"],
         "address": c["address"], "horario": horario, "pausas": pausas,
         "segmento": segmentos.segmento_de(c["settings"]).codigo, "termos": segmentos.termos(c["settings"]),
+        "cor": aparencia.cor_da_clinica(c["settings"]), "logo_versao": aparencia.versao_da_logo(conn, clinic_id),
     }
+
+
+@router.get("/clinics/{clinic_id}/logo", summary="Logo da clínica (Etapa 9B)")
+def logo(clinic_id: UUID, conn: Conn = Depends(get_conn)):
+    r = conn.execute("select mime, data from clinic_logos where clinic_id = %s", (clinic_id,)).fetchone()
+    if not r:
+        return Response(status_code=404)
+    return aparencia.resposta_imagem(r[0], bytes(r[1]))
 
 
 @router.get("/segmentos", summary="Segmentos de negócio disponíveis (Etapa 9)")
@@ -133,7 +142,8 @@ def kanban(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         """select p.id, p.name, p.phone, p.crm_stage, p.stage_changed_at, p.last_event, p.last_activity_at, p.created_at,
                   coalesce(bool_or(cv.status = 'humano'), false) as atendimento_manual,
                   (select count(*) from appointments a where a.patient_id = p.id and a.status = 'realizada') > 0 as recorrente,
-                  prox.id as consulta_id, prox.starts_at as proxima_consulta, prox.procedimento
+                  prox.id as consulta_id, prox.starts_at as proxima_consulta, prox.procedimento,
+                  (select (extract(epoch from f.updated_at) * 1000)::bigint from patient_photos f where f.patient_id = p.id) as foto_versao
            from patients p
            left join conversations cv on cv.patient_id = p.id
            left join lateral (
@@ -173,7 +183,8 @@ def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(ge
                     pr.name as dentista_referencia,
                     (select max(starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada') as ultima_consulta,
                     (select min(starts_at) from appointments a where a.patient_id = p.id
-                       and a.status in ('agendada','confirmada') and a.starts_at > now()) as proxima_consulta
+                       and a.status in ('agendada','confirmada') and a.starts_at > now()) as proxima_consulta,
+                    (select (extract(epoch from f.updated_at) * 1000)::bigint from patient_photos f where f.patient_id = p.id) as foto_versao
              from patients p left join professionals pr on pr.id = p.preferred_professional_id
              where p.clinic_id = %s"""
     params: list = [clinic_id]
@@ -204,6 +215,40 @@ def editar_paciente(clinic_id: UUID, patient_id: UUID, body: EdicaoPaciente, con
         raise AgendaError("DADOS_INVALIDOS", "Paciente não encontrado.")
     avisar(conn, clinic_id, "crm", patient_id)
     return p
+
+
+def _paciente_da_clinica(conn, clinic_id: UUID, patient_id: UUID) -> None:
+    if not conn.execute("select 1 from patients where clinic_id = %s and id = %s", (clinic_id, patient_id)).fetchone():
+        raise AgendaError("DADOS_INVALIDOS", "Paciente não encontrado.")
+
+
+@router.get("/clinics/{clinic_id}/patients/{patient_id}/foto", summary="Foto do lead/cliente (Etapa 9B)")
+def foto_paciente(clinic_id: UUID, patient_id: UUID, conn: Conn = Depends(get_conn)):
+    r = conn.execute("select mime, data from patient_photos where clinic_id = %s and patient_id = %s",
+                     (clinic_id, patient_id)).fetchone()
+    if not r:
+        return Response(status_code=404)
+    return aparencia.resposta_imagem(r[0], bytes(r[1]))
+
+
+@router.put("/clinics/{clinic_id}/patients/{patient_id}/foto", summary="Enviar foto do lead/cliente (corpo = imagem)")
+async def enviar_foto_paciente(clinic_id: UUID, patient_id: UUID, request: Request, conn: Conn = Depends(get_conn)):
+    dados, mime = await aparencia.ler_imagem(request)
+    _paciente_da_clinica(conn, clinic_id, patient_id)
+    conn.execute(
+        """insert into patient_photos (patient_id, clinic_id, mime, data) values (%s, %s, %s, %s)
+           on conflict (patient_id) do update set mime = excluded.mime, data = excluded.data, updated_at = now()""",
+        (patient_id, clinic_id, mime, dados))
+    avisar(conn, clinic_id, "crm", patient_id)
+    return {"foto_versao": aparencia.versao_da_foto_paciente(conn, patient_id)}
+
+
+@router.delete("/clinics/{clinic_id}/patients/{patient_id}/foto", summary="Remover foto do lead/cliente")
+def remover_foto_paciente(clinic_id: UUID, patient_id: UUID, conn: Conn = Depends(get_conn)):
+    _paciente_da_clinica(conn, clinic_id, patient_id)
+    conn.execute("delete from patient_photos where clinic_id = %s and patient_id = %s", (clinic_id, patient_id))
+    avisar(conn, clinic_id, "crm", patient_id)
+    return {"foto_versao": None}
 
 
 # ---------------------------------------------------------------------------

@@ -41,9 +41,14 @@ export function Sidebar() {
       }`}
     >
       <div className="flex items-center gap-3 border-b border-line px-5 py-5">
-        <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-lg font-semibold text-primary-contrast">
-          {clinica.name.replace(/^Clínica\s+/i, '').charAt(0)}
-        </div>
+        {clinica.logo_versao ? (
+          <img src={`/api/clinics/${clinica.id}/logo?v=${clinica.logo_versao}`} alt={`Logo da ${clinica.name}`}
+            className="size-11 shrink-0 rounded-xl border border-line bg-white object-contain p-0.5" />
+        ) : (
+          <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-lg font-semibold text-primary-contrast">
+            {clinica.name.replace(/^Clínica\s+/i, '').charAt(0)}
+          </div>
+        )}
         {!recolhida && <span className="truncate text-lg font-medium" title={clinica.name}>{clinica.name}</span>}
       </div>
 
@@ -99,9 +104,7 @@ export function Sidebar() {
       </div>
 
       <div className="flex items-center gap-3 border-t border-line px-5 py-4">
-        <div className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium uppercase">
-          {iniciais}
-        </div>
+        <FotoUsuario versao={usuario.foto_versao} iniciais={iniciais} />
         {!recolhida && (
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-sm font-medium" title={usuario.email}>{usuario.nome || usuario.email}</div>
@@ -114,5 +117,15 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  )
+}
+
+/** Foto de perfil do usuário logado; sem foto, as iniciais. */
+export function FotoUsuario({ versao, iniciais, tamanho = 'size-10' }: { versao: number | null; iniciais: string; tamanho?: string }) {
+  if (versao) return <img src={`/api/auth/foto?v=${versao}`} alt="Sua foto" className={`${tamanho} shrink-0 rounded-full object-cover`} />
+  return (
+    <div className={`grid ${tamanho} shrink-0 place-items-center rounded-full bg-surface-muted text-sm font-medium uppercase`}>
+      {iniciais}
+    </div>
   )
 }

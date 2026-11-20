@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Search, Users } from 'lucide-react'
 import { api, type Etapa, type Paciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
@@ -8,6 +8,7 @@ import { useAviso } from '../components/Aviso'
 import { PageHeader } from '../components/PageHeader'
 import { Botao, Campo, Entrada, Modal, Selo, Vazio, type CorSelo } from '../components/ui'
 import { useTermos } from '../lib/termos'
+import { EnviarImagem, Retrato } from '../components/Imagem'
 
 const ETAPA: Record<Etapa, [string, CorSelo]> = {
   novo_contato: ['Novo contato', 'rosa'],
@@ -64,7 +65,12 @@ export function Clientes() {
                   const [rot, cor] = ETAPA[p.crm_stage]
                   return (
                     <tr key={p.id}>
-                      <td className="py-2.5 pr-4 font-medium">{p.name ?? <span className="text-muted">sem nome</span>}</td>
+                      <td className="py-2.5 pr-4 font-medium">
+                        <span className="flex items-center gap-3">
+                          <Retrato nome={p.name} src={p.foto_versao ? `/api/clinics/${clinica.id}/patients/${p.id}/foto?v=${p.foto_versao}` : null} />
+                          {p.name ?? <span className="text-muted">sem nome</span>}
+                        </span>
+                      </td>
                       <td className="py-2.5 pr-4">{telefone(p.phone)}</td>
                       <td className="py-2.5 pr-4"><Selo cor={cor}>{rot}</Selo></td>
                       <td className="py-2.5 pr-4">{p.birth_date ? p.birth_date.split('-').reverse().join('/') : '—'}</td>
@@ -96,11 +102,24 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
   const [nome, setNome] = useState('')
   const [nasc, setNasc] = useState('')
   const [obs, setObs] = useState('')
+  const [foto, setFoto] = useState<number | null>(null)
+  const qc = useQueryClient()
   useEffect(() => {
     setNome(paciente?.name ?? '')
     setNasc(paciente?.birth_date ?? '')
     setObs(paciente?.notes ?? '')
+    setFoto(paciente?.foto_versao ?? null)
   }, [paciente])
+  const urlFoto = `/clinics/${clinica.id}/patients/${paciente?.id}/foto`
+  const mudarFoto = useMutation({
+    mutationFn: (f: File | null) => (f ? api.put<{ foto_versao: number | null }>(urlFoto, f) : api.delete<{ foto_versao: null }>(urlFoto)),
+    onSuccess: (r) => {
+      setFoto(r.foto_versao)
+      qc.invalidateQueries({ queryKey: ['pacientes'] })
+      qc.invalidateQueries({ queryKey: ['kanban'] })
+    },
+    onError: aviso.erro,
+  })
 
   const salvar = useMutation({
     mutationFn: () => api.patch(`/clinics/${clinica.id}/patients/${paciente!.id}`, { name: nome || null, birth_date: nasc || null, notes: obs || null }),
@@ -111,7 +130,15 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
   return (
     <Modal titulo={`Editar ${pal.cliente}`} aberto={!!paciente} onFechar={onFechar}>
       <div className="space-y-4">
-        <p className="text-sm text-muted">Telefone: {paciente && telefone(paciente.phone)} (é a chave do paciente e não muda)</p>
+        <div className="flex items-center gap-4">
+          <Retrato tamanho="size-16" nome={nome || paciente?.name} src={foto ? `/api${urlFoto}?v=${foto}` : null} />
+          <div className="space-y-1">
+            <EnviarImagem tem={!!foto} enviando={mudarFoto.isPending} rotulo="Enviar foto"
+              onArquivo={(f) => mudarFoto.mutate(f)} onRemover={() => mudarFoto.mutate(null)} onProblema={aviso.erro} />
+            <p className="text-xs text-muted">PNG, JPG ou WebP até 512 KB.</p>
+          </div>
+        </div>
+        <p className="text-sm text-muted">Telefone: {paciente && telefone(paciente.phone)} (é a chave do {pal.cliente} e não muda)</p>
         <Campo rotulo="Nome completo"><Entrada value={nome} onChange={(e) => setNome(e.target.value)} /></Campo>
         <Campo rotulo="Data de nascimento" ajuda="Usada na mensagem de aniversário"><Entrada type="date" value={nasc} onChange={(e) => setNasc(e.target.value)} /></Campo>
         <Campo rotulo="Observações"><Entrada value={obs} onChange={(e) => setObs(e.target.value)} /></Campo>

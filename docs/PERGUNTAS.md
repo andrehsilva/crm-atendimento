@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 41 de 49 resolvidas (38 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 43 de 51 resolvidas (40 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -34,6 +34,10 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 ## 🟢 Bloqueia a Etapa 9 (Outros segmentos e personalização)
 
 ✅ Nada pendente — Etapa 9 liberada.
+
+## 🟢 Bloqueia a 9C (Observações do cliente)
+
+✅ Nada pendente — 9C liberada.
 
 ## 🔵 Bloqueia a Etapa 10 (IA de cada clínica e controle de gastos)
 
@@ -66,6 +70,8 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q42 — Observações do cliente:** ok — histórico (diário) com data, hora e autor; negrito, itálico, lista e link; quem escreveu corrige/apaga a sua, o admin apaga qualquer uma; a assistente não lê; o campo antigo vira a 1ª observação. *(20/11 → D48)*
+- [x] **Q43 — Pasta do Drive:** ok — um link por cliente, só `https://drive.google.com/...`; botão "Abrir pasta no Drive" em outra aba; sem integração. *(20/11 → D49)*
 - [x] **Q37 — Chave de IA:** ok — o admin da clínica (ou o admin geral) cadastra em Configurações › Assistente; chave criptografada no banco com chave-mestra no `.env`; só os 4 últimos caracteres aparecem; botão "Testar conexão". *(20/11 → D42)*
 - [x] **Q38 — Provedor e modelo:** ok — Google, OpenAI, OpenCode ou OpenRouter; modelo numa lista sugerida (só os aprovados na bateria de cenários) ou campo livre. *(20/11 → D43)*
 - [x] **Q39 — Gastos:** ok — tokens por resposta; custo estimado pela tabela de preços do admin geral; tela "Uso da IA" com US$ e R$ (cotação do admin geral). *(20/11 → D44)*

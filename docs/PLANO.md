@@ -111,7 +111,8 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 - **9A — Segmentos e palavras:** ✅ feito e testado (20/11/2026, clínica de Psicologia). Segmento por clínica (escolhido ao criar no admin geral, editável no Perfil); palavras ajustáveis
   (profissional / cliente / atendimento); procedimentos iniciais por segmento; a assistente, as mensagens automáticas e as telas
   usam as palavras da clínica; urgências e "o que a assistente não é" por segmento; lembrete discreto.
-- **9B — Aparência:** 🔨 em andamento. Logo e cor principal por clínica (Configurações › Perfil), aplicadas no painel.
+- **9B — Aparência e fotos:** ✅ feito e testado (20/11/2026). Logo ao lado do nome da clínica e cor principal (Configurações › Perfil › Aparência, com prévia; cores claras demais são recusadas); foto de perfil de cada usuário (Perfil › Minha conta); foto de cada lead/cliente (Leads / Clientes › editar), que aparece na lista e no CRM. Imagens PNG/JPG/WebP até 512 KB guardadas no banco (D40, D47).
+- **9C — Observações do cliente:** 🔨 em andamento (D48, D49). Em Leads / Clientes, histórico de observações em texto com formatação, cada uma com data e autor, e um botão que abre a pasta do Google Drive do cliente (só o link, sem integração).
 
 **O que testar:** criar uma clínica de Psicologia no admin geral, conversar no chat de teste e conferir que a assistente fala
 em "sessão" e "psicólogo(a)", que o lembrete não cita o procedimento e que as telas trocam as palavras.
