@@ -18,6 +18,7 @@ const INVALIDA: Record<string, string[]> = {
   crm: ['kanban', 'pacientes', 'dashboard'],
   mensagens: ['mensagens', 'dashboard'],
   conversa: ['kanban', 'dashboard', 'chat'],
+  clinica: ['clinica', 'config'], // 10C: configuração concluída libera o painel na hora para toda a equipe
 }
 
 /** Escuta o backend (SSE) e recarrega só o que mudou. */

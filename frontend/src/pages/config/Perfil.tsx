@@ -12,7 +12,8 @@ import { useAuth } from '../../lib/auth'
 import { EnviarImagem, Retrato } from '../../components/Imagem'
 import { CORES_SUGERIDAS, corValida, legivel, tons } from '../../lib/marca'
 
-export function Perfil({ podeEditar }: { podeEditar: boolean }) {
+/** modo (10C): 'dados' = dados da clínica e segmento; 'aparencia' = só cor e logo; 'tudo' = a aba Perfil inteira. */
+export function Perfil({ podeEditar, modo = 'tudo' }: { podeEditar: boolean; modo?: 'tudo' | 'dados' | 'aparencia' }) {
   const { clinica } = useClinica()
   const aviso = useAviso()
   const qc = useQueryClient()
@@ -37,9 +38,10 @@ export function Perfil({ podeEditar }: { podeEditar: boolean }) {
     onError: aviso.erro,
   })
   if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
+  if (modo === 'aparencia') return <div className="grid max-w-5xl gap-6"><AparenciaClinica podeEditar={podeEditar} /></div>
 
   return (
-    <div className="grid max-w-5xl gap-6 lg:grid-cols-[1fr_22rem]">
+    <div className={modo === 'tudo' ? 'grid max-w-5xl gap-6 lg:grid-cols-[1fr_22rem]' : 'flex max-w-5xl flex-col gap-6'}>
       <Secao titulo="Dados da clínica" icone={<Building className="size-5" />}>
         <form onSubmit={(e) => { e.preventDefault(); salvar.mutate() }} className="grid gap-4 sm:grid-cols-2">
           <Campo rotulo="Nome da clínica" ajuda="Aparece no topo da barra lateral e nas mensagens.">
@@ -69,8 +71,8 @@ export function Perfil({ podeEditar }: { podeEditar: boolean }) {
           )}
         </form>
       </Secao>
-      <TrocarMinhaSenha />
-      <AparenciaClinica podeEditar={podeEditar} />
+      {modo === 'tudo' && <TrocarMinhaSenha />}
+      {modo === 'tudo' && <AparenciaClinica podeEditar={podeEditar} />}
       <SeuNegocio valor={negocio} onMudar={setNegocio} segmentos={segmentos.data ?? []} podeEditar={podeEditar}
         enviando={salvar.isPending} onSalvar={() => salvar.mutate()} />
     </div>

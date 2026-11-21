@@ -28,7 +28,7 @@ from app.core import relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
-from app import aparencia, ia, segmentos
+from app import aparencia, configuracao_inicial as inicial, ia, segmentos
 
 router = APIRouter(prefix="/api", tags=["painel"], dependencies=[Depends(acesso)])
 Conn = psycopg.Connection
@@ -58,6 +58,8 @@ def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         "cor": aparencia.cor_da_clinica(c["settings"]), "logo_versao": aparencia.versao_da_logo(conn, clinic_id),
         "ia_ativa": ia.config_da_clinica(conn, clinic_id) is not None,
         "nome_assistente": (c["settings"] or {}).get("nome_assistente") or "Ísis",
+        # 10C: sem concluir, o painel mostra só os "Primeiros passos"; depois, o que faltar vira aviso (D54)
+        "configurada": inicial.concluida(conn, clinic_id), "pendencias": inicial.pendencias(conn, clinic_id),
     }
 
 

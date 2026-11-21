@@ -21,7 +21,7 @@ from app.auth.usuarios import criar_ou_ligar
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
-from app import aparencia, ia, segmentos
+from app import aparencia, configuracao_inicial as inicial, ia, segmentos
 
 router = APIRouter(prefix="/api/clinics/{clinic_id}/config", tags=["configurações"], dependencies=[Depends(acesso)])
 
@@ -505,7 +505,35 @@ def testar_ia(clinic_id: UUID, body: TesteIa, request: Request, conn=Depends(get
     cfg = _regra(ia.para_teste, conn, clinic_id, body.provedor, body.modelo, body.chave or None)
     if cfg is None:
         return {"ok": False, "detalhe": "A assistente está desligada: cadastre uma chave primeiro."}
-    return ia.testar(cfg)
+    r = ia.testar(cfg)
+    if r["ok"]:
+        ia.marcar_verificada(conn, clinic_id, cfg)
+    return r
+
+
+# ---------------------------------------------------------------------------
+# Primeiros passos (Etapa 10C — D51–D54)
+# ---------------------------------------------------------------------------
+@router.get("/inicial", summary="Etapas da configuração inicial e o que falta em cada uma")
+def ver_inicial(clinic_id: UUID, conn=Depends(get_conn)):
+    return inicial.estado(conn, clinic_id)
+
+
+@router.post("/inicial/aparencia", summary="Confirmar a aparência (manter a cor padrão vale)")
+def confirmar_aparencia(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    inicial.confirmar_aparencia(conn, clinic_id)
+    return inicial.estado(conn, clinic_id)
+
+
+@router.post("/inicial/concluir", summary="Concluir a configuração inicial (libera o painel para a equipe)")
+def concluir_inicial(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    faltando = inicial.concluir(conn, clinic_id)
+    if faltando:
+        raise AgendaError("DADOS_INVALIDOS", f"Ainda falta: {', '.join(faltando)}.")
+    avisar(conn, clinic_id, "clinica", clinic_id)
+    return inicial.estado(conn, clinic_id)
 
 
 # ---------------------------------------------------------------------------

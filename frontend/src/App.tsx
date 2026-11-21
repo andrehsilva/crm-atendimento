@@ -18,6 +18,9 @@ import { Demo } from './pages/Demo'
 import { Configuracoes } from './pages/Configuracoes'
 import { Mensagens } from './pages/Mensagens'
 import { AvisoIaDesligada } from './pages/config/IaClinica'
+import { AguardandoConfiguracao, AvisoPendencias, PrimeirosPassos } from './pages/PrimeirosPassos'
+import { useAuth } from './lib/auth'
+import { useClinica } from './lib/clinica'
 import { RedefinirSenha } from './pages/RedefinirSenha'
 
 const queryClient = new QueryClient({
@@ -32,6 +35,7 @@ function Layout() {
         <Topbar />
         <div className="px-10 pb-10 pt-2">
           <AvisoIaDesligada />
+          <AvisoPendencias />
           <Outlet />
         </div>
       </main>
@@ -52,9 +56,18 @@ function AreaLogada() {
 function AreaClinica() {
   return (
     <ProvedorClinica>
-      <Outlet />
+      <Portao />
     </ProvedorClinica>
   )
+}
+
+/** 10C (D52): clínica sem a configuração inicial concluída → o admin vê só os "Primeiros passos"; os outros esperam. */
+function Portao() {
+  const { clinica } = useClinica()
+  const { usuario } = useAuth()
+  if (clinica.configurada) return <Outlet />
+  const papel = usuario.super_admin ? 'super_admin' : usuario.clinicas.find((c) => c.clinic_id === clinica.id)?.papel
+  return papel === 'clinic_admin' || papel === 'super_admin' ? <PrimeirosPassos /> : <AguardandoConfiguracao />
 }
 
 export default function App() {

@@ -57,7 +57,14 @@ export type Clinica = {
   ia_ativa: boolean
   /** nome que a assistente usa com os clientes (Configurações › Assistente) */
   nome_assistente: string
+  /** 10C (D51–D54): false = painel mostra só os "Primeiros passos" */
+  configurada: boolean
+  /** etapas obrigatórias que faltam (depois de concluída vira só aviso) */
+  pendencias: string[]
 }
+
+export type EtapaInicial = { codigo: 'clinica' | 'assistente' | 'aparencia' | 'horarios' | 'equipe' | 'ia'; titulo: string; ok: boolean; falta: string | null }
+export type ConfigInicial = { concluida: boolean; pode_concluir: boolean; etapas: EtapaInicial[] }
 
 /** Etapa 9B: cor principal e logo da clínica */
 export type Aparencia = { cor: string; cor_padrao: string; logo_versao: number | null }

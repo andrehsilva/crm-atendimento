@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 49 de 57 resolvidas (46 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 49 de 64 resolvidas (46 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -50,6 +50,36 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 ## 🟣 Clínica de apresentação (Clínica Rodrigues)
 
 ✅ Nada pendente.
+
+## 🟤 Bloqueia a Etapa 11 (Endereço por clínica — subdomínio)
+
+- [ ] **Q50 — Domínio da plataforma:** qual nome registrar (ex.: `isis.com.br`, `isisatende.com.br`)? Onde ficará o DNS (Registro.br, Cloudflare…)?
+  *Sugestão:* registrar no Registro.br e apontar o DNS para a Cloudflare (grátis). Isso facilita o certificado HTTPS "coringa", que vale para todos os subdomínios.
+  Resposta:
+- [ ] **Q51 — Endereço da Rodrigues:** trocar o endereço curto de `demo` para `rodrigues` (fica `rodrigues.<dominio>`)?
+  *Sugestão:* sim. O que marca a clínica de demonstração passa a ser a marcação "clínica de apresentação" (D55), não o endereço.
+  Resposta:
+- [ ] **Q52 — "Entrar como" no subdomínio:** com cada clínica no próprio endereço, o login fica separado por endereço. Ao usar "Entrar como", o admin geral entra direto (passagem automática e segura, válida por 60 s) ou faz login de novo?
+  *Sugestão:* entrar direto, com registro na auditoria.
+  Resposta:
+
+## 🟤 Bloqueia a Etapa 12 (Site de apresentação)
+
+- [ ] **Q53 — Layouts iniciais:** 3 layouts que servem para todos os segmentos (mudam textos e ícones) ou layouts diferentes por segmento?
+  *Sugestão:* 3 layouts para todos ("Clássico", "Moderno", "Acolhedor"), com a cor e a logo da clínica.
+  Resposta:
+- [ ] **Q54 — Seções e fotos:** entram galeria de fotos, bio e foto de cada profissional, e "antes e depois"?
+  *Sugestão:* galeria e bio/foto sim; "antes e depois" não. Os conselhos (CFO, CFM, CFP…) têm regras rígidas de publicidade, e vale validar os textos padrão com um profissional antes de lançar.
+  Resposta:
+- [ ] **Q56 — Chat no site:** além do botão "Agendar pelo WhatsApp", colocar o chat da assistente dentro do site?
+  *Sugestão:* só WhatsApp na 1ª versão, que é onde a assistente já atende.
+  Resposta:
+
+## 🟤 Bloqueia a Etapa 13 (Domínio próprio)
+
+- [ ] **Q55 — Cobrança do domínio próprio:** grátis, pago à parte ou incluso num plano?
+  *Sugestão:* extra pago. Por ora, o admin geral liga o recurso em cada clínica.
+  Resposta:
 
 ---
 

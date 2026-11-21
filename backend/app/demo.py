@@ -158,5 +158,6 @@ def criar_demo(conn, reset: bool = False) -> str:
         return str(existente[0])
     clinic_id, _, _ = criar_estrutura(
         conn, "Clínica Dental Demo", TELEFONE_CLINICA, SLUG, "Rua das Flores, 123 — Centro, São Paulo/SP")
+    conn.execute("update clinics set configurada_em = now() where id = %s", (clinic_id,))  # demo já nasce pronta
     criar_exemplos(conn, clinic_id)
     return str(clinic_id)

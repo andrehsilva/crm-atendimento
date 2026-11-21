@@ -221,7 +221,7 @@ def salvar_chave(conn, clinic_id: UUID, provedor: str, modelo: str, chave: str |
             """insert into clinic_ai (clinic_id, provider, model, key_cipher, key_last4, updated_at, updated_by)
                values (%s, %s, %s, %s, %s, now(), %s)
                on conflict (clinic_id) do update set provider = excluded.provider, model = excluded.model,
-                 key_cipher = excluded.key_cipher, key_last4 = excluded.key_last4,
+                 key_cipher = excluded.key_cipher, key_last4 = excluded.key_last4, verificada_em = null,
                  updated_at = now(), updated_by = excluded.updated_by""",
             (clinic_id, provedor, modelo, cifra, final, autor))
         return
@@ -229,12 +229,12 @@ def salvar_chave(conn, clinic_id: UUID, provedor: str, modelo: str, chave: str |
         raise ValueError("Cole a chave de IA da clínica.")
     if atual[0] != provedor:
         raise ValueError("Trocou de provedor: cole a chave do novo provedor.")
-    conn.execute("update clinic_ai set model = %s, updated_at = now(), updated_by = %s where clinic_id = %s",
-                 (modelo, autor, clinic_id))
+    conn.execute("""update clinic_ai set model = %s, verificada_em = case when model = %s then verificada_em end,
+                    updated_at = now(), updated_by = %s where clinic_id = %s""", (modelo, modelo, autor, clinic_id))
 
 
 def remover_chave(conn, clinic_id: UUID, autor: UUID) -> None:
-    conn.execute("""update clinic_ai set key_cipher = null, key_last4 = null, provider = null, model = null,
+    conn.execute("""update clinic_ai set key_cipher = null, key_last4 = null, provider = null, model = null, verificada_em = null,
                     updated_at = now(), updated_by = %s where clinic_id = %s""", (autor, clinic_id))
 
 
@@ -258,3 +258,11 @@ def para_teste(conn, clinic_id: UUID, provedor: str | None, modelo: str | None, 
         chave = salva.api_key
     p = PROVEDORES[provedor]
     return ConfigIA("clinica", provedor, modelo.strip(), p["base_url"], p["estilo"], chave.strip())
+
+
+def marcar_verificada(conn, clinic_id: UUID, testada: ConfigIA) -> None:
+    """10C (D51): a chave SALVA passou no teste. Só conta se o que foi testado é exatamente o que está salvo."""
+    salva = config_da_clinica(conn, clinic_id)
+    if salva and salva.origem == "clinica" and (salva.provedor, salva.modelo, salva.api_key) == (
+            testada.provedor, testada.modelo, testada.api_key):
+        conn.execute("update clinic_ai set verificada_em = now() where clinic_id = %s", (clinic_id,))

@@ -9,7 +9,7 @@ import { useTermos } from '../../lib/termos'
 import { IaClinica } from './IaClinica'
 
 /** Nome, tom e regras da agenda (RN marcadas como "Config"). Valem para ações novas. */
-export function Assistente({ podeEditar }: { podeEditar: boolean }) {
+export function Assistente({ podeEditar, comIa = true }: { podeEditar: boolean; comIa?: boolean }) {
   const { clinica } = useClinica()
   const pal = useTermos()
   const aviso = useAviso()
@@ -28,7 +28,7 @@ export function Assistente({ podeEditar }: { podeEditar: boolean }) {
 
   return (
     <div className="grid max-w-5xl gap-6">
-      <IaClinica podeEditar={podeEditar} />
+      {comIa && <IaClinica podeEditar={podeEditar} />}
       <form onSubmit={(e) => { e.preventDefault(); salvar.mutate() }} className="grid gap-6 lg:grid-cols-2">
         <Secao titulo="Como ela se apresenta" icone={<Bot className="size-5" />}>
           <fieldset disabled={!podeEditar} className="flex flex-col gap-4">
