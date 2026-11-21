@@ -72,3 +72,17 @@ export function tempoParado(iso: string): string {
   if (h < 72) return `há ${h}h`
   return `há ${Math.floor(h / 24)}d`
 }
+
+/** US$ com mais casas quando o valor é pequeno (gasto de IA costuma ser centavos). */
+export function dolar(v: number): string {
+  const casas = v !== 0 && Math.abs(v) < 1 ? 4 : 2
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: casas })
+}
+
+export function real(v: number): string {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export function inteiro(v: number): string {
+  return v.toLocaleString('pt-BR')
+}

@@ -21,7 +21,7 @@ from app.auth.usuarios import criar_ou_ligar
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
-from app import aparencia, configuracao_inicial as inicial, ia, segmentos
+from app import aparencia, configuracao_inicial as inicial, ia, segmentos, uso_ia
 
 router = APIRouter(prefix="/api/clinics/{clinic_id}/config", tags=["configurações"], dependencies=[Depends(acesso)])
 
@@ -509,6 +509,26 @@ def testar_ia(clinic_id: UUID, body: TesteIa, request: Request, conn=Depends(get
     if r["ok"]:
         ia.marcar_verificada(conn, clinic_id, cfg)
     return r
+
+
+# ---------------------------------------------------------------------------
+# Uso da IA e teto mensal (Etapa 10B — D44, D45)
+# ---------------------------------------------------------------------------
+class Teto(BaseModel):
+    teto_usd: float | None = Field(None, gt=0, le=100000)  # vazio = sem teto
+
+
+@router.get("/uso-ia", summary="Uso e custo estimado da IA (mês atual por dia e últimos 6 meses)")
+def ver_uso_ia(clinic_id: UUID, conn=Depends(get_conn)):
+    return uso_ia.relatorio(conn, clinic_id)
+
+
+@router.put("/uso-ia/teto", summary="Teto mensal em US$ (aviso aos 80%, pausa aos 100%)")
+def salvar_teto(clinic_id: UUID, body: Teto, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    uso_ia.salvar_teto(conn, clinic_id, body.teto_usd)
+    avisar(conn, clinic_id, "clinica", clinic_id)
+    return uso_ia.relatorio(conn, clinic_id)
 
 
 # ---------------------------------------------------------------------------

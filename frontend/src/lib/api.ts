@@ -61,7 +61,20 @@ export type Clinica = {
   configurada: boolean
   /** etapas obrigatórias que faltam (depois de concluída vira só aviso) */
   pendencias: string[]
+  /** 10B (D45): gasto do mês x teto; "aviso" aos 80%, "pausada" aos 100% */
+  uso_ia: SituacaoUsoIa
 }
+
+export type SituacaoUsoIa = { gasto_usd: number; teto_usd: number | null; pct: number | null; nivel: 'ok' | 'aviso' | 'pausada' }
+export type UsoIa = {
+  situacao: SituacaoUsoIa
+  cotacao_brl: number | null
+  dias: { dia: string; respostas: number; tokens_entrada: number; tokens_saida: number; custo_usd: number }[]
+  meses: { mes: string; respostas: number; tokens: number; custo_usd: number }[]
+  sem_preco: { provider: string; model: string }[]
+}
+export type PrecoModelo = { provider: string; model: string; entrada_usd: number; saida_usd: number; cache_usd: number | null; updated_at: string }
+export type Precos = { precos: PrecoModelo[]; cotacao_brl: number | null }
 
 export type EtapaInicial = { codigo: 'clinica' | 'assistente' | 'aparencia' | 'horarios' | 'equipe' | 'ia'; titulo: string; ok: boolean; falta: string | null }
 export type ConfigInicial = { concluida: boolean; pode_concluir: boolean; etapas: EtapaInicial[] }
@@ -252,6 +265,9 @@ export type UsoClinica = {
   falhas_ia: number
   automaticas_enviadas: number
   consultas_pela_ia: number
+  tokens_ia: number
+  custo_clinica_usd: number
+  custo_plataforma_usd: number
 }
 
 export type Plataforma = {

@@ -12,6 +12,7 @@ from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
 from app.agent import isis
 from app.core import relogio
 from app.eventos import avisar
+from app import uso_ia
 from app.ia import config_da_clinica
 from app.mensagens import lembretes
 from app.painel import crm
@@ -91,11 +92,16 @@ def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
         return novas
 
     ia = config_da_clinica(conn, clinica["id"])
-    if ia is None:  # D46: clínica sem IA = assistente desligada; a conversa vai direto para a equipe
+    teto_atingido = ia is not None and uso_ia.pausada(conn, clinica["id"])
+    if ia is None or teto_atingido:
+        # D46: sem IA = assistente desligada. D45: teto do mês atingido = assistente pausa e o paciente é avisado.
+        # Nos dois casos a conversa vai direto para a equipe.
         if conversa["status"] != "humano":
             conn.execute("update conversations set status = 'humano' where id = %s", (conversa["id"],))
             conversa["status"] = "humano"
             crm.registrar(conn, clinica["id"], paciente["id"], "aguardando_humano", "sistema")
+            if teto_atingido:
+                novas.append(_gravar(conn, clinica["id"], conversa["id"], "out", "isis", isis.AVISO_EQUIPE))
         avisar(conn, clinica["id"], "conversa", conversa["id"])
         return novas
 

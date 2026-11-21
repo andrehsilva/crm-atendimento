@@ -117,26 +117,24 @@ Esses dados vão **direto no arquivo `backend/.env`**, nunca aqui no chat.
 **O que testar:** criar uma clínica de Psicologia no admin geral, conversar no chat de teste e conferir que a assistente fala
 em "sessão" e "psicólogo(a)", que o lembrete não cita o procedimento e que as telas trocam as palavras.
 
-## Etapa 10 — IA de cada clínica e controle de gastos — 🔨 em andamento (D42–D46)
+## Etapa 10 — IA de cada clínica e controle de gastos ✅ (20/11/2026)
 Cada clínica cadastra a própria chave (Google, OpenAI, OpenCode ou OpenRouter), escolhe o modelo, acompanha tokens e custo
 estimado e define um teto mensal. Substitui a D36 (IA paga por uso antes do 1º cliente).
 - **10A — Chave e modelo:** ✅ feito e testado (20/11/2026; D50). Chave criptografada por clínica, provedores Google/OpenAI/OpenCode/OpenRouter, "Testar conexão", assistente desligada sem chave, opção "usar a chave da plataforma" no admin geral.
-- **10C — Configuração inicial obrigatória:** 🧪 pronto, aguardando seu teste (D51–D54). Passo a passo "Primeiros passos" que precisa ser concluído antes de usar o painel (clínica, assistente, aparência, horários, serviços e equipe, IA).
+- **10C — Configuração inicial obrigatória:** ✅ feito e testado (20/11/2026; D51–D54). Passo a passo "Primeiros passos" que precisa ser concluído antes de usar o painel (clínica, assistente, aparência, horários, serviços e equipe, IA).
 - **Reiniciar demonstração sem apagar a clínica (D56):** ✅ feito e testado (20/11/2026). Troca só clientes, consultas, conversas e mensagens pelos exemplos; botão só na clínica `/demo`, com confirmação.
 - **Clínica de apresentação (D55):** ✅ feito e testado (20/11/2026). Marcação no Admin geral › clínica › Dados (hoje a Clínica Rodrigues); o admin da plataforma entra por ela; "Admin geral" só nela, "Voltar para…" nas outras.
-- **10B — Uso e teto:** tokens por resposta, tabela de preços e cotação no admin geral, tela "Uso da IA", teto mensal com aviso aos 80% e pausa aos 100%.
+- **10B — Uso e teto:** ✅ feito e testado (20/11/2026; D60). tokens por resposta, tabela de preços e cotação no admin geral, tela "Uso da IA", teto mensal com aviso aos 80% e pausa aos 100%.
 
-## Etapa 11 — Endereço por clínica (subdomínio) — ⏳ depois da 10B; aguarda Q50–Q52 (D57, D59)
-`<clinica>.<dominio>/painel` abre o login já com a marca da clínica; `admin.<dominio>` é o Admin geral.
-O endereço identifica a clínica, mas o acesso continua conferido pelo login. Certificado HTTPS "coringa" no Caddy.
+## Etapa 11 — Site de apresentação — ⏳ liberada (D57 revista, D58, D59, D61–D63, D65); o domínio oficial (Q50) só é preciso para publicar
+Painel e login num endereço único (`app.<dominio>`). Cada clínica ganha um site público em `<dominio>/<clinica>`, gerado no servidor
+(bom para o Google e para a prévia do link no WhatsApp), com os dados que ela já cadastra: nome, logo, cor, sobre,
+procedimentos, equipe, horários e endereço. Botão "Agendar pelo WhatsApp" (a assistente atende) e link "Área da clínica"
+para o painel. Editor em Configurações › Site: layout, seções, textos, fotos, prévia e Publicar (só com a 10C concluída).
 
-## Etapa 12 — Site de apresentação com layouts — ⏳ depois da 11; aguarda Q53, Q54 e Q56 (D58)
-- **O site:** `<clinica>.<dominio>` mostra o site da clínica, gerado no servidor (bom para o Google e para a prévia no WhatsApp). Usa os dados que a clínica já cadastra: nome, logo, cor, sobre, procedimentos, equipe, horários e endereço.
-- **Agendar:** um botão "Agendar pelo WhatsApp" leva à assistente.
-- **Editor:** em Configurações › Site, a clínica escolhe o layout, liga e desliga seções, edita textos e fotos, vê a prévia e publica.
-
-## Etapa 13 — Domínio próprio — ⏳ depois da 12; aguarda Q55 (D58)
-A clínica aponta o domínio dela (CNAME + verificação TXT) e o HTTPS sai automático. O certificado só é emitido para domínio verificado.
+## Etapa 12 — Domínio próprio (só para o site, extra pago) — ⏳ depois da 11 (D58, D64)
+A clínica aponta o domínio dela (CNAME + verificação TXT) e o HTTPS sai automático, só para domínio verificado.
+O painel continua sempre no endereço oficial.
 
 ---
 

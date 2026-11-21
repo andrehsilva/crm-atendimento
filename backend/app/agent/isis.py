@@ -16,6 +16,7 @@ from app.agent.contexto import esta_aberta, instrucoes
 from app.agent.ferramentas import Sessao, criar_ferramentas
 from app.eventos import avisar
 from app.painel import crm
+from app import uso_ia
 from app.ia import ConfigIA, config_da_clinica, modelo_agno
 
 log = logging.getLogger("isis.agente")
@@ -71,6 +72,7 @@ def responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, r
     sessao = Sessao(conn=conn, clinica=clinica, paciente=paciente, conversa=conversa, agora=agora)
     inicio = time.perf_counter()
     saida, erro = None, None
+    tokens = (0, 0, 0)  # entrada, saída, cache (10B)
 
     try:
         if ia is None:
@@ -85,6 +87,7 @@ def responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, r
         )
         entrada = _historico(conn, conversa["id"], recebida_em) + [Message(role="user", content=texto)]
         r = agente.run(entrada)
+        tokens = uso_ia.tokens_da_resposta(r)
         saida = (r.content or "").strip() if isinstance(r.content, str) else str(r.content or "").strip()
         if not saida:
             if not chamou_equipe(sessao.chamadas):
@@ -113,10 +116,14 @@ def responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, r
         else:
             saida = MSG_FALHA
 
+    # 10B (D44): tokens e custo estimado de cada resposta, com o preço da época (tabela do admin geral)
+    custo = uso_ia.calcular_custo(conn, ia, *tokens) if ia and any(tokens) else None
     conn.execute(
-        """insert into agent_runs (clinic_id, conversation_id, input, tools, output, latency_ms, error)
-           values (%s, %s, %s, %s, %s, %s, %s)""",
+        """insert into agent_runs (clinic_id, conversation_id, input, tools, output, latency_ms, error,
+                                   provider, model, origem, tokens_entrada, tokens_saida, tokens_cache, custo_usd)
+           values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
         (clinica["id"], conversa["id"], texto, Jsonb(sessao.chamadas), saida,
-         round((time.perf_counter() - inicio) * 1000), erro),
+         round((time.perf_counter() - inicio) * 1000), erro,
+         ia.provedor if ia else None, ia.modelo if ia else None, ia.origem if ia else None, *tokens, custo),
     )
     return saida

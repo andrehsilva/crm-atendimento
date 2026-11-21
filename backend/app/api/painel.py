@@ -28,7 +28,7 @@ from app.core import relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
-from app import aparencia, configuracao_inicial as inicial, ia, segmentos
+from app import aparencia, configuracao_inicial as inicial, ia, segmentos, uso_ia
 
 router = APIRouter(prefix="/api", tags=["painel"], dependencies=[Depends(acesso)])
 Conn = psycopg.Connection
@@ -60,6 +60,7 @@ def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         "nome_assistente": (c["settings"] or {}).get("nome_assistente") or "Ísis",
         # 10C: sem concluir, o painel mostra só os "Primeiros passos"; depois, o que faltar vira aviso (D54)
         "configurada": inicial.concluida(conn, clinic_id), "pendencias": inicial.pendencias(conn, clinic_id),
+        "uso_ia": uso_ia.situacao(conn, clinic_id),  # 10B: aviso aos 80%, pausa aos 100%
     }
 
 
@@ -339,6 +340,9 @@ def devolver(clinic_id: UUID, conversa_id: UUID, conn: Conn = Depends(get_conn))
     if ia.config_da_clinica(conn, clinic_id) is None:
         raise AgendaError("IA_DESLIGADA", "A assistente está desligada (a clínica ainda não tem chave de IA). "
                                           "Cadastre em Configurações › Assistente.")
+    if uso_ia.pausada(conn, clinic_id):
+        raise AgendaError("IA_DESLIGADA", "A assistente está pausada: o teto de gasto do mês foi atingido. "
+                                          "Aumente o teto em Configurações › Uso da IA.")
     return _mudar_atendimento(conn, clinic_id, conversa_id, "ativa", "devolvido_para_isis")
 
 

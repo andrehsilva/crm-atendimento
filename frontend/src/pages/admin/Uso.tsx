@@ -1,7 +1,9 @@
+import { PrecosECotacao } from './PrecosECotacao'
 import { useQuery } from '@tanstack/react-query'
 import { PageHeader } from '../../components/PageHeader'
 import { Selo } from '../../components/ui'
 import { api, type UsoClinica } from '../../lib/api'
+import { dolar, inteiro } from '../../lib/formato'
 
 const COLUNAS: [keyof UsoClinica, string][] = [
   ['conversas', 'Conversas'],
@@ -11,7 +13,13 @@ const COLUNAS: [keyof UsoClinica, string][] = [
   ['falhas_ia', 'Falhas da IA'],
   ['consultas_pela_ia', 'Consultas marcadas pela IA'],
   ['automaticas_enviadas', 'Mensagens automáticas'],
+  ['tokens_ia', 'Tokens da IA'],
+  ['custo_clinica_usd', 'Custo na chave da clínica'],
+  ['custo_plataforma_usd', 'Custo na chave da plataforma'],
 ]
+const DINHEIRO = new Set<keyof UsoClinica>(['custo_clinica_usd', 'custo_plataforma_usd'])
+const fmt = (k: keyof UsoClinica, v: unknown) =>
+  v == null ? '—' : DINHEIRO.has(k) ? dolar(Number(v)) : k === 'tokens_ia' ? inteiro(Number(v)) : String(v)
 
 export function AdminUso() {
   const q = useQuery({ queryKey: ['admin', 'uso'], queryFn: () => api.get<UsoClinica[]>('/admin/uso') })
@@ -37,7 +45,7 @@ export function AdminUso() {
                   </td>
                   {COLUNAS.map(([k]) => (
                     <td key={k} className={`px-4 py-3 text-right tabular-nums ${k === 'falhas_ia' && Number(c[k]) > 0 ? 'text-red-600' : ''}`}>
-                      {c[k] ?? '—'}
+                      {fmt(k, c[k])}
                     </td>
                   ))}
                 </tr>
@@ -46,12 +54,16 @@ export function AdminUso() {
             <tfoot className="border-t border-line font-medium">
               <tr>
                 <td className="px-6 py-3">Total</td>
-                {COLUNAS.map(([k]) => <td key={k} className="px-4 py-3 text-right tabular-nums">{k === 'tempo_medio_s' ? '' : total(k)}</td>)}
+                {COLUNAS.map(([k]) => <td key={k} className="px-4 py-3 text-right tabular-nums">{k === 'tempo_medio_s' ? '' : fmt(k, total(k))}</td>)}
               </tr>
             </tfoot>
           </table>
         )}
       </section>
+      <p className="mt-3 text-xs text-muted">
+        Custos estimados pela tabela de preços abaixo. O gasto na chave da plataforma é seu (teste grátis e demonstração).
+      </p>
+      <PrecosECotacao />
     </>
   )
 }

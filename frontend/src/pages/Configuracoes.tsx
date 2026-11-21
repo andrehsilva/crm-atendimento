@@ -9,8 +9,9 @@ import { Perfil } from './config/Perfil'
 import { Procedimentos } from './config/Procedimentos'
 import { Profissionais } from './config/Profissionais'
 import { Usuarios } from './config/Usuarios'
+import { UsoIa } from './config/UsoIa'
 
-const ABAS = ['Perfil', 'Horários', 'Procedimentos', 'Profissionais', 'Assistente', 'Mensagens', 'Usuários'] as const
+const ABAS = ['Perfil', 'Horários', 'Procedimentos', 'Profissionais', 'Assistente', 'Uso da IA', 'Mensagens', 'Usuários'] as const
 type Aba = (typeof ABAS)[number]
 
 /** Spec 07-A: configurações da clínica em abas. Ver: toda a equipe. Mudar: só o administrador da clínica. */
@@ -41,6 +42,7 @@ export function Configuracoes() {
       {aba === 'Procedimentos' && <Procedimentos podeEditar={podeEditar} />}
       {aba === 'Profissionais' && <Profissionais podeEditar={podeEditar} />}
       {aba === 'Assistente' && <Assistente podeEditar={podeEditar} />}
+      {aba === 'Uso da IA' && <UsoIa podeEditar={podeEditar} />}
       {aba === 'Mensagens' && <Mensagens podeEditar={podeEditar} />}
       {aba === 'Usuários' && podeEditar && <Usuarios />}
     </>

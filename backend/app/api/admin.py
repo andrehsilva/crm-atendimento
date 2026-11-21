@@ -19,7 +19,7 @@ from app.config import get_settings
 from app.db import get_conn
 from app.eventos import avisar
 from app.segmentos import SEGMENTOS
-from app import ia
+from app import ia, uso_ia
 
 
 def _so_super_admin(request: Request, _=Depends(acesso)) -> None:
@@ -305,6 +305,45 @@ def ia_plataforma(clinic_id: UUID, body: UsoPlataforma, request: Request, conn=D
 
 
 # ---------------------------------------------------------------------------
+# Preços dos modelos e cotação do dólar (Etapa 10B — D44)
+# ---------------------------------------------------------------------------
+class Preco(BaseModel):
+    provedor: str = Field(pattern="^(google|openai|opencode|openrouter)$")
+    modelo: str = Field(min_length=1, max_length=120)
+    entrada_usd: float = Field(ge=0, le=10000)  # por 1 milhão de tokens
+    saida_usd: float = Field(ge=0, le=10000)
+    cache_usd: float | None = Field(None, ge=0, le=10000)
+
+
+class Cotacao(BaseModel):
+    cotacao_brl: float | None = Field(None, gt=0, le=1000)
+
+
+@router.get("/precos", summary="Tabela de preços dos modelos (US$ por 1 milhão de tokens)")
+def ver_precos(conn=Depends(get_conn)):
+    c = uso_ia.cotacao(conn)
+    return {"precos": uso_ia.precos(conn), "cotacao_brl": float(c) if c else None}
+
+
+@router.put("/precos", summary="Cadastrar ou mudar o preço de um modelo (vale para as próximas respostas)")
+def salvar_preco(body: Preco, conn=Depends(get_conn)):
+    uso_ia.salvar_preco(conn, body.provedor, body.modelo, body.entrada_usd, body.saida_usd, body.cache_usd)
+    return ver_precos(conn)
+
+
+@router.delete("/precos/{provedor}/{modelo:path}", summary="Tirar o preço de um modelo")
+def apagar_preco(provedor: str, modelo: str, conn=Depends(get_conn)):
+    uso_ia.apagar_preco(conn, provedor, modelo)
+    return ver_precos(conn)
+
+
+@router.put("/cotacao", summary="Cotação do dólar em R$ (só para mostrar valores em reais)")
+def salvar_cotacao(body: Cotacao, conn=Depends(get_conn)):
+    uso_ia.salvar_cotacao(conn, body.cotacao_brl)
+    return ver_precos(conn)
+
+
+# ---------------------------------------------------------------------------
 # Uso e configurações da plataforma
 # ---------------------------------------------------------------------------
 @router.get("/uso", summary="Uso do mês por clínica")
@@ -320,6 +359,12 @@ def uso(conn=Depends(get_conn)):
                      and r.created_at >= date_trunc('month', now())) as tempo_medio_s,
                   (select count(*) from agent_runs r where r.clinic_id = c.id and r.error is not null
                      and r.created_at >= date_trunc('month', now())) as falhas_ia,
+                  (select coalesce(sum(coalesce(r.tokens_entrada, 0) + coalesce(r.tokens_saida, 0)), 0) from agent_runs r
+                     where r.clinic_id = c.id and r.created_at >= date_trunc('month', now())) as tokens_ia,
+                  (select coalesce(sum(r.custo_usd), 0)::float from agent_runs r where r.clinic_id = c.id
+                     and r.origem = 'clinica' and r.created_at >= date_trunc('month', now())) as custo_clinica_usd,
+                  (select coalesce(sum(r.custo_usd), 0)::float from agent_runs r where r.clinic_id = c.id
+                     and r.origem = 'plataforma' and r.created_at >= date_trunc('month', now())) as custo_plataforma_usd,
                   (select count(*) from outbound_messages o where o.clinic_id = c.id and o.status in ('enviada', 'entregue', 'lida')
                      and o.sent_at >= date_trunc('month', now())) as automaticas_enviadas,
                   (select count(*) from appointments a where a.clinic_id = c.id and a.source = 'isis'

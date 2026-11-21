@@ -18,6 +18,7 @@ import { Demo } from './pages/Demo'
 import { Configuracoes } from './pages/Configuracoes'
 import { Mensagens } from './pages/Mensagens'
 import { AvisoIaDesligada } from './pages/config/IaClinica'
+import { AvisoTetoIa } from './pages/config/UsoIa'
 import { AguardandoConfiguracao, AvisoPendencias, PrimeirosPassos } from './pages/PrimeirosPassos'
 import { useAuth } from './lib/auth'
 import { useClinica } from './lib/clinica'
@@ -35,6 +36,7 @@ function Layout() {
         <Topbar />
         <div className="px-10 pb-10 pt-2">
           <AvisoIaDesligada />
+          <AvisoTetoIa />
           <AvisoPendencias />
           <Outlet />
         </div>
