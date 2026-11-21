@@ -6,6 +6,7 @@ import { Botao, Secao, Selo } from '../../components/ui'
 import { api, type ProfissionalCfg } from '../../lib/api'
 import { CORES_SUGERIDAS, corValida, legivel } from '../../lib/marca'
 import { FotoProfissional } from './Profissionais'
+import { SiteConteudo } from './SiteConteudo'
 import { useClinica } from '../../lib/clinica'
 
 type EstadoSite = {
@@ -28,6 +29,7 @@ export function Site({ podeEditar }: { podeEditar: boolean }) {
   const q = useQuery({ queryKey: chave, queryFn: () => api.get<EstadoSite>(base) })
   const [layout, setLayout] = useState('classico')
   const [celular, setCelular] = useState(false)
+  const [versaoPrevia, setVersaoPrevia] = useState(0) // muda depois de salvar: recarrega a prévia
   // cor em edição por layout: null = cor da clínica
   const [cores, setCores] = useState<Record<string, string | null>>({})
   useEffect(() => { if (q.data) { setLayout(q.data.template); setCores(q.data.cores) } }, [q.data])
@@ -143,6 +145,8 @@ export function Site({ podeEditar }: { podeEditar: boolean }) {
 
       <FotosEquipe podeEditar={podeEditar} />
 
+      <SiteConteudo podeEditar={podeEditar} onSalvo={() => setVersaoPrevia((v) => v + 1)} />
+
       <Secao titulo="Prévia" acao={
         <div role="group" aria-label="Tamanho da prévia" className="flex gap-1 rounded-xl bg-surface-muted p-1">
           <BotaoTamanho ativo={!celular} onClick={() => setCelular(false)} icone={<Monitor className="size-4" />} rotulo="Computador" />
@@ -150,7 +154,7 @@ export function Site({ podeEditar }: { podeEditar: boolean }) {
         </div>
       }>
         <div className="flex justify-center rounded-2xl bg-surface-muted p-3">
-          <iframe key={previa} title={`Prévia do site no layout ${nomeLayout}`} src={previa}
+          <iframe key={`${previa}#${versaoPrevia}`} title={`Prévia do site no layout ${nomeLayout}`} src={previa}
             className={`h-[720px] rounded-xl border border-line bg-white transition-[width] ${celular ? 'w-[390px]' : 'w-full'}`} />
         </div>
       </Secao>

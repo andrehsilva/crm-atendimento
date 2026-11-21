@@ -126,20 +126,20 @@ estimado e define um teto mensal. Substitui a D36 (IA paga por uso antes do 1º 
 - **Clínica de apresentação (D55):** ✅ feito e testado (20/11/2026). Marcação no Admin geral › clínica › Dados (hoje a Clínica Rodrigues); o admin da plataforma entra por ela; "Admin geral" só nela, "Voltar para…" nas outras.
 - **10B — Uso e teto:** ✅ feito e testado (20/11/2026; D60). tokens por resposta, tabela de preços e cotação no admin geral, tela "Uso da IA", teto mensal com aviso aos 80% e pausa aos 100%.
 
-## Etapa 11 — Site de apresentação — 🔨 em andamento (D57 revista, D58, D59, D61–D63, D65); o domínio oficial (Q50) só é preciso para publicar
+## Etapa 11 — Site de apresentação ✅ (20/11/2026) (D57 revista, D58, D59, D61–D63, D65); o domínio oficial (Q50) só é preciso para publicar
 Painel e login num endereço único (`app.<dominio>`). Cada clínica ganha um site público em `<dominio>/<clinica>`, gerado no servidor
 (bom para o Google e para a prévia do link no WhatsApp), com os dados que ela já cadastra: nome, logo, cor, sobre,
 procedimentos, equipe, horários e endereço. Botão "Agendar pelo WhatsApp" (a assistente atende) e link "Área da clínica"
 para o painel. Editor em Configurações › Site: layout, seções, textos, fotos, prévia e Publicar (só com a 10C concluída).
 
 - **11A — Site com os dados atuais:** ✅ feito e testado (20/11/2026). Endereço da Rodrigues virou `rodrigues` (D61); site gerado no servidor em `/site/<clinica>` (dev: `localhost:5173/site/rodrigues`; produção: `<dominio>/<clinica>` quando houver domínio, Q50) com 3 layouts (D62: Elegante, Moderno e Acolhedor; cor própria por layout; foto e bio de cada profissional; carrossel quando há mais de um); Configurações › Site com escolha de layout, prévia (computador/celular) e Publicar (só com os Primeiros passos concluídos). "Reiniciar demonstração" passa a valer para a clínica de apresentação.
-- **11B — Editor completo:** 🔨 em andamento. Seções liga/desliga e ordem, textos próprios, escolher quais procedimentos aparecem, galeria de fotos, bio e foto de cada profissional (D63), sitemap.
+- **11B — Editor completo:** ✅ feito e testado (20/11/2026). Seções liga/desliga e ordem, textos próprios, escolher quais procedimentos aparecem, galeria de fotos, bio e foto de cada profissional (D63), sitemap.
 
 ## Etapa 12 — Domínio próprio (só para o site, extra pago) — ⏳ depois da 11 (D58, D64)
 A clínica aponta o domínio dela (CNAME + verificação TXT) e o HTTPS sai automático, só para domínio verificado.
 O painel continua sempre no endereço oficial.
 
-## Etapa 13 — WhatsApp: mensagens picadas, áudio e imagem — ⏳ depois da 12; aguarda Q57–Q59
+## Etapa 13 — WhatsApp: mensagens picadas, áudio e imagem — 🔨 em andamento (D66–D68; a 12 espera o domínio, Q50)
 Pedido do usuário (20/11/2026): muita gente escreve em várias mensagens curtas ("oi" / "tudo bem" / "queria saber…") e manda áudio.
 - **Mensagens picadas:** a assistente espera alguns segundos depois da última mensagem e responde tudo de uma vez.
 - **Áudio:** é transcrito para texto e a assistente responde normalmente; o custo entra no teto de gasto da IA.

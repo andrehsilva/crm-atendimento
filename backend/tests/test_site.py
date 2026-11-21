@@ -132,3 +132,69 @@ def test_cor_de_cada_layout(cliente, conn, clinica):  # noqa: F811
     assert adm.put(f"{base}/cor", json={"layout": "moderno", "cor": None}).json()["cores"]["moderno"] is None
     rec = _como(cliente, _usuario(conn, clinic_id=clinica.id))
     assert rec.put(f"{base}/cor", json={"layout": "moderno", "cor": "#0f766e"}).status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# 11B — editor completo
+# ---------------------------------------------------------------------------
+PNG = bytes([0x89]) + b"PNG\r\n\x1a\n" + b"0" * 64
+
+
+def _adm(cliente, conn, clinica):  # noqa: F811
+    return _como(cliente, _usuario(conn, clinic_id=clinica.id, papel="clinic_admin"))
+
+
+def test_textos_secoes_e_ordem(cliente, conn, clinica):  # noqa: F811
+    adm = _adm(cliente, conn, clinica)
+    base = f"/api/clinics/{clinica.id}/site"
+    c = adm.get(f"{base}/conteudo").json()
+    assert c["secoes"]["ordem"] == ["sobre", "procedimentos", "galeria", "visita"] and c["textos"]["titulo"] == ""
+    corpo = {"textos": {"titulo": "Consultório da Dra. A", "frase": "Sorrisos com calma.", "sobre": "Somos uma equipe pequena."},
+             "secoes": {"ordem": ["visita", "sobre", "procedimentos", "galeria", "inventada"], "ocultas": ["procedimentos"],
+                        "equipe_no_topo": False, "procedimentos_ocultos": []}}
+    r = adm.put(f"{base}/conteudo", json=corpo).json()
+    assert r["secoes"]["ordem"][:2] == ["visita", "sobre"] and "inventada" not in r["secoes"]["ordem"]
+    html = montagem.desenhar(conn, clinica.id, "acolhedor")
+    assert "Consultório da Dra. A" in html and "Sorrisos com calma." in html and "Somos uma equipe pequena." in html
+    assert "Como podemos ajudar" not in html  # seção desligada
+    corpo_html = html[html.index("<body>"):]
+    assert corpo_html.index("Quando atendemos") < corpo_html.index("Somos uma equipe pequena.")  # ordem escolhida
+    assert "data-carrossel" not in html and "Eu sou" not in html  # equipe fora do topo
+    rec = _como(cliente, _usuario(conn, clinic_id=clinica.id))
+    assert rec.put(f"{base}/conteudo", json=corpo).status_code == 403
+
+
+def test_esconder_procedimento_do_site(cliente, conn, clinica):  # noqa: F811
+    adm = _adm(cliente, conn, clinica)
+    corpo = {"textos": {}, "secoes": {"procedimentos_ocultos": [str(clinica.urgencia)]}}
+    r = adm.put(f"/api/clinics/{clinica.id}/site/conteudo", json=corpo).json()
+    assert {p["nome"]: p["visivel"] for p in r["procedimentos"]} == {"Limpeza": True, "Urgência": False}
+    html = montagem.desenhar(conn, clinica.id, "moderno")
+    assert "Limpeza" in html and "Urgência" not in html
+
+
+def test_galeria_envia_legenda_ordem_limite_e_apaga(cliente, conn, clinica):  # noqa: F811
+    adm = _adm(cliente, conn, clinica)
+    base = f"/api/clinics/{clinica.id}/site"
+    for _ in range(2):
+        r = adm.post(f"{base}/galeria", content=PNG, headers={"Content-Type": "image/png"})
+        assert r.status_code == 201, r.text
+    fotos = r.json()["galeria"]
+    a, b = fotos[0]["id"], fotos[1]["id"]
+    assert adm.patch(f"{base}/galeria/{a}", json={"legenda": "Sala de espera"}).json()["galeria"][0]["legenda"] == "Sala de espera"
+    assert [f["id"] for f in adm.put(f"{base}/galeria-ordem", json={"ids": [b, a]}).json()["galeria"]] == [b, a]
+    html = montagem.desenhar(conn, clinica.id, "classico")
+    assert "Sala de espera" in html and f"/galeria/{b}" in html
+    _publicar(conn, clinica)
+    assert TestClient(app).get(f"/site/{_slug(conn, clinica)}/galeria/{a}").status_code == 200
+    conn.execute("update site_photos set ordem = 0 where clinic_id = %s", (clinica.id,))
+    for _ in range(montagem.GALERIA_MAX - 2):
+        adm.post(f"{base}/galeria", content=PNG, headers={"Content-Type": "image/png"})
+    assert adm.post(f"{base}/galeria", content=PNG, headers={"Content-Type": "image/png"}).status_code == 422  # limite
+    assert len(adm.delete(f"{base}/galeria/{a}").json()["galeria"]) == montagem.GALERIA_MAX - 1
+
+
+def test_sitemap_so_com_sites_publicados(cliente, conn, clinica, outra_clinica):  # noqa: F811
+    _publicar(conn, clinica)
+    xml = TestClient(app).get("/site/sitemap.xml").text
+    assert f"/{_slug(conn, clinica)}</loc>" in xml and f"/{_slug(conn, outra_clinica)}</loc>" not in xml

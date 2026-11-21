@@ -60,6 +60,12 @@
   .pessoas .esp { color: var(--cor-escura); font-weight: 700; font-size: var(--t0); }
   .pessoas .bio { margin-top: 4px; color: var(--tinta-2); font-size: var(--t0); }
 
+  .sobre p { font-size: var(--t2); line-height: 1.55; max-width: 52ch; white-space: pre-line; }
+  .fotos { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .fotos figure { margin: 0; }
+  .fotos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 28px; }
+  .fotos figure:nth-child(3n+2) img { border-radius: 28px 28px 28px 8px; }
+  .fotos figcaption { margin-top: 8px; font-weight: 700; font-size: var(--t0); color: var(--tinta-2); }
   .duas { display: grid; gap: 20px; }
   @media (min-width: 820px) { .duas { grid-template-columns: 1fr 1fr; } }
   .quando { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
@@ -78,7 +84,7 @@
     <p class="oi">Oi, que bom ter você aqui!</p>
     {% if titulo %}<h1 id="t-nome">{% else %}<h2 class="como-h1">{% endif %}Eu sou {{ artigo }}{{ p.primeiro_nome }}{% if titulo %}</h1>{% else %}</h2>{% endif %}
     {% if p.especialidade %}<p class="especialidade">{{ p.especialidade }}</p>{% endif %}
-    <p class="texto">{{ p.bio or s.apresentacao }}</p>
+    <p class="texto">{{ p.bio or s.frase }}</p>
   </div>
 </div>
 {%- endmacro %}
@@ -91,14 +97,14 @@
     <div class="envelope">
       {% if s.carrossel|length > 1 %}
         {# Mais de uma pessoa: cada uma se apresenta num slide #}
-        <h1 id="t-nome" class="sr">{{ s.nome }}</h1>
+        <h1 id="t-nome" class="sr">{{ s.titulo }}</h1>
         {% call(p) carrossel(s.carrossel, 'Quem atende') %}
           {{ apresenta(p, s, False) }}
         {% endcall %}
       {% elif d %}
         {{ apresenta(d, s, True) }}
       {% else %}
-        <div><p class="oi">Que bom ter você aqui!</p><h1 id="t-nome">{{ s.nome }}</h1><p class="texto">{{ s.apresentacao }}</p></div>
+        <div><p class="oi">Que bom ter você aqui!</p><h1 id="t-nome">{{ s.titulo }}</h1><p class="texto">{{ s.frase }}</p></div>
       {% endif %}
       <div class="conversa">
         <div class="balao"><span class="quem">Sua mensagem</span><p>{{ s.texto_zap }}</p></div>
@@ -109,7 +115,10 @@
   </section>
 
   <div class="envelope pilha">
-    {% if s.procedimentos %}
+    {% for sec in s.ordem %}
+    {% if sec == 'sobre' %}
+    <section class="painel sobre" aria-labelledby="t-sobre"><h2 id="t-sobre">Sobre nós</h2><p>{{ s.sobre }}</p></section>
+    {% elif sec == 'procedimentos' %}
     <section class="painel" aria-labelledby="t-proc"><h2 id="t-proc">Como podemos ajudar</h2>
       <ul class="ajuda">
         {% for p in s.procedimentos %}
@@ -118,8 +127,15 @@
         {% endfor %}
       </ul>
     </section>
-    {% endif %}
-
+    {% elif sec == 'galeria' %}
+    <section class="painel" aria-labelledby="t-galeria"><h2 id="t-galeria">Um pouco do nosso cantinho</h2>
+      <div class="fotos">
+        {% for g in s.galeria %}
+        <figure><img src="{{ g.url }}" alt="{{ g.legenda or ('Foto de ' ~ s.nome) }}" loading="lazy">{% if g.legenda %}<figcaption>{{ g.legenda }}</figcaption>{% endif %}</figure>
+        {% endfor %}
+      </div>
+    </section>
+    {% elif sec == 'visita' %}
     <div class="duas">
       <section class="painel" aria-labelledby="t-hora"><h2 id="t-hora">Quando atendemos</h2>
         <ul class="quando">
@@ -129,6 +145,8 @@
       </section>
       <section class="painel" aria-labelledby="t-onde"><h2 id="t-onde">Onde estamos</h2>{{ como_chegar(s) }}</section>
     </div>
+    {% endif %}
+    {% endfor %}
   </div>
 </main>
 {% endblock %}

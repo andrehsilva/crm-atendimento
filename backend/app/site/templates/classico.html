@@ -49,6 +49,15 @@
   .lista .valor { color: var(--tinta-2); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: var(--t0); }
   .lista p { margin-top: 6px; color: var(--tinta-2); font-size: var(--t0); max-width: 44ch; }
 
+  .sobre p { font-family: "Fraunces", Georgia, serif; font-size: clamp(var(--t2), 2.6vw, var(--t3)); line-height: 1.45; max-width: 36ch;
+             font-weight: 300; white-space: pre-line; }
+  /* Galeria: foto maior à esquerda e as outras em coluna, legendas em itálico */
+  .galeria { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 820px) { .galeria { grid-template-columns: repeat(3, 1fr); } .galeria figure:first-child { grid-row: span 2; grid-column: span 2; } }
+  .galeria figure { margin: 0; }
+  .galeria img { width: 100%; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .galeria figure:first-child img { aspect-ratio: auto; min-height: 100%; }
+  .galeria figcaption { margin-top: 8px; font-family: "Fraunces", Georgia, serif; font-style: italic; color: var(--tinta-2); font-size: var(--t0); }
   .visita { background: #141518; color: #f3f3f5; }
   .visita h2 { color: #fff; }
   .visita .grade { display: grid; gap: 48px; }
@@ -61,8 +70,7 @@
   .horas tr.agora th, .horas tr.agora td { color: #fff; font-weight: 700; }
   .horas .fechado { color: #8b8d95; }
   .visita .mapa, .visita .fone { margin-top: 12px; }
-  .visita + .rodape, .rodape { background: #141518; color: #c9cad0; }
-  .rodape a { color: #c9cad0; }
+  .rodape { border-top: 1px solid var(--linha); }
 {% endblock %}
 
 {% block corpo %}
@@ -84,8 +92,8 @@
     </div>
     <div class="texto">
       <p class="local">{{ s.segmento }}{% if s.cidade %} em {{ s.cidade }}{% endif %}</p>
-      <h1 id="t-nome">{{ s.nome }}</h1>
-      <p class="apres">{{ s.apresentacao }}</p>
+      <h1 id="t-nome">{{ s.titulo }}</h1>
+      <p class="apres">{{ s.frase }}</p>
       {{ botao_zap(s, 'Agendar pelo WhatsApp') }}
       {% set hoje = s.horarios[s.hoje] %}
       <p class="hoje"><strong>Hoje</strong><span>{{ ('aberto das ' ~ hoje.lista | join(' e das ')) if hoje.faixas else 'fechado' }}</span>
@@ -93,7 +101,23 @@
     </div>
   </section>
 
-  {% if s.procedimentos %}
+  {% if s.carrossel|selectattr('bio')|list %}
+  <section class="secao" aria-labelledby="t-equipe"><div class="envelope">
+    <h2 id="t-equipe">{{ 'Quem atende' if s.carrossel|length == 1 else 'Quem atende você' }}</h2>
+    <ul class="lista">
+      {% for p in s.carrossel if p.bio %}
+      <li><div class="topo"><h3>{{ p.nome }}</h3>{% if p.especialidade %}<span class="valor">{{ p.especialidade }}</span>{% endif %}</div><p>{{ p.bio }}</p></li>
+      {% endfor %}
+    </ul>
+  </div></section>
+  {% endif %}
+
+  {% for sec in s.ordem %}
+  {% if sec == 'sobre' %}
+  <section class="secao sobre" aria-labelledby="t-sobre"><div class="envelope">
+    <h2 id="t-sobre">Sobre nós</h2><p>{{ s.sobre }}</p>
+  </div></section>
+  {% elif sec == 'procedimentos' %}
   <section class="secao" aria-labelledby="t-proc"><div class="envelope">
     <h2 id="t-proc">O que fazemos</h2>
     <ul class="lista">
@@ -103,19 +127,16 @@
       {% endfor %}
     </ul>
   </div></section>
-  {% endif %}
-
-  {% if s.carrossel|selectattr('bio')|list %}
-  <section class="secao" style="padding-top:0" aria-labelledby="t-equipe"><div class="envelope">
-    <h2 id="t-equipe">{{ 'Quem atende' if s.equipe|length == 1 else 'Quem atende você' }}</h2>
-    <ul class="lista">
-      {% for p in s.carrossel if p.bio %}
-      <li><div class="topo"><h3>{{ p.nome }}</h3>{% if p.especialidade %}<span class="valor">{{ p.especialidade }}</span>{% endif %}</div><p>{{ p.bio }}</p></li>
+  {% elif sec == 'galeria' %}
+  <section class="secao" aria-labelledby="t-galeria"><div class="envelope">
+    <h2 id="t-galeria">O consultório</h2>
+    <div class="galeria">
+      {% for g in s.galeria %}
+      <figure><img src="{{ g.url }}" alt="{{ g.legenda or ('Foto de ' ~ s.nome) }}" loading="lazy">{% if g.legenda %}<figcaption>{{ g.legenda }}</figcaption>{% endif %}</figure>
       {% endfor %}
-    </ul>
+    </div>
   </div></section>
-  {% endif %}
-
+  {% elif sec == 'visita' %}
   <section class="secao visita" id="visita" aria-labelledby="t-visita"><div class="envelope">
     <h2 id="t-visita">Venha nos visitar</h2>
     <div class="grade">
@@ -130,5 +151,7 @@
       <div><h3>Onde estamos</h3>{{ como_chegar(s) }}</div>
     </div>
   </div></section>
+  {% endif %}
+  {% endfor %}
 </main>
 {% endblock %}

@@ -73,3 +73,6 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D63 | ✅ Site: galeria de fotos e bio/foto de cada profissional; **sem "antes e depois"** (regras de publicidade dos conselhos). Textos padrão validados com um profissional antes de lançar | Q54, 20/11/2026 |
 | D64 | ✅ Domínio próprio é **extra pago**; por ora o admin geral liga o recurso em cada clínica | Q55, 20/11/2026 |
 | D65 | ✅ Site sem chat na 1ª versão: só o botão "Agendar pelo WhatsApp" (a assistente atende lá) | Q56, 20/11/2026 |
+| D66 | ✅ **Mensagens picadas:** a assistente espera 8 s depois da última mensagem do paciente (no máximo 30 s desde a primeira) e responde tudo de uma vez; enquanto espera, "digitando…" | Q57, 20/11/2026 |
+| D67 | ✅ **Áudio:** transcrito para texto (até 2 min) e respondido normalmente; o custo entra no "Uso da IA" e no teto. Mais longo: pede para resumir por texto ou passa para a equipe | Q58, 20/11/2026 |
+| D68 | ✅ **Imagem, vídeo, figurinha e documento:** resposta fixa pedindo para escrever ("Ainda não consigo ver imagens por aqui. Pode me escrever o que precisa?"); o tipo do arquivo fica registrado na conversa para a equipe | Q59, 20/11/2026 |

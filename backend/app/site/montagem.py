@@ -22,6 +22,24 @@ LAYOUTS = {
 DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
 FONTES = {"fraunces.woff2", "bricolage.woff2", "nunito.woff2"}
 SCRIPTS = {"carrossel.js"}
+
+# 11B: seções que a clínica liga/desliga e ordena (o topo com a equipe fica sempre no começo)
+SECOES = {"sobre": "Sobre", "procedimentos": "Procedimentos", "galeria": "Galeria de fotos", "visita": "Horários e endereço"}
+GALERIA_MAX = 12
+
+
+def conteudo(conn, clinic_id: UUID) -> dict:
+    """Textos e seções do site, já com os padrões (o que a clínica não mexeu)."""
+    r = conn.execute("select textos, secoes from clinic_sites where clinic_id = %s", (clinic_id,)).fetchone()
+    textos, sec = (r[0] or {}, r[1] or {}) if r else ({}, {})
+    ordem = [x for x in sec.get("ordem", []) if x in SECOES]
+    ordem += [x for x in SECOES if x not in ordem]
+    return {
+        "textos": {k: (textos.get(k) or "").strip() for k in ("titulo", "frase", "sobre")},
+        "secoes": {"ordem": ordem, "ocultas": [x for x in sec.get("ocultas", []) if x in SECOES],
+                   "equipe_no_topo": sec.get("equipe_no_topo", True) is not False,
+                   "procedimentos_ocultos": [str(x) for x in sec.get("procedimentos_ocultos", [])]},
+    }
 ESTATICO = Path(__file__).parent / "estatico"
 SCHEMA = {"odontologia": "Dentist", "medicina": "MedicalClinic", "fisioterapia": "MedicalClinic",
           "psicologia": "MedicalClinic", "estetica": "HealthAndBeautyBusiness", "outro": "LocalBusiness"}
@@ -143,11 +161,19 @@ def dados(conn, clinic_id: UUID, cor: str | None = None) -> dict:
     zap = conn.execute("select phone from whatsapp_instances where clinic_id = %s and enabled", (clinic_id,)).fetchone()
     fone = (zap[0] if zap and zap[0] else None) or c["phone"]
     mostrar_precos = bool(cfg.get("mostrar_precos"))
+    cont = conteudo(conn, clinic_id)
+    ocultos = set(cont["secoes"]["procedimentos_ocultos"])
     procedimentos = [
         {"nome": s["name"], "descricao": s["description"], "duracao": _duracao(s["duration_min"]),
          "preco": _preco(s["price_cents"]) if mostrar_precos else None}
-        for s in cur.execute("select name, description, duration_min, price_cents from services "
+        for s in cur.execute("select id, name, description, duration_min, price_cents from services "
                              "where clinic_id = %s and active order by name", (clinic_id,)).fetchall()
+        if str(s["id"]) not in ocultos
+    ]
+    galeria = [
+        {"url": f"/site/{c['slug']}/galeria/{g['id']}", "legenda": g["legenda"]}
+        for g in cur.execute("select id, legenda from site_photos where clinic_id = %s order by ordem, created_at",
+                             (clinic_id,)).fetchall()
     ]
     equipe = [
         {"nome": p["name"], "especialidade": p["specialty"], "bio": p["bio"],
@@ -169,11 +195,16 @@ def dados(conn, clinic_id: UUID, cor: str | None = None) -> dict:
     cidade = _cidade(c["address"])
     texto_zap = f"Olá! Vim pelo site da {nome} e gostaria de agendar um{'a' if termos.get('genero') == 'f' else ''} {atend}."
     return {
-        "nome": nome, "slug": c["slug"], "endereco": c["address"], "sobre": cfg.get("sobre_clinica"), "cidade": cidade,
-        # sem "Sobre" preenchido: uma frase neutra (sem promessas — regras de publicidade dos conselhos, D63)
-        "apresentacao": cfg.get("sobre_clinica") or (
+        "nome": nome, "slug": c["slug"], "endereco": c["address"], "cidade": cidade,
+        "titulo": cont["textos"]["titulo"] or nome,
+        "frase_propria": cont["textos"]["frase"] or None,  # a frase escrita pela clínica (sem o padrão)
+        "sobre": cont["textos"]["sobre"] or cfg.get("sobre_clinica"),
+        # frase do topo: a escrita pela clínica ou uma frase neutra (sem promessas — regras de publicidade dos conselhos, D63)
+        "frase": cont["textos"]["frase"] or (
             f"{seg.tipo_negocio[0].upper()}{seg.tipo_negocio[1:]}{' em ' + cidade if cidade else ''}. "
             f"{termos['atendimentos'][0].upper()}{termos['atendimentos'][1:]} com hora marcada e agendamento pelo WhatsApp."),
+        "galeria": galeria,
+        "secoes": cont["secoes"],
         "segmento": seg.nome, "tipo_negocio": seg.tipo_negocio, "termos": termos,
         "assistente": cfg.get("nome_assistente") or "Ísis",
         "chamada": f"Agende {'sua' if termos.get('genero') == 'f' else 'seu'} {atend} pelo WhatsApp.",
@@ -221,7 +252,14 @@ def desenhar(conn, clinic_id: UUID, layout: str, previa: bool = False, cor: str 
     layout = layout if layout in LAYOUTS else "classico"
     d = dados(conn, clinic_id, cor or cor_do_layout(conn, clinic_id, layout))
     # Com mais de uma pessoa, quem tem foto aparece primeiro no carrossel
-    d["carrossel"] = sorted(d["equipe"], key=lambda p: p["foto_url"] is None)
+    d["carrossel"] = sorted(d["equipe"], key=lambda p: p["foto_url"] is None) if d["secoes"]["equipe_no_topo"] else []
+    if not d["secoes"]["equipe_no_topo"]:
+        d["destaque"] = None
+    # para o Google e a prévia do link: o "Sobre", senão a frase do topo
+    d["apresentacao"] = d["sobre"] or d["frase"]
+    # seções na ordem escolhida, sem as desligadas e sem as que ficariam vazias
+    tem = {"sobre": bool(d["sobre"]), "procedimentos": bool(d["procedimentos"]), "galeria": bool(d["galeria"]), "visita": True}
+    d["ordem"] = [x for x in d["secoes"]["ordem"] if x not in d["secoes"]["ocultas"] and tem[x]]
     return _env.get_template(f"{layout}.html").render(s=d, json_ld=_json_ld(d), previa=previa)
 
 

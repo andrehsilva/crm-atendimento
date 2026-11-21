@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 54 de 66 resolvidas (51 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 57 de 66 resolvidas (54 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -63,15 +63,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## 🟢 Bloqueia a Etapa 13 (WhatsApp: mensagens picadas, áudio e imagem)
 
-- [ ] **Q57 — Quanto esperar antes de responder?** Quando chegam várias mensagens curtas seguidas.
-  *Sugestão:* 8 segundos depois da última mensagem (no máximo 30 s no total). Enquanto espera, aparece "digitando…".
-  Resposta:
-- [ ] **Q58 — Áudio:** transcrever e responder?
-  *Sugestão:* sim, até 2 minutos por áudio. O custo da transcrição entra no "Uso da IA" e no teto. Áudio mais longo: a assistente pede para resumir por texto ou passa para a equipe.
-  Resposta:
-- [ ] **Q59 — Imagem, vídeo, figurinha e documento:** o que a assistente faz?
-  *Sugestão:* responde "Ainda não consigo ver imagens por aqui. Pode me escrever o que precisa?". A imagem fica guardada na conversa para a equipe ver.
-  Resposta:
+✅ Nada pendente — Etapa 13 liberada.
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
@@ -104,6 +96,9 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q57 — Mensagens picadas:** ok — espera 8 s depois da última mensagem (no máximo 30 s no total) e responde tudo junto, com "digitando…". *(20/11 → D66)*
+- [x] **Q58 — Áudio:** ok — transcreve até 2 minutos; o custo entra no "Uso da IA" e no teto; mais longo, pede para resumir por texto ou passa para a equipe. *(20/11 → D67)*
+- [x] **Q59 — Imagem, vídeo, figurinha e documento:** ok — "Ainda não consigo ver imagens por aqui. Pode me escrever o que precisa?"; o arquivo fica registrado na conversa para a equipe. *(20/11 → D68)*
 - [x] **Q51 — Endereço da Rodrigues:** ok — o endereço curto passa de `demo` para `rodrigues`; a demonstração passa a ser a marcação "clínica de apresentação" (D55). *(20/11 → D61)*
 - [x] **Q53 — Layouts iniciais:** ok — 3 layouts para todos os segmentos ("Clássico", "Moderno", "Acolhedor"), com a cor e a logo da clínica. *(20/11 → D62)*
 - [x] **Q54 — Seções e fotos:** ok — galeria e bio/foto dos profissionais sim; "antes e depois" não; validar os textos padrão com um profissional antes de lançar. *(20/11 → D63)*

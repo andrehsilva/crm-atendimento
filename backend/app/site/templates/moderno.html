@@ -42,9 +42,16 @@
   .cartao-foto .pausa { margin-left: 2px; padding: 0 6px; }
   @media (max-width: 899px) { .cartao-foto { max-width: 340px; } }
 
-  .semana-wrap { padding: 120px 0 24px; }
-  @media (max-width: 899px) { .semana-wrap { padding-top: 104px; } }
-  .rotulo { font-weight: 700; font-size: var(--t2); margin-bottom: 18px; }
+  .folga-cartao { height: 72px; }
+  .manifesto { font-size: clamp(var(--t3), 3.4vw, var(--t4)); line-height: 1.3; font-weight: 600; letter-spacing: -.02em; max-width: 30ch;
+               white-space: pre-line; }
+  .faixa-fotos { list-style: none; margin: 0; padding: 0 max(20px, (100% - 1120px) / 2) 8px; display: flex; gap: 16px;
+                 overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+  .faixa-fotos li { flex: 0 0 auto; width: min(320px, 78vw); scroll-snap-align: start; }
+  .faixa-fotos figure { margin: 0; }
+  .faixa-fotos img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 24px; }
+  .faixa-fotos figcaption { margin-top: 10px; font-weight: 600; font-size: var(--t0); }
+
   .semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 0; }
   .semana li { border: 1.5px solid var(--linha); border-radius: 16px; padding: 14px 10px; min-height: 112px; font-variant-numeric: tabular-nums; }
   .semana .d { font-weight: 800; font-size: var(--t1); }
@@ -96,8 +103,8 @@
     <div class="envelope">
       <div class="texto">
         <p class="local">{{ s.segmento }}{% if s.cidade %} · {{ s.cidade }}{% endif %}</p>
-        <h1 id="t-nome">{{ s.nome }}</h1>
-        <p class="apres">{{ s.chamada }}</p>
+        <h1 id="t-nome">{{ s.titulo }}</h1>
+        <p class="apres">{{ s.frase_propria or s.chamada }}</p>
         {{ botao_zap(s, 'Falar no WhatsApp') }}
       </div>
       {% if s.carrossel %}
@@ -113,22 +120,17 @@
     </div>
   </section>
 
-  <section class="semana-wrap" aria-labelledby="t-semana"><div class="envelope">
-    <h2 id="t-semana" class="rotulo">Quando atendemos</h2>
-    <ul class="semana">
-      {% for h in s.horarios %}
-      <li{% if loop.index0 == s.hoje %} class="hoje" aria-current="date"{% endif %}><div class="d">{{ h.curto }}</div>
-        <div class="h{% if not h.faixas %} fechado{% endif %}">{% if h.lista %}{% for f in h.lista %}{{ f }}<br>{% endfor %}{% else %}Fechado{% endif %}</div></li>
-      {% endfor %}
-    </ul>
-  </div></section>
+  {# espaço para o cartão de foto que "sai" da faixa colorida #}
+  {% if s.carrossel %}<div class="folga-cartao" aria-hidden="true"></div>{% endif %}
 
+  {% for sec in s.ordem %}
+  {% if sec == 'sobre' %}
   <section class="secao" aria-labelledby="t-sobre"><div class="envelope">
-    <p style="font-size:var(--t3);line-height:1.35;font-weight:500;letter-spacing:-.01em;max-width:32ch" id="t-sobre">{{ s.apresentacao }}</p>
+    <h2 id="t-sobre" class="sr">Sobre nós</h2>
+    <p class="manifesto">{{ s.sobre }}</p>
   </div></section>
-
-  {% if s.procedimentos %}
-  <section class="secao" style="padding-top:0" aria-labelledby="t-proc"><div class="envelope">
+  {% elif sec == 'procedimentos' %}
+  <section class="secao" aria-labelledby="t-proc"><div class="envelope">
     <h2 id="t-proc">O que fazemos</h2>
     <ul class="quadro">
       {% for p in s.procedimentos %}
@@ -136,11 +138,32 @@
       {% endfor %}
     </ul>
   </div></section>
-  {% endif %}
-
+  {% elif sec == 'galeria' %}
+  <section class="secao" aria-labelledby="t-galeria"><div class="envelope">
+    <h2 id="t-galeria">Por dentro</h2>
+  </div>
+    {# Faixa de fotos altas que rola de lado, sangrando até a borda da tela #}
+    <ul class="faixa-fotos">
+      {% for g in s.galeria %}
+      <li><figure><img src="{{ g.url }}" alt="{{ g.legenda or ('Foto de ' ~ s.nome) }}" loading="lazy">{% if g.legenda %}<figcaption>{{ g.legenda }}</figcaption>{% endif %}</figure></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% elif sec == 'visita' %}
+  <section class="secao" aria-labelledby="t-semana"><div class="envelope">
+    <h2 id="t-semana">Quando atendemos</h2>
+    <ul class="semana">
+      {% for h in s.horarios %}
+      <li{% if loop.index0 == s.hoje %} class="hoje" aria-current="date"{% endif %}><div class="d">{{ h.curto }}</div>
+        <div class="h{% if not h.faixas %} fechado{% endif %}">{% if h.lista %}{% for f in h.lista %}{{ f }}<br>{% endfor %}{% else %}Fechado{% endif %}</div></li>
+      {% endfor %}
+    </ul>
+  </div></section>
   <section class="secao onde" aria-labelledby="t-onde"><div class="envelope">
     <h2 id="t-onde" style="margin:0">Onde estamos</h2>
     <div class="grande">{{ como_chegar(s) }}</div>
   </div></section>
+  {% endif %}
+  {% endfor %}
 </main>
 {% endblock %}
