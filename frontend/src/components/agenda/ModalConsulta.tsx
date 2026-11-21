@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, UserCheck, UserX, XCircle } from 'lucide-react'
 import { api, type Consulta, type Slot } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
-import { dataHora, diaLegivel, hora, partes, telefone } from '../../lib/formato'
+import { dataHora, diaLegivel, hojeYmd, hora, partes, telefone } from '../../lib/formato'
 import { useAviso } from '../Aviso'
 import { Botao, Campo, Entrada, Modal, Selo } from '../ui'
 import { SeloStatus } from './status'
@@ -31,6 +31,9 @@ export function ModalConsulta({ consulta, onFechar }: { consulta: Consulta | nul
 
   const base = consulta ? `/clinics/${clinica.id}/appointments/${consulta.id}` : ''
   const ativa = consulta && (consulta.status === 'agendada' || consulta.status === 'confirmada')
+  // Presença/falta só a partir do dia do atendimento (a mesma regra é conferida no servidor)
+  const futura = !!consulta && partes(consulta.starts_at, tz).ymd > hojeYmd(tz)
+  const dicaFutura = futura ? 'Presença e falta só podem ser marcadas a partir do dia do atendimento' : undefined
 
   const slots = useQuery({
     queryKey: ['slots', 'remarcar', consulta?.id, dia],
@@ -76,8 +79,8 @@ export function ModalConsulta({ consulta, onFechar }: { consulta: Consulta | nul
           {consulta.status === 'agendada' && (
             <Botao variante="secundario" disabled={ocupado} onClick={() => status.mutate('confirmada')}><Check className="size-4" />Confirmar</Botao>
           )}
-          <Botao variante="secundario" disabled={ocupado} onClick={() => status.mutate('realizada')}><UserCheck className="size-4" />Compareceu</Botao>
-          <Botao variante="secundario" disabled={ocupado} onClick={() => status.mutate('faltou')}><UserX className="size-4" />Faltou</Botao>
+          <Botao variante="secundario" disabled={ocupado || futura} title={dicaFutura} onClick={() => status.mutate('realizada')}><UserCheck className="size-4" />Compareceu</Botao>
+          <Botao variante="secundario" disabled={ocupado || futura} title={dicaFutura} onClick={() => status.mutate('faltou')}><UserX className="size-4" />Faltou</Botao>
           <Botao variante="secundario" disabled={ocupado} onClick={() => setModo('remarcar')}><CalendarClock className="size-4" />Remarcar</Botao>
           <Botao variante="perigo" disabled={ocupado} onClick={() => setModo('cancelar')}><XCircle className="size-4" />Cancelar</Botao>
         </div>

@@ -23,7 +23,25 @@ from app.services.llm import USER_AGENT
 
 log = logging.getLogger("isis.waha")
 
-TEXTO_MIDIA = "(o paciente enviou um arquivo, foto ou áudio — peça com gentileza para escrever a mensagem em texto)"
+# Etapa 13 (D68): mídia sem texto não vai para a IA; o código responde e a equipe vê o que chegou na conversa
+ROTULO_MIDIA = {"foto": "📷 Foto", "video": "🎬 Vídeo", "figurinha": "🙂 Figurinha", "documento": "📄 Documento",
+                "audio": "🎤 Áudio", "outro": "📎 Arquivo"}
+
+
+def _tipo_midia(p: dict, dados: dict) -> str:
+    t = str(dados.get("type") or "").lower()
+    mime = str(((p.get("media") or {}) if isinstance(p.get("media"), dict) else {}).get("mimetype") or dados.get("mimetype") or "").lower()
+    if t in ("ptt", "audio") or mime.startswith("audio/"):
+        return "audio"
+    if t == "sticker" or mime == "image/webp" and t != "image":
+        return "figurinha"
+    if t == "image" or mime.startswith("image/"):
+        return "foto"
+    if t == "video" or mime.startswith("video/"):
+        return "video"
+    if t == "document" or mime:
+        return "documento"
+    return "outro"
 _SUFIXOS_IGNORADOS = ("@g.us", "@newsletter", "@broadcast")  # grupos, canais, status e listas
 _NUMERO_EM_ID = re.compile(r"^(\d{10,15})@(c\.us|s\.whatsapp\.net)$")
 
@@ -40,6 +58,7 @@ class MensagemEntrada:
     texto: str
     id_externo: str
     nome: str | None = None
+    midia: str | None = None  # "foto", "audio"… (Etapa 13); texto = legenda, ou "" se veio sem legenda
 
 
 def verificar_assinatura(corpo: bytes, assinatura: str | None, chave: str) -> bool:
@@ -76,11 +95,12 @@ def interpretar(evento: dict) -> MensagemEntrada | None:
     if p.get("fromMe") or not remetente or remetente.endswith(_SUFIXOS_IGNORADOS) or remetente == "status@broadcast":
         return None
     texto = (p.get("body") or "").strip()
-    if not texto:
-        if not p.get("hasMedia"):
-            return None
-        texto = TEXTO_MIDIA
     dados = p.get("_data") if isinstance(p.get("_data"), dict) else {}
+    midia = _tipo_midia(p, dados) if p.get("hasMedia") else None
+    if midia and texto == (dados.get("body") or "") and len(texto) > 500:
+        texto = ""  # alguns servidores mandam a mídia em base64 no "body": não é legenda
+    if not texto and not midia:
+        return None
     meu = _numero(((evento.get("me") or {}).get("id")))
     telefone = _numero(remetente)
     if telefone is None and remetente.endswith("@lid"):
@@ -93,6 +113,7 @@ def interpretar(evento: dict) -> MensagemEntrada | None:
         texto=texto[:2000],
         id_externo=str(p.get("id") or evento.get("id") or ""),
         nome=nome,
+        midia=midia,
     )
 
 
@@ -141,6 +162,15 @@ class ClienteWaha:
         if isinstance(i, dict):
             i = i.get("_serialized") or i.get("id")
         return str(i) if i else None
+
+    def digitando(self, sessao: str, chat_id: str) -> None:
+        """D66: "visto" e "digitando…" enquanto a assistente espera o paciente terminar de escrever."""
+        alvo = {"session": sessao, "chatId": chat_id}
+        try:
+            self._req("POST", "/api/sendSeen", json=alvo)
+            self._req("POST", "/api/startTyping", json=alvo)
+        except WahaErro as e:
+            log.info("sem visto/digitando: %s", e)
 
     # ---- sessão ------------------------------------------------------------
     def sessao(self, sessao: str) -> dict:

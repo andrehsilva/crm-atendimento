@@ -34,7 +34,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-AG-09 | Remarcar = cancelar a antiga + criar a nova numa única transação; se a nova falhar, a antiga continua. | Código | 🟡 |
 | RN-AG-10 | Ísis oferece no máximo **3 opções** de horário por vez, priorizando o pedido do paciente (dia/turno/profissional). | Prompt + Código | 🟡 |
 | RN-AG-11 | Antes de marcar/remarcar/cancelar, Ísis **resume e pede confirmação explícita** ("Posso confirmar?"). O código só aceita a confirmação se o paciente respondeu depois do resumo. | Prompt + Código (dois passos) | ✅ |
-| RN-AG-12 | Status da consulta: `agendada` → `confirmada` → `realizada`; ou `cancelada` / `faltou`. Remarcar gera nova consulta ligada à antiga. | Código | 🟡 |
+| RN-AG-12 | Status da consulta: `agendada` → `confirmada` → `realizada`; ou `cancelada` / `faltou`. Remarcar gera nova consulta ligada à antiga. **Presença (`realizada`) e falta (`faltou`) só a partir do dia da consulta**, no fuso da clínica (pedido do usuário, 20/11/2026). | Código | ✅ |
 | RN-AG-13 | Datas relativas ("quinta que vem", "amanhã") são resolvidas com a data/hora atual no fuso da clínica, e Ísis repete a data por extenso ("quinta, 19/11, às 14h"). | Prompt + Código | 🟡 |
 
 ## Atendimento e segurança da Ísis (RN-AT)

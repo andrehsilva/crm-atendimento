@@ -165,8 +165,9 @@ def test_remarcar_com_limite_cheio_funciona(conn, clinica):
 
 
 # --- status e dentista de referência (RN-AG-12, RN-AG-15) ----------------------
-def test_rn_ag_15_realizada_define_dentista_de_referencia(conn, clinica):
+def test_rn_ag_15_realizada_define_dentista_de_referencia(conn, clinica, monkeypatch):
     c = marcar(conn, clinica, as_(23, 9), prof=clinica.prof_b)
+    monkeypatch.setattr(S.relogio, "agora", lambda: as_(23, 11))  # já é o dia do atendimento
     S.mudar_status(conn, clinica.id, appointment_id=c["id"], novo="realizada", ator="recepcao")
     assert S.buscar_paciente(conn, clinica.id, TEL)["preferred_professional_id"] == clinica.prof_b
     slots = S.horarios_livres(conn, clinica.id, clinica.servico, date(2026, 11, 24), date(2026, 11, 24), telefone=TEL, agora=AGORA)
@@ -254,3 +255,16 @@ def test_remarcar_enfileira_uma_mensagem_de_remarcacao(conn, clinica):
     assert _fila(conn, clinica).count("confirmacao") == 1  # só a da marcação original
     texto = conn.execute("select body from outbound_messages where kind = 'remarcacao' and clinic_id = %s", (clinica.id,)).fetchone()[0]
     assert "segunda-feira, 23/11 às 09:00" in texto and "terça-feira, 24/11 às 14:00" in texto
+
+
+def test_presenca_e_falta_so_a_partir_do_dia_do_atendimento(conn, clinica, monkeypatch):
+    c = marcar(conn, clinica, as_(24, 9))
+    monkeypatch.setattr(S.relogio, "agora", lambda: as_(23, 18))  # véspera
+    for novo in ("realizada", "faltou"):
+        with pytest.raises(AgendaError) as e:
+            S.mudar_status(conn, clinica.id, appointment_id=c["id"], novo=novo, ator="recepcao")
+        assert e.value.codigo == "STATUS_INVALIDO"
+    S.mudar_status(conn, clinica.id, appointment_id=c["id"], novo="confirmada", ator="recepcao")  # confirmar continua livre
+    monkeypatch.setattr(S.relogio, "agora", lambda: as_(24, 8))  # no dia, mesmo antes do horário
+    assert S.mudar_status(conn, clinica.id, appointment_id=c["id"], novo="realizada", ator="recepcao")["status"] == "realizada"
+

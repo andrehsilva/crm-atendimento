@@ -69,11 +69,12 @@ def _gravar(conn, clinic_id, conversa_id, direcao, autor, texto, external_id: st
 
 
 def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
-              external_id: str | None = None, responder: bool = True) -> list[dict]:
+              external_id: str | None = None, responder: bool = True, adiar: bool = False) -> list[dict]:
     """Grava a mensagem do paciente e, se a Ísis estiver ativa, a resposta dela. Vale para qualquer canal.
 
     Devolve as mensagens novas: [] se a mensagem já tinha chegado antes (duplicada),
     [paciente] se a Ísis está pausada, [paciente, isis] no caso normal.
+    adiar=True (WhatsApp, D66): só grava; a resposta vem depois, junta, por `responder_pendentes`.
     """
     entrada = _gravar(conn, clinica["id"], conversa["id"], "in", "paciente", texto, external_id)
     if entrada is None:
@@ -87,10 +88,36 @@ def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
         avisar(conn, clinica["id"], "conversa", conversa["id"])
         return novas
 
-    if conversa["status"] == "humano" or not responder:  # RN-AT-06: Ísis pausada, a recepção responde
+    if conversa["status"] == "humano" or not responder or adiar:  # RN-AT-06: Ísis pausada, a recepção responde
         avisar(conn, clinica["id"], "conversa", conversa["id"])
         return novas
+    return novas + _responder(conn, clinica, paciente, conversa, texto.strip(), entrada["created_at"])
 
+
+def pendentes(conn, conversa_id) -> list[dict]:
+    """Mensagens do paciente que chegaram depois da última resposta (da Ísis, da equipe ou do sistema)."""
+    return conn.cursor(row_factory=dict_row).execute(
+        """select id, content, created_at from messages m
+           where m.conversation_id = %s and m.author = 'paciente'
+             and m.created_at > coalesce((select max(created_at) from messages o
+                                         where o.conversation_id = %s and o.direction = 'out'), '-infinity')
+           order by m.created_at""", (conversa_id, conversa_id)).fetchall()
+
+
+def responder_pendentes(conn, clinica: dict, paciente: dict, conversa: dict) -> list[dict]:
+    """D66: responde de uma vez tudo o que o paciente mandou em mensagens picadas ("oi" / "tudo bem" / "queria…")."""
+    if conversa["status"] == "humano":
+        return []
+    lista = pendentes(conn, conversa["id"])
+    if not lista:
+        return []
+    texto = "\n".join(m["content"].strip() for m in lista if m["content"].strip())
+    return _responder(conn, clinica, paciente, conversa, texto, lista[0]["created_at"])
+
+
+def _responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, recebida_em) -> list[dict]:
+    """Gera a resposta da Ísis (ou passa para a equipe, se não houver IA ou o teto tiver sido atingido)."""
+    novas: list[dict] = []
     ia = config_da_clinica(conn, clinica["id"])
     teto_atingido = ia is not None and uso_ia.pausada(conn, clinica["id"])
     if ia is None or teto_atingido:
@@ -109,7 +136,7 @@ def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     conn.commit()
 
-    resposta = isis.responder(conn, clinica, paciente, conversa, texto.strip(), entrada["created_at"], ia)
+    resposta = isis.responder(conn, clinica, paciente, conversa, texto, recebida_em, ia)
     novas.append(_gravar(conn, clinica["id"], conversa["id"], "out", "isis", resposta))
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     return novas

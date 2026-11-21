@@ -32,7 +32,10 @@ class Settings(BaseSettings):
     waha_api_key: str = ""            # chave X-Api-Key do servidor WAHA
     waha_webhook_hmac_key: str = ""   # segredo que assina os webhooks (HMAC SHA-512)
     public_base_url: str = ""         # endereço público do backend (túnel em dev), ex.: https://xxx.trycloudflare.com
-    waha_simular_digitacao: bool = True  # "visto" + "digitando…" antes de responder (evita bloqueio)
+    waha_simular_digitacao: bool = True
+    # Etapa 13 (D66): mensagens picadas — espera este silêncio (s) antes de responder, no máximo o total abaixo
+    whatsapp_espera_s: float = 8.0
+    whatsapp_espera_max_s: float = 30.0  # "visto" + "digitando…" antes de responder (evita bloqueio)
 
     # Etapa 6 — mensagens automáticas (lembretes, avisos, aniversário)
     mensagens_automaticas: bool = True  # liga o envio automático da fila

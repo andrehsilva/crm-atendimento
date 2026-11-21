@@ -49,8 +49,13 @@ def test_ignora_outros_eventos():
     assert interpretar({"event": "message.ack", "payload": {}}) is None
 
 
-def test_midia_sem_texto_vira_aviso_para_a_isis():
-    assert interpretar(_evento(body="", hasMedia=True)).texto == waha.TEXTO_MIDIA
+def test_midia_e_identificada_pelo_tipo():
+    foto = interpretar(_evento(body="", hasMedia=True, _data={"type": "image"}))
+    assert foto.midia == "foto" and foto.texto == ""
+    assert interpretar(_evento(body="", hasMedia=True, _data={"type": "ptt"})).midia == "audio"
+    assert interpretar(_evento(body="", hasMedia=True, _data={"type": "sticker"})).midia == "figurinha"
+    legenda = interpretar(_evento(body="Essa mancha é normal?", hasMedia=True, _data={"type": "image"}))
+    assert legenda.midia == "foto" and legenda.texto == "Essa mancha é normal?"
 
 
 def test_lid_acha_numero_no_data():
@@ -81,6 +86,10 @@ class SemCommit:
 class WahaFalso:
     def __init__(self, falhar=False):
         self.enviadas, self.falhar = [], falhar
+        self.digitou = 0
+
+    def digitando(self, sessao, chat_id):
+        self.digitou += 1
 
     def enviar_texto(self, sessao, chat_id, texto, simular_digitacao=None):
         if self.falhar:
@@ -103,8 +112,8 @@ def ligada(conn, clinica):
     return clinica
 
 
-def _msg(texto="Oi", id_ext="false_5511988887777@c.us_M1", chat_id="5511988887777@c.us", tel="+5511988887777"):
-    return MensagemEntrada(sessao=SESSAO, chat_id=chat_id, telefone=tel, texto=texto, id_externo=id_ext)
+def _msg(texto="Oi", id_ext="false_5511988887777@c.us_M1", chat_id="5511988887777@c.us", tel="+5511988887777", midia=None):
+    return MensagemEntrada(sessao=SESSAO, chat_id=chat_id, telefone=tel, texto=texto, id_externo=id_ext, midia=midia)
 
 
 def _mensagens(conn, clinica):
@@ -201,3 +210,65 @@ def test_webhook_recusa_assinatura_errada_e_aceita_a_certa(monkeypatch):
     certa = hmac.new(b"segredo-teste", corpo, hashlib.sha512).hexdigest()
     r = cliente.post("/webhooks/waha", content=corpo, headers={"X-Webhook-Hmac": certa})
     assert r.status_code == 200 and r.json()["ignorada"] is True
+
+
+# ---------------------------------------------------------------------------
+# Etapa 13A — mensagens picadas (D66) e mídia (D68)
+# ---------------------------------------------------------------------------
+def test_mensagens_picadas_viram_uma_resposta_so(conn, ligada, monkeypatch):
+    chamadas, agendadas = [], []
+    monkeypatch.setattr(chat.isis, "responder", lambda conn, clinica, paciente, conversa, texto, em, ia=None:
+                        chamadas.append(texto) or "Oi! Claro, me conta.")
+    monkeypatch.setattr(whatsapp, "_agendar", lambda chave, dados: agendadas.append(dados))
+    w, c = WahaFalso(), SemCommit(conn)
+    for i, t in enumerate(["oi", "tudo bem", "queria saber do clareamento"]):
+        whatsapp.processar_com(c, _msg(t, id_ext=f"M{i}"), w, agrupar=True)
+    assert not chamadas and not w.enviadas and len(agendadas) == 3 and w.digitou == 3  # só gravou e ficou "digitando…"
+    sessao, chat_id, clinic_id, tel, _ = agendadas[-1]
+    whatsapp.responder_agrupadas(c, sessao, chat_id, clinic_id, tel, w)
+    assert chamadas == ["oi\ntudo bem\nqueria saber do clareamento"]
+    assert w.enviadas == [(SESSAO, "5511988887777@c.us", "Oi! Claro, me conta.")]
+    whatsapp.responder_agrupadas(c, sessao, chat_id, clinic_id, tel, w)  # nada novo: não responde de novo
+    assert len(chamadas) == 1 and len(w.enviadas) == 1
+
+
+def test_espera_nunca_passa_do_maximo(monkeypatch):
+    import threading as th
+    criados = []
+
+    class TimerFalso:
+        def __init__(self, espera, alvo, args):
+            criados.append(espera)
+            self.daemon = False
+
+        def start(self):
+            pass
+
+        def cancel(self):
+            pass
+
+    monkeypatch.setattr(th, "Timer", TimerFalso)
+    relogio = iter([100.0, 104.0, 127.0])
+    monkeypatch.setattr(whatsapp.time, "monotonic", lambda: next(relogio))
+    for _ in range(3):
+        whatsapp._agendar("teste:chat", ())
+    assert criados == [8.0, 8.0, 3.0]  # a 3ª mensagem chegou 27 s depois da 1ª: só falta 3 s para os 30
+    whatsapp._agrupando.pop("teste:chat", None)
+
+
+def test_foto_sem_legenda_responde_sem_ia_e_fica_registrada(conn, ligada, monkeypatch):
+    monkeypatch.setattr(chat.isis, "responder", lambda *a, **k: pytest.fail("não devia chamar a IA"))
+    w = WahaFalso()
+    whatsapp.processar_com(SemCommit(conn), _msg("", midia="foto"), w, agrupar=True)
+    assert w.enviadas == [(SESSAO, "5511988887777@c.us", whatsapp.RESPOSTA_MIDIA)]
+    assert [m[:2] for m in _mensagens(conn, ligada)] == [("paciente", "[📷 Foto]"), ("isis", whatsapp.RESPOSTA_MIDIA)]
+
+
+def test_foto_com_conversa_na_equipe_nao_recebe_resposta_automatica(conn, ligada, monkeypatch):
+    w, c = WahaFalso(), SemCommit(conn)
+    monkeypatch.setattr(chat.isis, "responder", lambda *a, **k: "ok")
+    whatsapp.processar_com(c, _msg("Oi"), w)
+    conn.execute("update conversations set status = 'humano' where clinic_id = %s", (ligada.id,))
+    whatsapp.processar_com(c, _msg("", id_ext="M9", midia="audio"), w)
+    assert len(w.enviadas) == 1  # só a resposta do "Oi"
+

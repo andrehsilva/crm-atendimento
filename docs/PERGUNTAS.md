@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 57 de 66 resolvidas (54 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 57 de 67 resolvidas (54 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -64,6 +64,13 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 ## 🟢 Bloqueia a Etapa 13 (WhatsApp: mensagens picadas, áudio e imagem)
 
 ✅ Nada pendente — Etapa 13 liberada.
+
+## ⚪ WhatsApp por clínica
+
+- [ ] **Q60 — Um servidor WAHA para todas ou um por clínica?**
+  Hoje há **um servidor WAHA** (endereço e chave no `.env`) com **uma sessão (um número) por clínica**: Admin geral › clínica › WhatsApp liga a sessão, aponta o webhook e mostra o QR. O webhook é único; cada mensagem traz a sessão, que identifica a clínica.
+  *Sugestão:* manter um servidor para todas (mais simples, um lugar só para cuidar) e, só se algum cliente exigir, permitir no Admin geral um servidor próprio para aquela clínica, com endereço e chave criptografada.
+  Resposta:
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 

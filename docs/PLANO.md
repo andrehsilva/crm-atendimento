@@ -144,6 +144,8 @@ Pedido do usuário (20/11/2026): muita gente escreve em várias mensagens curtas
 - **Mensagens picadas:** a assistente espera alguns segundos depois da última mensagem e responde tudo de uma vez.
 - **Áudio:** é transcrito para texto e a assistente responde normalmente; o custo entra no teto de gasto da IA.
 - **Imagem:** a assistente pede, com educação, para a pessoa escrever o que precisa.
+- **13A — Mensagens picadas e mídia:** ✅ feito e testado (20/11/2026; D66, D68). Áudio, por ora, recebe o pedido para escrever.
+- **13B — Áudio transcrito:** 🔨 em andamento (D67).
 
 ---
 

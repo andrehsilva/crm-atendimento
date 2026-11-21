@@ -16,6 +16,7 @@ from psycopg.types.json import Jsonb
 
 from app.agenda import regras as R
 from app.agenda.erros import AgendaError
+from app.core import relogio
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.eventos import avisar
 from app.painel import avisos, crm
@@ -387,6 +388,11 @@ def mudar_status(conn, clinic_id: UUID, *, appointment_id: UUID, novo: str, ator
     c = _consulta_do_paciente(conn, clinic_id, appointment_id, telefone, ator)
     if c["status"] not in TRANSICOES[novo]:
         raise AgendaError("STATUS_INVALIDO", f"Não dá para mudar de {c['status']} para {novo}.")
+    # Presença/falta só a partir do dia do atendimento (no fuso da clínica): não se marca o futuro
+    if novo in ("realizada", "faltou"):
+        tz = carregar_clinica(conn, clinic_id)["tz"]
+        if c["starts_at"].astimezone(tz).date() > relogio.agora().astimezone(tz).date():
+            raise AgendaError("STATUS_INVALIDO", "Só dá para marcar presença ou falta a partir do dia do atendimento.")
     novo_c = _cur(conn).execute("update appointments set status = %s where id = %s returning *", (novo, appointment_id)).fetchone()
     if novo == "realizada":  # RN-AG-15: vira o dentista de referência
         conn.execute(

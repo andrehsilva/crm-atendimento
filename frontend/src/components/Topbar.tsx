@@ -30,7 +30,7 @@ export function Topbar() {
       : 'Conectando…'
 
   return (
-    <div className="flex items-center justify-end gap-3 px-10 pt-6 text-sm">
+    <div className="flex items-center justify-end gap-3 px-10 pb-6 pt-6 text-sm">
       <span className="flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-muted">
         <span className={`size-2 rounded-full ${cor}`} />
         {texto}
