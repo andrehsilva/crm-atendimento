@@ -35,7 +35,7 @@ def _slug_livre(conn, base: str) -> str:
 
 def listar_clinicas(conn) -> list[dict]:
     return _cur(conn).execute(
-        """select c.id, c.name, c.phone, c.slug, c.status, c.timezone, c.address, c.created_at,
+        """select c.id, c.name, c.phone, c.slug, c.status, c.timezone, c.address, c.created_at, c.apresentacao,
                   coalesce(c.settings->>'nome_assistente', 'Ísis') as nome_assistente,
                   coalesce(c.settings->>'segmento', 'odontologia') as segmento,
                   w.session as whatsapp_sessao, w.status as whatsapp_status, w.phone as whatsapp_numero,
@@ -43,7 +43,7 @@ def listar_clinicas(conn) -> list[dict]:
                      where m.clinic_id = c.id and m.created_at >= date_trunc('month', now())) as conversas_mes,
                   (select count(*) from clinic_users cu where cu.clinic_id = c.id and cu.active) as usuarios
            from clinics c left join whatsapp_instances w on w.clinic_id = c.id
-           order by c.name"""
+           order by c.apresentacao desc, c.name"""
     ).fetchall()
 
 
@@ -99,6 +99,10 @@ def atualizar_clinica(conn, clinic_id: UUID, dados: dict) -> None:
     for coluna, valor in campos.items():
         if valor is not None:
             conn.execute(f"update clinics set {coluna} = %s, updated_at = now() where id = %s", (valor, clinic_id))  # noqa: S608 — coluna vem da lista fixa acima
+    if dados.get("apresentacao") is not None:  # D55: no máximo uma clínica de apresentação
+        if dados["apresentacao"]:
+            conn.execute("update clinics set apresentacao = false where apresentacao and id <> %s", (clinic_id,))
+        conn.execute("update clinics set apresentacao = %s where id = %s", (dados["apresentacao"], clinic_id))
     novos = {}
     if dados.get("nome_assistente"):
         novos["nome_assistente"] = dados["nome_assistente"].strip()

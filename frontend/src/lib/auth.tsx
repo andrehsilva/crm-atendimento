@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ErroApi, EVENTO_SESSAO, type Usuario } from './api'
+import { esquecerClinica } from './clinicaGuardada'
 import { Login } from '../pages/Login'
 import { TrocarSenha } from '../pages/TrocarSenha'
 
@@ -33,6 +34,7 @@ export function ProvedorAuth({ children }: { children: ReactNode }) {
 
   async function sair() {
     await api.post('/auth/logout').catch(() => undefined)
+    esquecerClinica() // D55: no próximo login entra pela clínica de apresentação
     // Recarrega na página inicial: limpa tudo da sessão (cache, tempo real, cor) e mostra a tela de entrar.
     // (Antes o cache era limpo sem avisar a tela, que ficava parada no painel.)
     window.location.replace('/')

@@ -8,7 +8,7 @@ import { useAviso } from '../components/Aviso'
 import { ChatTeste } from '../components/ChatTeste'
 import { AgendaSemana } from '../components/agenda/AgendaSemana'
 import { ModalConsulta } from '../components/agenda/ModalConsulta'
-import { Botao } from '../components/ui'
+import { Botao, Modal } from '../components/ui'
 
 /** Tela de demonstração (D11): conversar com a assistente e ver a agenda mudar na hora, lado a lado. */
 export function Demo() {
@@ -16,10 +16,13 @@ export function Demo() {
   const aviso = useAviso()
   const qc = useQueryClient()
   const [aberta, setAberta] = useState<Consulta | null>(null)
+  const [confirmar, setConfirmar] = useState(false)
+  // O reinício vale só para a clínica de demonstração (endereço /demo), nunca para a clínica aberta (D56)
+  const ehDemo = clinica.slug === 'demo'
 
   const reset = useMutation({
     mutationFn: () => api.post('/dev/reset-demo'),
-    onSuccess: () => { qc.invalidateQueries(); aviso.ok('Demonstração reiniciada') },
+    onSuccess: () => { qc.invalidateQueries(); setConfirmar(false); aviso.ok('Demonstração reiniciada') },
     onError: aviso.erro,
   })
 
@@ -33,15 +36,32 @@ export function Demo() {
             <p className="text-sm text-muted">Converse como {clinica.termos.cliente} à esquerda e veja a agenda mudar na hora</p>
           </div>
         </div>
-        <Botao variante="secundario" disabled={reset.isPending} onClick={() => reset.mutate()}>
-          <RotateCcw className="size-4" />{reset.isPending ? 'Reiniciando…' : 'Reiniciar demonstração'}
-        </Botao>
+        {ehDemo && (
+          <Botao variante="secundario" onClick={() => setConfirmar(true)}>
+            <RotateCcw className="size-4" />Reiniciar demonstração
+          </Botao>
+        )}
       </header>
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(320px,380px)_1fr]">
         <section className="flex min-h-[520px] flex-col rounded-3xl bg-surface p-4"><ChatTeste /></section>
         <section className="min-h-[520px] overflow-y-auto rounded-3xl bg-surface p-5"><AgendaSemana onConsulta={setAberta} /></section>
       </div>
       <ModalConsulta consulta={aberta} onFechar={() => setAberta(null)} />
+      <Modal titulo="Reiniciar a demonstração?" aberto={confirmar} onFechar={() => setConfirmar(false)}>
+        <p className="text-sm">
+          Apaga os {clinica.termos.clientes}, {clinica.termos.atendimentos}, conversas e mensagens de <strong>{clinica.name}</strong> e
+          cria alguns exemplos novos com a sua equipe e os seus procedimentos.
+        </p>
+        <p className="mt-3 text-sm text-muted">
+          Ficam como estão: nome, logo, cor, assistente, chave de IA, WhatsApp, horários, equipe, procedimentos e usuários.
+        </p>
+        <div className="mt-6 flex justify-end gap-2">
+          <Botao variante="fantasma" onClick={() => setConfirmar(false)}>Cancelar</Botao>
+          <Botao variante="perigo" disabled={reset.isPending} onClick={() => reset.mutate()}>
+            {reset.isPending ? 'Reiniciando…' : 'Reiniciar'}
+          </Botao>
+        </div>
+      </Modal>
     </div>
   )
 }

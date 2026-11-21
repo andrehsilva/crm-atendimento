@@ -121,8 +121,9 @@ em "sessão" e "psicólogo(a)", que o lembrete não cita o procedimento e que as
 Cada clínica cadastra a própria chave (Google, OpenAI, OpenCode ou OpenRouter), escolhe o modelo, acompanha tokens e custo
 estimado e define um teto mensal. Substitui a D36 (IA paga por uso antes do 1º cliente).
 - **10A — Chave e modelo:** ✅ feito e testado (20/11/2026; D50). Chave criptografada por clínica, provedores Google/OpenAI/OpenCode/OpenRouter, "Testar conexão", assistente desligada sem chave, opção "usar a chave da plataforma" no admin geral.
-- **10C — Configuração inicial obrigatória:** ⏳ liberada (D51–D54). Passo a passo "Primeiros passos" que precisa ser concluído antes de usar o painel (clínica, assistente, aparência, horários, serviços e equipe, IA).
-- **Reiniciar demonstração sem apagar a clínica (D56)** e **clínica de apresentação (D55):** 🔨 em andamento.
+- **10C — Configuração inicial obrigatória:** 🔨 em andamento (D51–D54). Passo a passo "Primeiros passos" que precisa ser concluído antes de usar o painel (clínica, assistente, aparência, horários, serviços e equipe, IA).
+- **Reiniciar demonstração sem apagar a clínica (D56):** ✅ feito e testado (20/11/2026). Troca só clientes, consultas, conversas e mensagens pelos exemplos; botão só na clínica `/demo`, com confirmação.
+- **Clínica de apresentação (D55):** ✅ feito e testado (20/11/2026). Marcação no Admin geral › clínica › Dados (hoje a Clínica Rodrigues); o admin da plataforma entra por ela; "Admin geral" só nela, "Voltar para…" nas outras.
 - **10B — Uso e teto:** tokens por resposta, tabela de preços e cotação no admin geral, tela "Uso da IA", teto mensal com aviso aos 80% e pausa aos 100%.
 
 ---

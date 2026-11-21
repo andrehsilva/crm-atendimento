@@ -26,8 +26,8 @@ Conn = psycopg.Connection
 def listar_clinicas(request: Request, conn: Conn = Depends(get_conn)):
     u = usuario_da_requisicao(request)
     return conn.cursor(row_factory=dict_row).execute(
-        """select id, name, phone, slug, timezone, status from clinics
-           where %s or id = any(%s) order by name""",
+        """select id, name, phone, slug, timezone, status, apresentacao from clinics
+           where %s or id = any(%s) order by apresentacao desc, name""",
         (u.super_admin, list(u.clinicas)),
     ).fetchall()
 

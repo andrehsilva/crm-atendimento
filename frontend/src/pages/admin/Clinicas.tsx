@@ -64,7 +64,7 @@ export function AdminClinicas() {
                 <tr key={c.id} className="border-b border-line last:border-0 hover:bg-surface-muted">
                   <td className="px-6 py-4">
                     <Link to={`/admin/clinicas/${c.id}`} className="font-medium hover:text-primary">{c.name}</Link>
-                    <div className="text-xs text-muted">/{c.slug}</div>
+                    <div className="flex items-center gap-2 text-xs text-muted">/{c.slug}{c.apresentacao && <Selo cor="azul">apresentação</Selo>}</div>
                   </td>
                   <td className="px-4 py-4 tabular-nums">{telefone(c.phone)}</td>
                   <td className="px-4 py-4"><SeloWhatsapp status={c.whatsapp_sessao ? c.whatsapp_status : null} /></td>

@@ -3,8 +3,6 @@
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from psycopg.types.json import Jsonb
-
 from app.agenda import servico
 from app.painel import chat
 
@@ -89,50 +87,76 @@ def criar_estrutura(conn, nome: str, telefone: str, slug: str, endereco: str | N
     return clinic_id, serv, prof
 
 
-def criar_demo(conn, reset: bool = False) -> str:
-    existente = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
-    if existente and not reset:
-        return str(existente[0])
-    guardados = {"whatsapp": [], "usuarios": [], "settings": None}
-    if existente:
-        # O reset recria a clínica do zero, mas mantém o WhatsApp, os usuários e as configurações ligados a ela
-        guardados["whatsapp"] = conn.execute(
-            "select session, status, phone, enabled from whatsapp_instances where clinic_id = %s", existente).fetchall()
-        guardados["usuarios"] = conn.execute(
-            "select user_id, role, active from clinic_users where clinic_id = %s", existente).fetchall()
-        guardados["settings"] = conn.execute("select settings from clinics where id = %s", existente).fetchone()[0]
-        conn.execute("delete from appointment_events where clinic_id = %s", existente)
-        conn.execute("delete from outbound_messages where clinic_id = %s", existente)
-        conn.execute("delete from appointments where clinic_id = %s", existente)
-        conn.execute("delete from clinics where id = %s", existente)
+# Dados de TESTE da clínica (D56): tudo que nasce de clientes e conversas. A ordem respeita as ligações entre tabelas.
+TABELAS_DE_TESTE = ("appointment_events", "outbound_messages", "action_tokens", "agent_runs", "messages",
+                    "conversations", "crm_events", "patient_notes", "patient_photos", "appointments", "patients")
 
-    clinic_id, serv, prof = criar_estrutura(
-        conn, "Clínica Dental Demo", TELEFONE_CLINICA, SLUG, "Rua das Flores, 123 — Centro, São Paulo/SP")
-    if guardados["settings"]:
-        conn.execute("update clinics set settings = %s where id = %s", (Jsonb(guardados["settings"]), clinic_id))
-    for sessao, status, fone, ligado in guardados["whatsapp"]:
-        conn.execute("insert into whatsapp_instances (clinic_id, session, status, phone, enabled) values (%s,%s,%s,%s,%s)",
-                     (clinic_id, sessao, status, fone, ligado))
-    for uid, papel, ativo in guardados["usuarios"]:
-        conn.execute("insert into clinic_users (clinic_id, user_id, role, active) values (%s,%s,%s,%s)", (clinic_id, uid, papel, ativo))
+# Exemplos: nome, telefone, dias úteis à frente, hora, confirmar?
+EXEMPLOS = [
+    ("Maria da Silva", "(11) 98765-4321", 1, time(9), False),
+    ("João Pereira", "11 97654-3210", 1, time(14), True),
+    ("Carla Souza", "+55 21 99234-5678", 2, time(10), False),
+]
 
+
+def limpar_dados_de_teste(conn, clinic_id) -> None:
+    """Apaga só clientes, consultas, conversas e mensagens. A clínica (nome, logo, cor, assistente, IA,
+    WhatsApp, horários, equipe, procedimentos e usuários) fica como está."""
+    for tabela in TABELAS_DE_TESTE:
+        conn.execute(f"delete from {tabela} where clinic_id = %s", (clinic_id,))  # noqa: S608 — nomes fixos
+
+
+def _pares(conn, clinic_id) -> list[tuple]:
+    """(profissional, procedimento) ativos que a assistente pode marcar — da própria clínica, como ela está hoje."""
+    return conn.execute(
+        """select ps.professional_id, ps.service_id from professional_services ps
+           join professionals p on p.id = ps.professional_id and p.active
+           join services s on s.id = ps.service_id and s.active and s.bookable_by_ai
+           where ps.clinic_id = %s order by p.name, s.name""", (clinic_id,)).fetchall()
+
+
+def criar_exemplos(conn, clinic_id) -> int:
+    """Consultas, um contato novo e um aniversariante, usando a equipe e os procedimentos que a clínica tem.
+    Exemplo que não cabe na agenda (folga, fora do horário…) é pulado. Devolve quantas consultas criou."""
+    from app.agenda.erros import AgendaError
+
+    slug = conn.execute("select slug from clinics where id = %s", (clinic_id,)).fetchone()[0]
+    pares = _pares(conn, clinic_id)
     hoje = datetime.now(TZ).date()
+    criadas = 0
+    for n, (nome, tel, dias, hora, confirmar) in enumerate(EXEMPLOS):
+        for prof, serv in pares[n:] + pares[:n]:  # cada exemplo começa num par diferente, para variar a agenda
+            dia = _dia_util(hoje, dias)
+            try:
+                with conn.transaction():
+                    c = servico.marcar(conn, clinic_id, telefone=tel, nome=nome, professional_id=prof, service_id=serv,
+                                       inicio=datetime.combine(dia, hora, tzinfo=TZ), ator="recepcao")
+                    if confirmar:
+                        servico.mudar_status(conn, clinic_id, appointment_id=c["id"], novo="confirmada", ator="recepcao")
+                criadas += 1
+                break
+            except AgendaError:
+                continue
 
-    def marcar(nome, tel, dentista, procedimento, dia, hora):
-        return servico.marcar(conn, clinic_id, telefone=tel, nome=nome, professional_id=prof[dentista],
-                              service_id=serv[procedimento], inicio=datetime.combine(dia, hora, tzinfo=TZ), ator="recepcao")
-
-    marcar("Maria da Silva", "(11) 98765-4321", "Dra. Ana Lima", "Limpeza (profilaxia)", _dia_util(hoje, 1), time(9))
-    joao = marcar("João Pereira", "11 97654-3210", "Dr. Bruno Costa", "Avaliação odontológica geral",
-                  _dia_util(hoje, 1, evitar_sexta=True), time(14))
-    marcar("Carla Souza", "+55 21 99234-5678", "Dra. Ana Lima", "Clareamento a laser", _dia_util(hoje, 2), time(10))
-    servico.mudar_status(conn, clinic_id, appointment_id=joao["id"], novo="confirmada", ator="recepcao")
-
-    # Um contato novo que só conversou (coluna "Novo Contato")
-    chat.receber(conn, SLUG, "(11) 96543-2109", "Oi! Vocês fazem clareamento?", responder=False)
+    # Um contato novo que só conversou (coluna "Novo Contato" do CRM)
+    chat.receber(conn, slug, "(11) 96543-2109", "Oi! Vocês fazem clareamento?", responder=False)
     conn.execute("update patients set name = 'Pedro Alves' where clinic_id = %s and phone = '+5511965432109'", (clinic_id,))
-
     # Aniversariante do dia, para o Dashboard
     conn.execute("update patients set birth_date = %s where clinic_id = %s and phone = '+5521992345678'",
                  (hoje.replace(year=1990), clinic_id))
+    return criadas
+
+
+def criar_demo(conn, reset: bool = False) -> str:
+    """Cria a clínica de demonstração na 1ª vez. Com reset=True numa clínica que já existe, só troca os dados
+    de teste pelos exemplos (D56) — nunca apaga a clínica nem as configurações dela."""
+    existente = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
+    if existente:
+        if reset:
+            limpar_dados_de_teste(conn, existente[0])
+            criar_exemplos(conn, existente[0])
+        return str(existente[0])
+    clinic_id, _, _ = criar_estrutura(
+        conn, "Clínica Dental Demo", TELEFONE_CLINICA, SLUG, "Rua das Flores, 123 — Centro, São Paulo/SP")
+    criar_exemplos(conn, clinic_id)
     return str(clinic_id)

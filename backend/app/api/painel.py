@@ -413,7 +413,7 @@ def chat_mensagem(slug: str, body: MensagemChat, conn: Conn = Depends(get_conn))
 # ---------------------------------------------------------------------------
 # Desenvolvimento
 # ---------------------------------------------------------------------------
-@router.post("/dev/reset-demo", summary="Recria a clínica demo (só com ENV=dev)")
+@router.post("/dev/reset-demo", summary="Reinicia os dados de teste da clínica demo, sem apagar a clínica (D56; só com ENV=dev)")
 def reset_demo(request: Request, conn: Conn = Depends(get_conn)):
     exigir_super_admin(request)
     if get_settings().env != "dev":

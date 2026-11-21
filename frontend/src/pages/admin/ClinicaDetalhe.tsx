@@ -111,8 +111,31 @@ function Dados({ c }: { c: AdminClinica }) {
     },
     onError: aviso.erro,
   })
+  const apresentacao = useMutation({
+    mutationFn: (ligar: boolean) => api.patch(`/admin/clinicas/${c.id}`, { apresentacao: ligar }),
+    onSuccess: (_, ligar) => {
+      aviso.ok(ligar ? `${c.name} agora é a clínica de apresentação.` : 'Clínica de apresentação desmarcada.')
+      qc.invalidateQueries({ queryKey: ['admin'] })
+      qc.invalidateQueries({ queryKey: ['clinicas'] })
+    },
+    onError: aviso.erro,
+  })
   return (
-    <Secao className="max-w-3xl">
+    <div className="flex max-w-3xl flex-col gap-6">
+    <Secao titulo="Clínica de apresentação">
+      <label className="flex items-start gap-3 text-sm">
+        <input type="checkbox" className="mt-0.5 size-4 accent-[var(--primary)]" checked={c.apresentacao} disabled={apresentacao.isPending}
+          onChange={(e) => apresentacao.mutate(e.target.checked)} />
+        <span>
+          Esta é a clínica de apresentação da plataforma
+          <span className="block text-xs text-muted">
+            Você entra sempre por ela e só nela aparece o botão "Admin geral". Nas outras clínicas aparece "Voltar para {c.name}".
+            Só uma clínica pode ter esta marcação.
+          </span>
+        </span>
+      </label>
+    </Secao>
+    <Secao>
       <form onSubmit={(e) => { e.preventDefault(); salvar.mutate() }} className="grid gap-4 sm:grid-cols-2">
         <Campo rotulo="Nome da clínica"><Entrada required value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} /></Campo>
         <Campo rotulo="Telefone (chave)" ajuda="Não muda: identifica a clínica."><Entrada value={telefone(c.phone)} disabled /></Campo>
@@ -128,6 +151,7 @@ function Dados({ c }: { c: AdminClinica }) {
         </div>
       </form>
     </Secao>
+    </div>
   )
 }
 

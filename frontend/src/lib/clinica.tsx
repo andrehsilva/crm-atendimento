@@ -3,9 +3,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from './auth'
 import { aplicarMarca, lembrarClinica } from './marca'
+import { clinicaGuardada } from './clinicaGuardada'
+export { escolherClinica, esquecerClinica } from './clinicaGuardada'
 import { api, EVENTO_SESSAO, type Cadastros, type Clinica } from './api'
 
-type Contexto = { clinica: Clinica; cadastros: Cadastros }
+/** apresentacao = clínica de apresentação da plataforma (D55), para o botão "Voltar para…" do admin da plataforma */
+type ItemLista = { id: string; name: string; apresentacao: boolean }
+type Contexto = { clinica: Clinica; cadastros: Cadastros; apresentacao: ItemLista | null }
 const Ctx = createContext<Contexto | null>(null)
 
 // Qual "tipo" de aviso do backend atualiza quais dados da tela
@@ -51,29 +55,11 @@ function useTempoReal(clinicId: string | undefined) {
   }, [clinicId, qc])
 }
 
-const CHAVE_CLINICA = 'isis:clinica'
-
-/** Clínica escolhida neste navegador (o super admin troca pelo "Entrar como"). Só conveniência local. */
-export function escolherClinica(id: string) {
-  try {
-    localStorage.setItem(CHAVE_CLINICA, id)
-  } catch {
-    // navegador sem armazenamento: usa a primeira clínica da lista
-  }
-}
-
-function clinicaGuardada(): string | null {
-  try {
-    return localStorage.getItem(CHAVE_CLINICA)
-  } catch {
-    return null
-  }
-}
-
 export function ProvedorClinica({ children }: { children: ReactNode }) {
   // A lista já vem filtrada pelo backend: só as clínicas do usuário (super admin: todas)
   const { usuario } = useAuth()
-  const lista = useQuery({ queryKey: ['clinicas'], queryFn: () => api.get<{ id: string }[]>('/clinics') })
+  // A lista vem com a clínica de apresentação primeiro (D55): sem escolha guardada, é por ela que se entra
+  const lista = useQuery({ queryKey: ['clinicas'], queryFn: () => api.get<ItemLista[]>('/clinics') })
   const guardada = clinicaGuardada()
   const id = lista.data?.find((c) => c.id === guardada)?.id ?? lista.data?.[0]?.id
   const clinica = useQuery({ queryKey: ['clinica', id], queryFn: () => api.get<Clinica>(`/clinics/${id}`), enabled: !!id })
@@ -113,11 +99,17 @@ export function ProvedorClinica({ children }: { children: ReactNode }) {
     )
   }
   if (!clinica.data || !cadastros.data) return <Centro>Carregando…</Centro>
-  return <Ctx.Provider value={{ clinica: clinica.data, cadastros: cadastros.data }}>{children}</Ctx.Provider>
+  const apresentacao = lista.data?.find((c) => c.apresentacao) ?? null
+  return <Ctx.Provider value={{ clinica: clinica.data, cadastros: cadastros.data, apresentacao }}>{children}</Ctx.Provider>
 }
 
 function Centro({ children }: { children: ReactNode }) {
   return <div className="grid h-full place-items-center p-8 text-center text-muted">{children}</div>
+}
+
+/** Igual ao useClinica, mas devolve null fora de uma clínica (ex.: Admin geral, que usa o mesmo topo). */
+export function useClinicaOpcional(): Contexto | null {
+  return useContext(Ctx)
 }
 
 export function useClinica(): Contexto {

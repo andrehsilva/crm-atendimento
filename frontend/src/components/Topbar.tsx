@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
-import { useClinica } from '../lib/clinica'
+import { useClinicaOpcional } from '../lib/clinica'
 import { useSaude } from '../lib/saude'
 import { aplicarTema, temaAtual, type Tema } from '../lib/tema'
 
 export function Topbar() {
   const [tema, setTema] = useState<Tema>(temaAtual)
-  const { clinica } = useClinica()
+  const clinica = useClinicaOpcional()?.clinica ?? null
   const q = useSaude()
   const saude = q.data ?? null
   const erro = q.isError
@@ -21,7 +21,7 @@ export function Topbar() {
   const texto = erro
     ? 'Backend fora do ar'
     : saude
-      ? `Backend ok · banco: ${saude.banco.status} · IA da clínica: ${clinica.ia_ativa ? 'ligada' : 'desligada'}`
+      ? `Backend ok · banco: ${saude.banco.status} · ${clinica ? `IA da clínica: ${clinica.ia_ativa ? 'ligada' : 'desligada'}` : `IA da plataforma: ${saude.ia.status}`}`
       : 'Verificando backend…'
 
   return (

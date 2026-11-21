@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { nomePapel, useAuth } from '../lib/auth'
-import { useClinica } from '../lib/clinica'
+import { escolherClinica, useClinica } from '../lib/clinica'
 import { useSaude } from '../lib/saude'
 import {
+  ArrowLeftRight,
   CalendarDays,
   ChevronLeft,
   KanbanSquare,
@@ -28,7 +30,18 @@ const itens = [
 
 export function Sidebar() {
   const [recolhida, setRecolhida] = useState(false)
-  const { clinica } = useClinica()
+  const { clinica, apresentacao } = useClinica()
+  const qc = useQueryClient()
+  const navegar = useNavigate()
+  // D55: o botão Admin geral só aparece na clínica de apresentação; nas outras, o caminho de volta para ela
+  const naApresentacao = !apresentacao || apresentacao.id === clinica.id
+  function voltarParaApresentacao() {
+    if (!apresentacao) return
+    escolherClinica(apresentacao.id)
+    qc.removeQueries({ queryKey: ['clinica'] })
+    qc.invalidateQueries({ queryKey: ['clinicas'] })
+    navegar('/')
+  }
   const { usuario, sair } = useAuth()
   const saude = useSaude() // em produção o chat de teste fica desligado (8B)
   const papel = usuario.super_admin ? 'super_admin' : (usuario.clinicas.find((c) => c.clinic_id === clinica.id)?.papel ?? '')
@@ -81,7 +94,14 @@ export function Sidebar() {
       </nav>
 
       <div className="flex flex-col gap-2 px-3 pb-3">
-        {usuario.super_admin && (
+        {usuario.super_admin && !naApresentacao && apresentacao && (
+          <button type="button" onClick={voltarParaApresentacao} title={`Voltar para ${apresentacao.name}`}
+            className="flex items-center gap-3 rounded-xl bg-text px-4 py-3 text-left text-sm font-medium text-surface hover:opacity-90">
+            <ArrowLeftRight className="size-5 shrink-0" />
+            {!recolhida && `Voltar para ${apresentacao.name}`}
+          </button>
+        )}
+        {usuario.super_admin && naApresentacao && (
           <Link
             to="/admin"
             title="Painel de admin geral: clínicas, WhatsApp e usuários"

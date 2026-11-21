@@ -202,6 +202,8 @@ export type Usuario = {
 // ---------------------------------------------------------------- admin geral (7B)
 export type AdminClinica = {
   id: string
+  /** D55: clínica de apresentação da plataforma (no máximo uma) */
+  apresentacao: boolean
   name: string
   phone: string
   slug: string

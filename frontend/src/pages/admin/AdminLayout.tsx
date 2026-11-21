@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
 import { Activity, ArrowLeft, Building2, LogOut, SlidersHorizontal } from 'lucide-react'
 import { Topbar } from '../../components/Topbar'
@@ -12,6 +13,7 @@ const itens = [
 /** Área do admin geral (D30): mesmo visual do painel, menu próprio. Só para o super admin. */
 export function AdminLayout() {
   const { usuario, sair } = useAuth()
+  useEffect(() => { document.title = 'Admin geral · Ísis' }, [])
   if (!usuario.super_admin) return <Navigate to="/" replace />
 
   return (

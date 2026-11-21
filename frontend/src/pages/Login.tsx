@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { CartaoAcesso, ErroForm } from '../components/CartaoAcesso'
 import { Botao, Campo, Entrada } from '../components/ui'
 import { api, type Usuario } from '../lib/api'
+import { esquecerClinica } from '../lib/clinicaGuardada'
 
 /** Tela de entrar (D34) + "Esqueci minha senha". */
 export function Login({ aviso }: { aviso?: string }) {
@@ -21,6 +22,7 @@ export function Login({ aviso }: { aviso?: string }) {
     setEnviando(true)
     try {
       const u = await api.post<Usuario>('/auth/login', { email, senha })
+      esquecerClinica() // D55: o admin da plataforma entra sempre pela clínica de apresentação
       qc.setQueryData(['me'], u)
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Não foi possível entrar.')

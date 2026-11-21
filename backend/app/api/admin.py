@@ -63,6 +63,7 @@ class EdicaoClinica(BaseModel):
     nome_assistente: str | None = Field(None, min_length=1, max_length=40)
     segmento: str | None = Field(None, pattern=SEGMENTOS_RE)
     status: str | None = Field(None, pattern="^(ativa|suspensa)$")
+    apresentacao: bool | None = None  # D55: clínica de apresentação da plataforma
 
     @field_validator("fuso")
     @classmethod
