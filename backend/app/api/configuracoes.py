@@ -8,6 +8,7 @@ from datetime import datetime, time
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import Response
 from psycopg import errors
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
@@ -332,6 +333,7 @@ def excluir_procedimento(clinic_id: UUID, service_id: UUID, request: Request, co
 class Profissional(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     especialidade: str | None = Field(None, max_length=120)
+    bio: str | None = Field(None, max_length=400)  # Etapa 11: aparece no site
     cor: str = Field("#B85C74", pattern=COR)
     ativo: bool = True
     procedimentos: list[UUID] = Field(default_factory=list)
@@ -353,7 +355,9 @@ class Folga(BaseModel):
 def ver_profissionais(clinic_id: UUID, conn=Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
     profs = _cur(conn).execute(
-        """select p.id, p.name as nome, p.specialty as especialidade, p.color as cor, p.active as ativo,
+        """select p.id, p.name as nome, p.specialty as especialidade, p.bio, p.color as cor, p.active as ativo,
+                  (select (extract(epoch from f.updated_at) * 1000)::bigint from professional_photos f
+                     where f.professional_id = p.id) as foto_versao,
                   coalesce(array_agg(ps.service_id) filter (where ps.service_id is not null), '{}') as procedimentos,
                   exists(select 1 from professional_hours ph where ph.professional_id = p.id) as horario_proprio
            from professionals p left join professional_services ps on ps.professional_id = p.id
@@ -368,12 +372,13 @@ def ver_profissionais(clinic_id: UUID, conn=Depends(get_conn)):
 
 def _gravar_profissional(conn, clinic_id: UUID, pid: UUID | None, body: Profissional) -> UUID:
     _ids_validos(conn, clinic_id, "services", body.procedimentos)
-    valores = (body.nome.strip(), (body.especialidade or "").strip() or None, body.cor, body.ativo)
+    valores = (body.nome.strip(), (body.especialidade or "").strip() or None, (body.bio or "").strip() or None,
+               body.cor, body.ativo)
     if pid is None:
-        pid = conn.execute("insert into professionals (clinic_id, name, specialty, color, active) values (%s, %s, %s, %s, %s) returning id",
-                           (clinic_id, *valores)).fetchone()[0]
+        pid = conn.execute("insert into professionals (clinic_id, name, specialty, bio, color, active) "
+                           "values (%s, %s, %s, %s, %s, %s) returning id", (clinic_id, *valores)).fetchone()[0]
     elif not conn.execute(
-            """update professionals set name = %s, specialty = %s, color = %s, active = %s, updated_at = now()
+            """update professionals set name = %s, specialty = %s, bio = %s, color = %s, active = %s, updated_at = now()
                where clinic_id = %s and id = %s returning id""", (*valores, clinic_id, pid)).fetchone():
         raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
     conn.execute("delete from professional_services where clinic_id = %s and professional_id = %s", (clinic_id, pid))
@@ -394,6 +399,39 @@ def novo_profissional(clinic_id: UUID, body: Profissional, request: Request, con
 def editar_profissional(clinic_id: UUID, professional_id: UUID, body: Profissional, request: Request, conn=Depends(get_conn)):
     _admin(request, clinic_id, conn)
     return {"id": _gravar_profissional(conn, clinic_id, professional_id, body)}
+
+
+def _profissional(conn, clinic_id: UUID, professional_id: UUID) -> None:
+    if not conn.execute("select 1 from professionals where clinic_id = %s and id = %s", (clinic_id, professional_id)).fetchone():
+        raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
+
+
+@router.get("/profissionais/{professional_id}/foto", summary="Foto do profissional")
+def foto_profissional(clinic_id: UUID, professional_id: UUID, conn=Depends(get_conn)):
+    r = conn.execute("select mime, data from professional_photos where clinic_id = %s and professional_id = %s",
+                     (clinic_id, professional_id)).fetchone()
+    if not r:
+        return Response(status_code=404)
+    return aparencia.resposta_imagem(r[0], bytes(r[1]))
+
+
+@router.put("/profissionais/{professional_id}/foto", summary="Enviar a foto (o corpo é a imagem: PNG, JPG ou WebP até 512 KB)")
+async def enviar_foto_profissional(clinic_id: UUID, professional_id: UUID, request: Request, conn=Depends(get_conn)):
+    exigir_admin_clinica(request, clinic_id)
+    _profissional(conn, clinic_id, professional_id)
+    dados, mime = await aparencia.ler_imagem(request)
+    conn.execute(
+        """insert into professional_photos (professional_id, clinic_id, mime, data) values (%s, %s, %s, %s)
+           on conflict (professional_id) do update set mime = excluded.mime, data = excluded.data, updated_at = now()""",
+        (professional_id, clinic_id, mime, dados))
+    return ver_profissionais(clinic_id, conn)
+
+
+@router.delete("/profissionais/{professional_id}/foto", summary="Remover a foto")
+def remover_foto_profissional(clinic_id: UUID, professional_id: UUID, request: Request, conn=Depends(get_conn)):
+    exigir_admin_clinica(request, clinic_id)
+    conn.execute("delete from professional_photos where clinic_id = %s and professional_id = %s", (clinic_id, professional_id))
+    return ver_profissionais(clinic_id, conn)
 
 
 @router.post("/profissionais/{professional_id}/folgas", status_code=201, summary="Férias/folga do profissional")

@@ -17,12 +17,17 @@ export function Topbar() {
     setTema(novo)
   }
 
-  const cor = erro ? 'bg-red-500' : saude ? 'bg-green-500' : 'bg-amber-400'
-  const texto = erro
-    ? 'Backend fora do ar'
+  // Linguagem da equipe da clínica, sem termos técnicos (backend, banco…)
+  const bancoOk = saude?.banco.status === 'ok'
+  const assistenteLigada = clinica ? clinica.ia_ativa && clinica.uso_ia.nivel !== 'pausada' : saude?.ia.status === 'configurada'
+  const cor = erro || (saude && !bancoOk) ? 'bg-red-500' : saude ? (assistenteLigada ? 'bg-green-500' : 'bg-amber-400') : 'bg-amber-400'
+  const texto = erro || (saude && !bancoOk)
+    ? 'Sem conexão com o sistema. Atualize a página.'
     : saude
-      ? `Backend ok · banco: ${saude.banco.status} · ${clinica ? `IA da clínica: ${clinica.ia_ativa ? 'ligada' : 'desligada'}` : `IA da plataforma: ${saude.ia.status}`}`
-      : 'Verificando backend…'
+      ? clinica
+        ? `Tudo funcionando · ${!clinica.ia_ativa ? 'Assistente desligada' : clinica.uso_ia.nivel === 'pausada' ? 'Assistente pausada' : `${clinica.nome_assistente} atendendo`}`
+        : `Tudo funcionando · IA da plataforma ${assistenteLigada ? 'configurada' : 'não configurada'}`
+      : 'Conectando…'
 
   return (
     <div className="flex items-center justify-end gap-3 px-10 pt-6 text-sm">

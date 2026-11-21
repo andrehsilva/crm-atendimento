@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from './auth'
 import { aplicarMarca, lembrarClinica } from './marca'
 import { clinicaGuardada } from './clinicaGuardada'
-export { escolherClinica, esquecerClinica } from './clinicaGuardada'
 import { api, EVENTO_SESSAO, type Cadastros, type Clinica } from './api'
 
 /** apresentacao = clínica de apresentação da plataforma (D55), para o botão "Voltar para…" do admin da plataforma */

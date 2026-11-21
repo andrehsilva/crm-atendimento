@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ s.nome }}{% if s.cidade %} · {{ s.segmento }} em {{ s.cidade }}{% endif %}</title>
+<meta name="description" content="{{ s.apresentacao[:155] }}">
+{% if previa %}<meta name="robots" content="noindex">{% endif %}
+<link rel="canonical" href="{{ s.url }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ s.nome }}">
+<meta property="og:description" content="{{ s.apresentacao[:200] }}">
+<meta property="og:url" content="{{ s.url }}">
+{% if s.imagem_url %}<meta property="og:image" content="{{ s.imagem_url }}">{% endif %}
+<meta name="theme-color" content="{{ s.tons.cor }}">
+<script type="application/ld+json">{{ json_ld | safe }}</script>
+<style>
+  {% block fontes %}{% endblock %}
+  :root {
+    --cor: {{ s.tons.cor }}; --cor-escura: {{ s.tons.escura }}; --cor-suave: {{ s.tons.suave }}; --cor-media: {{ s.tons.media }};
+    --tinta: #17181c; --tinta-2: #55575f; --tinta-3: #8b8d95; --linha: #e7e5ea; --papel: #ffffff;
+    /* escala tipográfica (razão 1,25) */
+    --t-1: .875rem; --t0: 1rem; --t1: 1.125rem; --t2: 1.375rem; --t3: 1.75rem; --t4: 2.25rem; --t5: 2.875rem; --t6: 3.625rem; --t7: 4.625rem;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { margin: 0; color: var(--tinta); background: var(--papel); line-height: 1.6; font-size: var(--t1);
+         -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  img { max-width: 100%; display: block; }
+  a { color: var(--cor-escura); text-underline-offset: .18em; }
+  :focus-visible { outline: 3px solid var(--cor-escura); outline-offset: 3px; border-radius: 4px; }
+  h1, h2, h3 { line-height: 1.1; margin: 0; font-weight: 600; text-wrap: balance; }
+  p { margin: 0; text-wrap: pretty; }
+  .envelope { width: min(1120px, 100% - 40px); margin-inline: auto; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  /* Botão principal: texto grande e em negrito sobre a cor da clínica (contraste ≥ 3:1 garantido na 9B) */
+  .botao { display: inline-flex; align-items: center; justify-content: center; gap: .6em; background: var(--cor); color: #fff;
+           text-decoration: none; font-weight: 700; font-size: 1.1875rem; line-height: 1.2; padding: .9em 1.5em;
+           border-radius: var(--raio-botao, 12px); transition: filter .15s; }
+  .botao:hover { filter: brightness(.93); }
+  .botao svg { width: 1.25em; height: 1.25em; flex: none; }
+  .zap-flutuante { position: fixed; right: 16px; bottom: 16px; z-index: 30; box-shadow: 0 10px 30px rgb(0 0 0 / .22);
+                   border-radius: var(--raio-botao, 12px); }
+  @media (min-width: 900px) { .zap-flutuante { display: none; } }
+  .rodape { padding: 40px 0 104px; font-size: var(--t-1); color: var(--tinta-2); }
+  .rodape .envelope { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 32px; }
+  .rodape a { color: var(--tinta-2); }
+  @media (min-width: 900px) { .rodape { padding-bottom: 40px; } }
+  .faixa-previa { position: sticky; top: 0; z-index: 40; background: #17181c; color: #fff; font: 600 14px/1.4 system-ui, sans-serif;
+                  text-align: center; padding: 8px 12px; }
+  /* Carrossel dos profissionais: rolagem com "snap" (funciona até sem script) */
+  .carrossel { position: relative; }
+  .trilho { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .trilho::-webkit-scrollbar { display: none; }
+  .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+  .controles { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+  .controles button { font: inherit; cursor: pointer; }
+  .seta { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid currentColor; background: transparent; color: inherit;
+          display: grid; place-items: center; }
+  .seta svg { width: 18px; height: 18px; }
+  .pontos { display: flex; gap: 8px; margin: 0 6px; }
+  .ponto { width: 10px; height: 10px; padding: 0; border-radius: 999px; border: 0; background: currentColor; opacity: .3; transition: width .2s, opacity .2s; }
+  .ponto[aria-current="true"] { width: 26px; opacity: 1; }
+  .pausa { margin-left: auto; background: none; border: 0; color: inherit; text-decoration: underline; font-size: var(--t-1); opacity: .8; }
+  @media (prefers-reduced-motion: reduce) { .ponto { transition: none; } }
+  {% block estilo %}{% endblock %}
+</style>
+{% if s.carrossel and s.carrossel|length > 1 %}<script src="/site/_estatico/js/carrossel.js" defer></script>{% endif %}
+</head>
+<body>
+{% if previa %}<div class="faixa-previa">Prévia: só a equipe da clínica vê esta página.</div>{% endif %}
+{% block corpo %}{% endblock %}
+{% from "_partes.html" import botao_zap %}
+<div class="zap-flutuante">{{ botao_zap(s, 'Agendar') }}</div>
+<footer class="rodape">
+  <div class="envelope">
+    <span>{{ s.nome }}{% if s.endereco %}, {{ s.endereco }}{% endif %}</span>
+    <span><a href="{{ s.painel_url }}" rel="nofollow">Área da clínica</a> &nbsp;·&nbsp; Site feito com {{ s.plataforma }}</span>
+  </div>
+</footer>
+</body>
+</html>

@@ -150,7 +150,8 @@ def criar_exemplos(conn, clinic_id) -> int:
 def criar_demo(conn, reset: bool = False) -> str:
     """Cria a clínica de demonstração na 1ª vez. Com reset=True numa clínica que já existe, só troca os dados
     de teste pelos exemplos (D56) — nunca apaga a clínica nem as configurações dela."""
-    existente = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
+    # D61: a clínica de demonstração é a marcada como apresentação (D55); "demo" só vale para criar a 1ª vez
+    existente = conn.execute("select id from clinics where apresentacao").fetchone() or         conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
     if existente:
         if reset:
             limpar_dados_de_teste(conn, existente[0])
@@ -158,6 +159,8 @@ def criar_demo(conn, reset: bool = False) -> str:
         return str(existente[0])
     clinic_id, _, _ = criar_estrutura(
         conn, "Clínica Dental Demo", TELEFONE_CLINICA, SLUG, "Rua das Flores, 123 — Centro, São Paulo/SP")
-    conn.execute("update clinics set configurada_em = now() where id = %s", (clinic_id,))  # demo já nasce pronta
+    # demo já nasce pronta e vira a clínica de apresentação se ainda não houver uma
+    conn.execute("""update clinics set configurada_em = now(),
+                    apresentacao = not exists(select 1 from clinics where apresentacao) where id = %s""", (clinic_id,))
     criar_exemplos(conn, clinic_id)
     return str(clinic_id)

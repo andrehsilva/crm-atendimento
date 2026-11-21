@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { nomePapel, useAuth } from '../lib/auth'
-import { escolherClinica, useClinica } from '../lib/clinica'
+import { useClinica } from '../lib/clinica'
+import { escolherClinica } from '../lib/clinicaGuardada'
 import { useSaude } from '../lib/saude'
 import {
   ArrowLeftRight,

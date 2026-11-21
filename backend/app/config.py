@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     mensagens_automaticas: bool = True  # liga o envio automático da fila
     envio_somente_para: str = ""  # ENV=dev: só envia para estes telefones (separados por vírgula); vazio = não envia
 
+    # Etapa 11 — site de apresentação: endereço público onde fica <base>/<clinica>.
+    # Em dev, o painel (Vite) repassa /site para o backend. Em produção: https://<dominio> (Q50).
+    site_base_url: str = "http://localhost:5173/site"
+
     # Etapa 8B — produção
     chat_teste: bool | None = None  # chat web de TESTE (D15) aberto? Padrão: só em dev (em produção expõe conversas)
 

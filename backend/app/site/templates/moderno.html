@@ -1,0 +1,146 @@
+{% extends "_base.html" %}
+{% from "_partes.html" import botao_zap, marca, retrato, como_chegar, carrossel %}
+
+{% block fontes %}
+  @font-face { font-family: "Bricolage"; src: url("/site/_estatico/fontes/bricolage.woff2") format("woff2");
+               font-weight: 200 800; font-display: swap; }
+{% endblock %}
+
+{% block estilo %}
+  /* Moderno — "agenda": faixa forte na cor da clínica, nome enorme, semana em colunas, procedimentos como quadro. */
+  body { font-family: "Bricolage", system-ui, -apple-system, "Segoe UI", sans-serif; font-optical-sizing: auto; }
+  .barra { background: var(--cor); color: #fff; }
+  .barra .envelope { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
+  .barra .nome { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--t1); }
+  .barra .zap { color: #fff; font-weight: 700; font-size: 1.1875rem; text-decoration: none; display: inline-flex; gap: .5em; align-items: center; }
+  .barra .zap svg { width: 1.25em; height: 1.25em; }
+  @media (max-width: 640px) { .barra .zap { display: none; } }
+
+  .heroi { background: var(--cor); color: #fff; padding: clamp(40px, 7vw, 88px) 0 0; }
+  .heroi .envelope { display: grid; gap: 40px; align-items: end; }
+  @media (min-width: 900px) { .heroi .envelope { grid-template-columns: 1.35fr .65fr; } }
+  .heroi .texto { padding-bottom: clamp(40px, 7vw, 96px); }
+  /* Texto branco sobre a cor da clínica: sempre grande (≥ 24px ou negrito ≥ 19px) — contraste 3:1 vale para texto grande */
+  .heroi .local { font-size: 1.25rem; font-weight: 700; }
+  .heroi h1 { margin-top: 14px; font-size: clamp(3rem, 9.5vw, 6.5rem); font-weight: 800; letter-spacing: -.045em; line-height: .95; }
+  .heroi .apres { margin-top: 26px; font-size: 1.5rem; line-height: 1.4; max-width: 30ch; }
+  .heroi .botao { margin-top: 36px; background: #fff; color: var(--cor-escura); --raio-botao: 999px; }
+  .cartao-foto { position: relative; margin-bottom: -72px; }
+  .cartao-foto .foto { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 28px; box-shadow: 0 24px 60px rgb(0 0 0 / .25); }
+  .cartao-foto .foto.monograma { display: grid; place-items: center; background: var(--cor-suave); }
+  .monograma span { font-size: 6rem; font-weight: 800; color: var(--cor-escura); letter-spacing: -.04em; }
+  .etiqueta { position: absolute; left: 16px; right: 16px; bottom: 16px; background: #fff; color: var(--tinta); border-radius: 18px;
+              padding: 12px 16px; line-height: 1.3; }
+  .etiqueta strong { display: block; font-size: var(--t1); }
+  .etiqueta span { display: block; color: var(--tinta-2); font-size: var(--t0); }
+  .etiqueta em { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+                 margin-top: 6px; font-style: normal; font-size: var(--t-1); color: var(--tinta-2); }
+  .cartao { position: relative; }
+  .cartao-foto .controles { position: absolute; top: 14px; right: 14px; margin: 0; gap: 6px; padding: 4px 6px;
+                            background: rgb(255 255 255 / .94); color: var(--tinta); border-radius: 999px; }
+  .cartao-foto .seta { width: 34px; height: 34px; border-width: 0; }
+  .cartao-foto .pausa { margin-left: 2px; padding: 0 6px; }
+  @media (max-width: 899px) { .cartao-foto { max-width: 340px; } }
+
+  .semana-wrap { padding: 120px 0 24px; }
+  @media (max-width: 899px) { .semana-wrap { padding-top: 104px; } }
+  .rotulo { font-weight: 700; font-size: var(--t2); margin-bottom: 18px; }
+  .semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 0; }
+  .semana li { border: 1.5px solid var(--linha); border-radius: 16px; padding: 14px 10px; min-height: 112px; font-variant-numeric: tabular-nums; }
+  .semana .d { font-weight: 800; font-size: var(--t1); }
+  .semana .h { margin-top: 8px; font-size: var(--t-1); color: var(--tinta-2); line-height: 1.45; }
+  .semana .fechado { color: var(--tinta-3); }
+  .semana li.hoje { border-color: var(--cor); box-shadow: inset 0 0 0 1.5px var(--cor); }
+  .semana li.hoje .d::after { content: " · hoje"; color: var(--cor-escura); font-weight: 700; font-size: var(--t-1); }
+  @media (max-width: 760px) {
+    .semana { grid-template-columns: 1fr; gap: 0; }
+    .semana li { display: flex; justify-content: space-between; gap: 16px; min-height: 0; border-radius: 0; border-width: 0 0 1px; padding: 12px 4px; }
+    .semana li.hoje { box-shadow: none; border-color: var(--linha); }
+    .semana .h { margin: 0; text-align: right; }
+  }
+
+  .secao { padding: clamp(56px, 8vw, 104px) 0; }
+  .secao h2 { font-size: clamp(var(--t4), 5vw, var(--t6)); font-weight: 800; letter-spacing: -.035em; margin-bottom: 32px; }
+  .quadro { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--tinta); }
+  .quadro li { display: grid; gap: 4px 32px; padding: 22px 0; border-bottom: 1px solid var(--linha); }
+  @media (min-width: 760px) { .quadro li { grid-template-columns: 1.1fr 1.4fr auto; align-items: baseline; } }
+  .quadro h3 { font-size: var(--t3); font-weight: 700; letter-spacing: -.02em; }
+  .quadro p { color: var(--tinta-2); font-size: var(--t0); }
+  .quadro .valor { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--cor-escura); }
+
+  .time { display: grid; gap: 28px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .time .foto { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 24px; }
+  .time .foto.monograma { display: grid; place-items: center; background: var(--cor-suave); }
+  .time .foto.monograma span { font-size: 4rem; }
+  .time h3 { margin-top: 14px; font-size: var(--t2); font-weight: 700; }
+  .time .esp { color: var(--cor-escura); font-weight: 600; }
+  .time .bio { margin-top: 6px; color: var(--tinta-2); font-size: var(--t0); }
+
+  .onde { background: #f4f4f6; }
+  .onde .envelope { display: grid; gap: 32px; align-items: start; }
+  @media (min-width: 820px) { .onde .envelope { grid-template-columns: 1fr 1fr; } }
+  .onde .grande { font-size: var(--t3); font-weight: 700; line-height: 1.25; letter-spacing: -.015em; }
+  .onde .mapa, .onde .fone { margin-top: 12px; font-weight: 600; }
+{% endblock %}
+
+{% block corpo %}
+{% from "_partes.html" import icone_zap %}
+<header class="barra">
+  <div class="envelope">
+    <span class="nome">{{ marca(s, 34) }}{{ s.nome }}</span>
+    <a class="zap" href="{{ s.whatsapp_url }}" target="_blank" rel="noopener">{{ icone_zap() }}{{ s.telefone }}</a>
+  </div>
+</header>
+<main>
+  <section class="heroi" aria-labelledby="t-nome">
+    <div class="envelope">
+      <div class="texto">
+        <p class="local">{{ s.segmento }}{% if s.cidade %} · {{ s.cidade }}{% endif %}</p>
+        <h1 id="t-nome">{{ s.nome }}</h1>
+        <p class="apres">{{ s.chamada }}</p>
+        {{ botao_zap(s, 'Falar no WhatsApp') }}
+      </div>
+      {% if s.carrossel %}
+      <div class="cartao-foto">
+        {% call(p) carrossel(s.carrossel, 'Equipe') %}
+        <figure class="cartao" style="margin:0">{{ retrato(p, 'foto') }}
+          <figcaption class="etiqueta"><strong>{{ p.nome }}</strong>{% if p.especialidade %}<span>{{ p.especialidade }}</span>{% endif %}
+            {% if p.bio %}<em>{{ p.bio }}</em>{% endif %}</figcaption>
+        </figure>
+        {% endcall %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="semana-wrap" aria-labelledby="t-semana"><div class="envelope">
+    <h2 id="t-semana" class="rotulo">Quando atendemos</h2>
+    <ul class="semana">
+      {% for h in s.horarios %}
+      <li{% if loop.index0 == s.hoje %} class="hoje" aria-current="date"{% endif %}><div class="d">{{ h.curto }}</div>
+        <div class="h{% if not h.faixas %} fechado{% endif %}">{% if h.lista %}{% for f in h.lista %}{{ f }}<br>{% endfor %}{% else %}Fechado{% endif %}</div></li>
+      {% endfor %}
+    </ul>
+  </div></section>
+
+  <section class="secao" aria-labelledby="t-sobre"><div class="envelope">
+    <p style="font-size:var(--t3);line-height:1.35;font-weight:500;letter-spacing:-.01em;max-width:32ch" id="t-sobre">{{ s.apresentacao }}</p>
+  </div></section>
+
+  {% if s.procedimentos %}
+  <section class="secao" style="padding-top:0" aria-labelledby="t-proc"><div class="envelope">
+    <h2 id="t-proc">O que fazemos</h2>
+    <ul class="quadro">
+      {% for p in s.procedimentos %}
+      <li><h3>{{ p.nome }}</h3><p>{{ p.descricao or '' }}</p><span class="valor">{{ p.preco or p.duracao }}</span></li>
+      {% endfor %}
+    </ul>
+  </div></section>
+  {% endif %}
+
+  <section class="secao onde" aria-labelledby="t-onde"><div class="envelope">
+    <h2 id="t-onde" style="margin:0">Onde estamos</h2>
+    <div class="grande">{{ como_chegar(s) }}</div>
+  </div></section>
+</main>
+{% endblock %}

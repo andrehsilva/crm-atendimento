@@ -17,8 +17,8 @@ export function Demo() {
   const qc = useQueryClient()
   const [aberta, setAberta] = useState<Consulta | null>(null)
   const [confirmar, setConfirmar] = useState(false)
-  // O reinício vale só para a clínica de demonstração (endereço /demo), nunca para a clínica aberta (D56)
-  const ehDemo = clinica.slug === 'demo'
+  // O reinício vale só para a clínica de apresentação (D56, D61), nunca para outra clínica aberta
+  const ehDemo = clinica.apresentacao
 
   const reset = useMutation({
     mutationFn: () => api.post('/dev/reset-demo'),

@@ -63,6 +63,8 @@ export type Clinica = {
   pendencias: string[]
   /** 10B (D45): gasto do mês x teto; "aviso" aos 80%, "pausada" aos 100% */
   uso_ia: SituacaoUsoIa
+  /** D55/D61: clínica de apresentação (onde fica o "Reiniciar demonstração") */
+  apresentacao: boolean
 }
 
 export type SituacaoUsoIa = { gasto_usd: number; teto_usd: number | null; pct: number | null; nivel: 'ok' | 'aviso' | 'pausada' }
@@ -308,6 +310,9 @@ export type ProfissionalCfg = {
   id: string
   nome: string
   especialidade: string | null
+  /** Etapa 11: aparecem no site da clínica */
+  bio: string | null
+  foto_versao: number | null
   cor: string | null
   ativo: boolean
   procedimentos: string[]

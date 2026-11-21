@@ -10,6 +10,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
+      '/site': 'http://localhost:8000', // Etapa 11: site de apresentação de cada clínica
     },
   },
 })

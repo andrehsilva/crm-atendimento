@@ -1,0 +1,134 @@
+{% extends "_base.html" %}
+{% from "_partes.html" import botao_zap, marca, retrato, como_chegar, carrossel %}
+
+{% block fontes %}
+  @font-face { font-family: "Fraunces"; src: url("/site/_estatico/fontes/fraunces.woff2") format("woff2");
+               font-weight: 100 900; font-display: swap; }
+{% endblock %}
+
+{% block estilo %}
+  /* Elegante — "capa de revista": metade da tela é o retrato (ou o carrossel da equipe), metade é texto sóbrio. */
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1, h2, h3, .serifa { font-family: "Fraunces", Georgia, serif; font-optical-sizing: auto; }
+  .barra { border-bottom: 1px solid var(--linha); }
+  .barra .envelope { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0; }
+  .barra .nome { display: flex; align-items: center; gap: 12px; font-family: "Fraunces", Georgia, serif; font-size: var(--t2); font-weight: 600; }
+
+  .capa { display: grid; min-height: min(calc(100vh - 77px), 860px); }
+  @media (min-width: 900px) { .capa { grid-template-columns: 1.05fr 1fr; } }
+  .retratos { position: relative; background: var(--cor); color: #fff; min-height: 520px; }
+  @media (max-width: 899px) { .retratos { min-height: 0; } }
+  .retratos .carrossel, .retratos .trilho { height: 100%; }
+  .quadro { position: relative; height: 100%; min-height: 520px; }
+  @media (max-width: 899px) { .quadro { min-height: 0; aspect-ratio: 4 / 5; } }
+  .quadro .foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .quadro .foto.monograma { display: grid; place-items: center; background: var(--cor); }
+  .monograma span { font-family: "Fraunces", Georgia, serif; font-size: clamp(7rem, 16vw, 13rem); font-weight: 300; color: rgb(255 255 255 / .9); letter-spacing: -.04em; }
+  /* Legenda sobre a foto: véu escuro garante a leitura do texto branco */
+  .quadro figcaption { position: absolute; inset: auto 0 0 0; padding: 120px clamp(20px, 4vw, 48px) 92px;
+                       background: linear-gradient(to top, rgb(10 10 12 / .78), rgb(10 10 12 / 0)); }
+  .quadro figcaption strong { display: block; font-family: "Fraunces", Georgia, serif; font-size: clamp(var(--t3), 3vw, var(--t4)); font-weight: 500; line-height: 1.1; }
+  .quadro figcaption span { display: block; margin-top: 6px; font-size: var(--t1); font-weight: 600; opacity: .95; }
+  .retratos .controles { position: absolute; left: clamp(20px, 4vw, 48px); right: clamp(20px, 4vw, 48px); bottom: 24px; margin: 0; color: #fff; }
+
+  .texto { display: flex; flex-direction: column; justify-content: center; padding: clamp(48px, 7vw, 96px) clamp(20px, 6vw, 88px); }
+  .texto .local { font-family: "Fraunces", Georgia, serif; font-style: italic; color: var(--cor-escura); font-size: var(--t2); }
+  .texto h1 { margin-top: 12px; font-size: clamp(var(--t5), 6vw, var(--t7)); font-weight: 400; letter-spacing: -.03em; line-height: 1.02; }
+  .texto .apres { margin-top: 24px; font-size: var(--t2); line-height: 1.5; color: var(--tinta-2); max-width: 32ch; }
+  .texto .botao { margin-top: 34px; align-self: flex-start; --raio-botao: 2px; letter-spacing: .01em; }
+  .hoje { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--linha); display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+  .hoje strong { color: var(--tinta); }
+
+  .secao { padding: clamp(64px, 9vw, 120px) 0; }
+  .secao h2 { font-size: clamp(var(--t4), 5vw, var(--t6)); font-weight: 400; letter-spacing: -.025em; margin-bottom: 40px; }
+  .lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0 72px; }
+  @media (min-width: 820px) { .lista { grid-template-columns: 1fr 1fr; } }
+  .lista li { border-top: 1px solid var(--tinta); padding: 22px 0 26px; }
+  .lista .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .lista h3 { font-size: var(--t3); font-weight: 400; letter-spacing: -.01em; }
+  .lista .valor { color: var(--tinta-2); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: var(--t0); }
+  .lista p { margin-top: 6px; color: var(--tinta-2); font-size: var(--t0); max-width: 44ch; }
+
+  .visita { background: #141518; color: #f3f3f5; }
+  .visita h2 { color: #fff; }
+  .visita .grade { display: grid; gap: 48px; }
+  @media (min-width: 820px) { .visita .grade { grid-template-columns: 1fr 1fr; gap: 96px; } }
+  .visita h3 { font-size: var(--t2); font-weight: 400; margin-bottom: 18px; color: #fff; }
+  .visita a { color: var(--cor-media); }
+  .horas { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .horas th { text-align: left; font-weight: 500; padding: 11px 24px 11px 0; border-bottom: 1px solid #34353b; }
+  .horas td { padding: 11px 0; border-bottom: 1px solid #34353b; text-align: right; color: #c9cad0; }
+  .horas tr.agora th, .horas tr.agora td { color: #fff; font-weight: 700; }
+  .horas .fechado { color: #8b8d95; }
+  .visita .mapa, .visita .fone { margin-top: 12px; }
+  .visita + .rodape, .rodape { background: #141518; color: #c9cad0; }
+  .rodape a { color: #c9cad0; }
+{% endblock %}
+
+{% block corpo %}
+<header class="barra">
+  <div class="envelope"><span class="nome">{{ marca(s, 40) }}{{ s.nome }}</span></div>
+</header>
+<main>
+  <section class="capa" aria-labelledby="t-nome">
+    <div class="retratos">
+      {% if s.carrossel %}
+        {% call(p) carrossel(s.carrossel, 'Nossa equipe') %}
+        <figure class="quadro" style="margin:0">{{ retrato(p, 'foto') }}
+          <figcaption><strong>{{ p.nome }}</strong>{% if p.especialidade %}<span>{{ p.especialidade }}</span>{% endif %}</figcaption>
+        </figure>
+        {% endcall %}
+      {% else %}
+        <div class="quadro"><div class="foto monograma" aria-hidden="true"><span>{{ s.iniciais }}</span></div></div>
+      {% endif %}
+    </div>
+    <div class="texto">
+      <p class="local">{{ s.segmento }}{% if s.cidade %} em {{ s.cidade }}{% endif %}</p>
+      <h1 id="t-nome">{{ s.nome }}</h1>
+      <p class="apres">{{ s.apresentacao }}</p>
+      {{ botao_zap(s, 'Agendar pelo WhatsApp') }}
+      {% set hoje = s.horarios[s.hoje] %}
+      <p class="hoje"><strong>Hoje</strong><span>{{ ('aberto das ' ~ hoje.lista | join(' e das ')) if hoje.faixas else 'fechado' }}</span>
+        <a href="#visita">Todos os horários</a></p>
+    </div>
+  </section>
+
+  {% if s.procedimentos %}
+  <section class="secao" aria-labelledby="t-proc"><div class="envelope">
+    <h2 id="t-proc">O que fazemos</h2>
+    <ul class="lista">
+      {% for p in s.procedimentos %}
+      <li><div class="topo"><h3>{{ p.nome }}</h3><span class="valor">{{ p.preco or p.duracao }}</span></div>
+        {% if p.descricao %}<p>{{ p.descricao }}</p>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </div></section>
+  {% endif %}
+
+  {% if s.carrossel|selectattr('bio')|list %}
+  <section class="secao" style="padding-top:0" aria-labelledby="t-equipe"><div class="envelope">
+    <h2 id="t-equipe">{{ 'Quem atende' if s.equipe|length == 1 else 'Quem atende você' }}</h2>
+    <ul class="lista">
+      {% for p in s.carrossel if p.bio %}
+      <li><div class="topo"><h3>{{ p.nome }}</h3>{% if p.especialidade %}<span class="valor">{{ p.especialidade }}</span>{% endif %}</div><p>{{ p.bio }}</p></li>
+      {% endfor %}
+    </ul>
+  </div></section>
+  {% endif %}
+
+  <section class="secao visita" id="visita" aria-labelledby="t-visita"><div class="envelope">
+    <h2 id="t-visita">Venha nos visitar</h2>
+    <div class="grade">
+      <div><h3>Horário de atendimento</h3>
+        <table class="horas"><caption class="sr">Horário de atendimento</caption><tbody>
+        {% for h in s.horarios %}
+          <tr{% if loop.index0 == s.hoje %} class="agora"{% endif %}><th scope="row">{{ h.dia }}{% if loop.index0 == s.hoje %} · hoje{% endif %}</th>
+            <td{% if not h.faixas %} class="fechado"{% endif %}>{{ h.faixas or 'Fechado' }}</td></tr>
+        {% endfor %}
+        </tbody></table>
+      </div>
+      <div><h3>Onde estamos</h3>{{ como_chegar(s) }}</div>
+    </div>
+  </div></section>
+</main>
+{% endblock %}

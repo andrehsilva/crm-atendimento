@@ -1,0 +1,134 @@
+{% extends "_base.html" %}
+{% from "_partes.html" import botao_zap, marca, retrato, como_chegar, icone_zap, carrossel %}
+
+{% block fontes %}
+  @font-face { font-family: "Nunito"; src: url("/site/_estatico/fontes/nunito.woff2") format("woff2");
+               font-weight: 200 1000; font-display: swap; }
+{% endblock %}
+
+{% block estilo %}
+  /* Acolhedor — "conversa": a profissional se apresenta, foto em círculo, o agendamento é um balão de WhatsApp. */
+  :root { --papel: var(--cor-suave); --raio-botao: 999px; }
+  body { font-family: "Nunito", ui-rounded, system-ui, sans-serif; }
+  h1, h2, h3 { font-weight: 800; letter-spacing: -.015em; }
+  .topo .envelope { display: flex; align-items: center; gap: 12px; padding: 22px 0; font-weight: 800; font-size: var(--t1); }
+
+  .ola { padding: clamp(24px, 5vw, 64px) 0 clamp(48px, 7vw, 88px); }
+  .apresenta { display: grid; gap: 40px; align-items: center; padding: 12px 4px; }
+  @media (min-width: 880px) { .apresenta { grid-template-columns: .9fr 1.1fr; gap: 64px; } }
+  .ola .carrossel .controles { color: var(--cor-escura); }
+  /* dentro do carrossel o slide corta o que sai dele: espaço para a forma atrás da foto */
+  .ola .carrossel .apresenta { padding: 40px 48px 48px 32px; }
+  @media (min-width: 880px) { .ola .carrossel .controles, .ola .conversa { margin-left: calc(45% + 32px); } }
+  /* Foto em círculo sobre uma forma orgânica na cor da clínica */
+  .circulo { position: relative; width: min(400px, 82vw); justify-self: center; }
+  .circulo::before { content: ""; position: absolute; inset: -6% -10% -8% -4%; background: var(--cor-media);
+                     border-radius: 58% 42% 55% 45% / 48% 56% 44% 52%; }
+  .circulo .foto { position: relative; width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 8px solid #fff; }
+  .circulo .foto.monograma { display: grid; place-items: center; background: #fff; }
+  .monograma span { font-size: 6.5rem; font-weight: 900; color: var(--cor-escura); }
+  .ola .oi { font-size: var(--t2); font-weight: 700; color: var(--cor-escura); }
+  .ola h1, .ola .como-h1 { margin-top: 6px; font-size: clamp(var(--t5), 6vw, var(--t6)); line-height: 1.05; }
+  .ola .texto { margin-top: 18px; font-size: var(--t2); line-height: 1.5; color: var(--tinta-2); max-width: 40ch; }
+
+  /* O agendamento como uma conversa: balão com a mensagem pronta + botão de enviar */
+  .conversa { margin-top: 30px; max-width: 460px; }
+  .especialidade { margin-top: 6px; font-weight: 700; color: var(--cor-escura); }
+  .balao { position: relative; background: #fff; border-radius: 22px 22px 22px 6px; padding: 16px 18px; box-shadow: 0 6px 20px rgb(23 24 28 / .07); }
+  .balao .quem { display: block; font-size: var(--t-1); font-weight: 800; color: var(--cor-escura); margin-bottom: 4px; }
+  .balao p { font-size: var(--t1); }
+  .conversa .botao { margin-top: 14px; }
+  .conversa .nota { margin-top: 12px; font-size: var(--t0); color: var(--tinta-2); }
+
+  .painel { background: #fff; border-radius: 36px; padding: clamp(28px, 5vw, 56px); }
+  .pilha { display: grid; gap: 20px; padding-bottom: 24px; }
+  .painel h2 { font-size: clamp(var(--t3), 4vw, var(--t4)); margin-bottom: 24px; }
+  .ajuda { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px 40px; }
+  @media (min-width: 780px) { .ajuda { grid-template-columns: 1fr 1fr; } }
+  .ajuda li { display: flex; gap: 14px; padding: 14px 0; border-bottom: 2px dotted var(--cor-media); }
+  .ajuda .bola { flex: none; width: 12px; height: 12px; margin-top: .55em; border-radius: 50%; background: var(--cor); }
+  .ajuda h3 { font-size: var(--t1); }
+  .ajuda h3 small { font-weight: 700; color: var(--cor-escura); font-size: var(--t-1); margin-left: 6px; white-space: nowrap; }
+  .ajuda p { color: var(--tinta-2); font-size: var(--t0); }
+
+  .pessoas { display: grid; gap: 28px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .pessoas article { display: flex; gap: 16px; align-items: flex-start; }
+  .pessoas .foto { width: 84px; height: 84px; flex: none; border-radius: 50%; object-fit: cover; }
+  .pessoas .foto.monograma { display: grid; place-items: center; background: var(--cor-suave); }
+  .pessoas .foto.monograma span { font-size: 1.8rem; }
+  .pessoas h3 { font-size: var(--t1); }
+  .pessoas .esp { color: var(--cor-escura); font-weight: 700; font-size: var(--t0); }
+  .pessoas .bio { margin-top: 4px; color: var(--tinta-2); font-size: var(--t0); }
+
+  .duas { display: grid; gap: 20px; }
+  @media (min-width: 820px) { .duas { grid-template-columns: 1fr 1fr; } }
+  .quando { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .quando li { display: grid; gap: 2px; }
+  .quando strong { font-size: var(--t1); }
+  .quando span { color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+  .painel .mapa, .painel .fone { margin-top: 10px; font-weight: 700; }
+{% endblock %}
+
+{% macro apresenta(p, s, titulo) -%}
+{% set pn = p.primeiro_nome.lower() %}
+{% set artigo = 'a ' if pn.startswith('dra') else ('o ' if pn.startswith('dr') else '') %}
+<div class="apresenta">
+  <div class="circulo">{{ retrato(p, 'foto') }}</div>
+  <div>
+    <p class="oi">Oi, que bom ter você aqui!</p>
+    {% if titulo %}<h1 id="t-nome">{% else %}<h2 class="como-h1">{% endif %}Eu sou {{ artigo }}{{ p.primeiro_nome }}{% if titulo %}</h1>{% else %}</h2>{% endif %}
+    {% if p.especialidade %}<p class="especialidade">{{ p.especialidade }}</p>{% endif %}
+    <p class="texto">{{ p.bio or s.apresentacao }}</p>
+  </div>
+</div>
+{%- endmacro %}
+
+{% block corpo %}
+{% set d = s.destaque %}
+<header class="topo"><div class="envelope">{{ marca(s, 42) }}<span>{{ s.nome }}</span></div></header>
+<main>
+  <section class="ola" aria-labelledby="t-nome">
+    <div class="envelope">
+      {% if s.carrossel|length > 1 %}
+        {# Mais de uma pessoa: cada uma se apresenta num slide #}
+        <h1 id="t-nome" class="sr">{{ s.nome }}</h1>
+        {% call(p) carrossel(s.carrossel, 'Quem atende') %}
+          {{ apresenta(p, s, False) }}
+        {% endcall %}
+      {% elif d %}
+        {{ apresenta(d, s, True) }}
+      {% else %}
+        <div><p class="oi">Que bom ter você aqui!</p><h1 id="t-nome">{{ s.nome }}</h1><p class="texto">{{ s.apresentacao }}</p></div>
+      {% endif %}
+      <div class="conversa">
+        <div class="balao"><span class="quem">Sua mensagem</span><p>{{ s.texto_zap }}</p></div>
+        {{ botao_zap(s, 'Enviar no WhatsApp') }}
+        <p class="nota">Quem responde é {{ s.assistente }}, nossa assistente, e marca o melhor horário com você.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="envelope pilha">
+    {% if s.procedimentos %}
+    <section class="painel" aria-labelledby="t-proc"><h2 id="t-proc">Como podemos ajudar</h2>
+      <ul class="ajuda">
+        {% for p in s.procedimentos %}
+        <li><span class="bola" aria-hidden="true"></span><div><h3>{{ p.nome }}<small>{{ p.preco or p.duracao }}</small></h3>
+          {% if p.descricao %}<p>{{ p.descricao }}</p>{% endif %}</div></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <div class="duas">
+      <section class="painel" aria-labelledby="t-hora"><h2 id="t-hora">Quando atendemos</h2>
+        <ul class="quando">
+          {% for g in s.horarios_agrupados %}<li><strong>{{ g.dias }}</strong><span>{{ g.lista | join(' e ') }}</span></li>{% endfor %}
+          {% if not s.horarios_agrupados %}<li><span>Combine o horário pelo WhatsApp.</span></li>{% endif %}
+        </ul>
+      </section>
+      <section class="painel" aria-labelledby="t-onde"><h2 id="t-onde">Onde estamos</h2>{{ como_chegar(s) }}</section>
+    </div>
+  </div>
+</main>
+{% endblock %}

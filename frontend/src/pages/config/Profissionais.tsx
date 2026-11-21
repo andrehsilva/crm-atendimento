@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarOff, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
+import { EnviarImagem, Retrato } from '../../components/Imagem'
 import { Botao, Campo, Entrada, Modal, Selo } from '../../components/ui'
 import { api, type ProcedimentoCfg, type ProfissionalCfg } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
 import { dataHora } from '../../lib/formato'
 
-type Form = { nome: string; especialidade: string; cor: string; ativo: boolean; procedimentos: string[] }
+type Form = { nome: string; especialidade: string; bio: string; cor: string; ativo: boolean; procedimentos: string[] }
 const CORES = ['#B85C74', '#2F80C9', '#2E9E6A', '#C98A1B', '#7A5AC9', '#D0573D']
 
 export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
@@ -27,7 +28,7 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
   }
   const salvar = useMutation({
     mutationFn: ({ id, f }: { id: string | null; f: Form }) => {
-      const corpo = { ...f, especialidade: f.especialidade || null }
+      const corpo = { ...f, especialidade: f.especialidade || null, bio: f.bio.trim() || null }
       return id ? api.put(`${base}/profissionais/${id}`, corpo) : api.post(`${base}/profissionais`, corpo)
     },
     onSuccess: () => { aviso.ok('Profissional salvo.'); setEditando(null); atualizar() },
@@ -41,19 +42,21 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
 
   if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
   const nomeServ = Object.fromEntries((servs.data ?? []).map((s) => [s.id, s.nome]))
-  const paraForm = (p: ProfissionalCfg): Form => ({ nome: p.nome, especialidade: p.especialidade ?? '', cor: p.cor ?? CORES[0], ativo: p.ativo, procedimentos: p.procedimentos })
+  const paraForm = (p: ProfissionalCfg): Form => ({ nome: p.nome, especialidade: p.especialidade ?? '', bio: p.bio ?? '', cor: p.cor ?? CORES[0], ativo: p.ativo, procedimentos: p.procedimentos })
 
   return (
     <div className="max-w-4xl">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-muted">{q.data.profissionais.filter((p) => p.ativo).length} profissionais ativos</p>
-        {podeEditar && <Botao onClick={() => setEditando({ id: null, f: { nome: '', especialidade: '', cor: CORES[1], ativo: true, procedimentos: [] } })}><Plus className="size-4" /> Novo profissional</Botao>}
+        {podeEditar && <Botao onClick={() => setEditando({ id: null, f: { nome: '', especialidade: '', bio: '', cor: CORES[1], ativo: true, procedimentos: [] } })}><Plus className="size-4" /> Novo profissional</Botao>}
       </div>
       <ul className="flex flex-col gap-3">
         {q.data.profissionais.map((p) => (
           <li key={p.id} className={`rounded-3xl bg-surface px-5 py-4 ${p.ativo ? '' : 'opacity-60'}`}>
             <div className="flex items-start gap-4">
-              <span className="mt-1 size-4 shrink-0 rounded-full" style={{ background: p.cor ?? '#999' }} aria-hidden />
+              <span className="shrink-0 rounded-full p-0.5" style={{ background: p.cor ?? '#999' }} title="Cor na agenda">
+                <Retrato tamanho="size-12" nome={p.nome} src={p.foto_versao ? `/api${base}/profissionais/${p.id}/foto?v=${p.foto_versao}` : null} />
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2 font-medium">
                   {p.nome}
@@ -61,6 +64,7 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
                   {p.horario_proprio && <Selo cor="azul">horário próprio</Selo>}
                 </div>
                 {p.especialidade && <p className="text-sm text-muted">{p.especialidade}</p>}
+                {p.bio && <p className="mt-1 line-clamp-2 text-sm text-muted">{p.bio}</p>}
                 <p className="mt-1 text-sm">{p.procedimentos.map((id) => nomeServ[id]).filter(Boolean).join(' · ') || <span className="text-muted">nenhum procedimento</span>}</p>
                 {p.folgas.length > 0 && (
                   <ul className="mt-2 flex flex-wrap gap-2">
@@ -85,6 +89,8 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
       </ul>
       {editando && (
         <Modal titulo={editando.id ? 'Editar profissional' : 'Novo profissional'} aberto onFechar={() => setEditando(null)}>
+          {editando.id && <FotoProfissional id={editando.id} base={base} nome={editando.f.nome}
+            versao={q.data.profissionais.find((p) => p.id === editando.id)?.foto_versao ?? null} />}
           <FormProfissional inicial={editando.f} servicos={(servs.data ?? []).filter((s) => s.ativo)} enviando={salvar.isPending}
             onCancelar={() => setEditando(null)} onSalvar={(f) => salvar.mutate({ id: editando.id, f })} />
         </Modal>
@@ -103,6 +109,11 @@ function FormProfissional({ inicial, servicos, enviando, onSalvar, onCancelar }:
     <form onSubmit={(e) => { e.preventDefault(); onSalvar(f) }} className="flex flex-col gap-4">
       <Campo rotulo="Nome"><Entrada required value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="Dra. Ana Lima" /></Campo>
       <Campo rotulo="Especialidade"><Entrada value={f.especialidade} onChange={(e) => setF({ ...f, especialidade: e.target.value })} /></Campo>
+      <Campo rotulo="Apresentação curta" ajuda={`Aparece no site da clínica. ${f.bio.length}/400`}>
+        <textarea rows={3} maxLength={400} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })}
+          placeholder="Ex.: Formada pela USP, atendo adultos e crianças com calma e atenção."
+          className="rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-primary" />
+      </Campo>
       <fieldset>
         <legend className="mb-2 text-sm font-medium">Cor na agenda</legend>
         <div className="flex gap-2">
@@ -166,5 +177,25 @@ function NovaFolga({ p, onFechar, onFeita }: { p: ProfissionalCfg; onFechar: () 
         </div>
       </form>
     </Modal>
+  )
+}
+
+/** Etapa 11: foto do profissional (aparece no painel e no site). Só para quem já foi salvo. */
+export function FotoProfissional({ id, base, nome, versao }: { id: string; base: string; nome: string; versao: number | null }) {
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const url = `${base}/profissionais/${id}/foto`
+  const depois = () => qc.invalidateQueries({ queryKey: ['config'] })
+  const enviar = useMutation({ mutationFn: (f: File) => api.put(url, f), onSuccess: () => { aviso.ok('Foto salva.'); depois() }, onError: aviso.erro })
+  const remover = useMutation({ mutationFn: () => api.delete(url), onSuccess: () => { aviso.ok('Foto removida.'); depois() }, onError: aviso.erro })
+  return (
+    <div className="mb-5 flex items-center gap-4 rounded-2xl bg-surface-muted p-3">
+      <Retrato tamanho="size-16" nome={nome} src={versao ? `/api${url}?v=${versao}` : null} />
+      <div className="flex flex-col gap-1">
+        <EnviarImagem tem={!!versao} enviando={enviar.isPending || remover.isPending} rotulo={versao ? 'Trocar foto' : 'Enviar foto'}
+          onArquivo={(f) => enviar.mutate(f)} onRemover={() => remover.mutate()} onProblema={aviso.erro} />
+        <span className="text-xs text-muted">Foto de rosto, de frente e com boa luz. PNG, JPG ou WebP até 512 KB. Aparece no site.</span>
+      </div>
+    </div>
   )
 }

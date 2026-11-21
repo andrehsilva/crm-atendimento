@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 54 de 63 resolvidas (51 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 54 de 66 resolvidas (51 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -60,6 +60,18 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - [ ] **Q50 — Domínio da plataforma:** qual nome registrar (ex.: `isis.com.br`, `isisatende.com.br`)? Onde ficará o DNS (Registro.br, Cloudflare…)?
   *Sugestão:* registrar no Registro.br e apontar o DNS para a Cloudflare (grátis). Painel em `app.<dominio>` e sites em `<dominio>/<clinica>`.
   Resposta: *"ainda não tenho o domínio"* (20/11). Não bloqueia o desenvolvimento; só a publicação.
+
+## 🟢 Bloqueia a Etapa 13 (WhatsApp: mensagens picadas, áudio e imagem)
+
+- [ ] **Q57 — Quanto esperar antes de responder?** Quando chegam várias mensagens curtas seguidas.
+  *Sugestão:* 8 segundos depois da última mensagem (no máximo 30 s no total). Enquanto espera, aparece "digitando…".
+  Resposta:
+- [ ] **Q58 — Áudio:** transcrever e responder?
+  *Sugestão:* sim, até 2 minutos por áudio. O custo da transcrição entra no "Uso da IA" e no teto. Áudio mais longo: a assistente pede para resumir por texto ou passa para a equipe.
+  Resposta:
+- [ ] **Q59 — Imagem, vídeo, figurinha e documento:** o que a assistente faz?
+  *Sugestão:* responde "Ainda não consigo ver imagens por aqui. Pode me escrever o que precisa?". A imagem fica guardada na conversa para a equipe ver.
+  Resposta:
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 

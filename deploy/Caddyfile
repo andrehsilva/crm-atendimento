@@ -8,14 +8,16 @@
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
+		# SAMEORIGIN: a prévia do site (Configurações › Site) abre dentro do próprio painel
+		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		-Server
 	}
 
 	# API, webhooks e saúde → backend. flush_interval -1: o tempo real (SSE) chega na hora.
-	@backend path /api/* /webhooks/* /health
+	# /site/* = site de apresentação de cada clínica (Etapa 11)
+	@backend path /api/* /webhooks/* /health /site/*
 	handle @backend {
 		reverse_proxy backend:8000 {
 			flush_interval -1
