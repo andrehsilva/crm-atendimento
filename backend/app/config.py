@@ -35,7 +35,13 @@ class Settings(BaseSettings):
     waha_simular_digitacao: bool = True
     # Etapa 13 (D66): mensagens picadas — espera este silêncio (s) antes de responder, no máximo o total abaixo
     whatsapp_espera_s: float = 8.0
-    whatsapp_espera_max_s: float = 30.0  # "visto" + "digitando…" antes de responder (evita bloqueio)
+    whatsapp_espera_max_s: float = 30.0
+    # Etapa 13B (D67): transcrição de áudio (API compatível com OpenAI). Sem chave = áudio pede para escrever.
+    transcricao_api_key: str = ""
+    transcricao_base_url: str = "https://api.openai.com/v1"
+    transcricao_modelo: str = "whisper-1"
+    transcricao_usd_minuto: float = 0.006  # confira o preço atual no provedor
+    transcricao_max_s: int = 120  # "visto" + "digitando…" antes de responder (evita bloqueio)
 
     # Etapa 6 — mensagens automáticas (lembretes, avisos, aniversário)
     mensagens_automaticas: bool = True  # liga o envio automático da fila

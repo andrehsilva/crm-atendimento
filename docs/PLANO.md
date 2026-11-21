@@ -139,13 +139,25 @@ para o painel. Editor em Configurações › Site: layout, seções, textos, fot
 A clínica aponta o domínio dela (CNAME + verificação TXT) e o HTTPS sai automático, só para domínio verificado.
 O painel continua sempre no endereço oficial.
 
-## Etapa 13 — WhatsApp: mensagens picadas, áudio e imagem — 🔨 em andamento (D66–D68; a 12 espera o domínio, Q50)
+## Etapa 13 — WhatsApp: mensagens picadas, áudio e imagem ✅ (21/11/2026) (D66–D68; a 12 espera o domínio, Q50)
 Pedido do usuário (20/11/2026): muita gente escreve em várias mensagens curtas ("oi" / "tudo bem" / "queria saber…") e manda áudio.
 - **Mensagens picadas:** a assistente espera alguns segundos depois da última mensagem e responde tudo de uma vez.
 - **Áudio:** é transcrito para texto e a assistente responde normalmente; o custo entra no teto de gasto da IA.
 - **Imagem:** a assistente pede, com educação, para a pessoa escrever o que precisa.
 - **13A — Mensagens picadas e mídia:** ✅ feito e testado (20/11/2026; D66, D68). Áudio, por ora, recebe o pedido para escrever.
-- **13B — Áudio transcrito:** 🔨 em andamento (D67).
+- **13B — Áudio transcrito:** ✅ feito e testado (21/11/2026; D67). Precisa de `TRANSCRICAO_API_KEY` no `backend/.env`.
+
+## Etapa 14 — Mensagens de campanha editáveis e envio espaçado — 🔨 em andamento (D69–D72)
+Pedido do usuário (21/11/2026): além do aniversário (fixo), mensagens que a clínica escreve e agenda: Natal, Ano novo,
+aviso de férias… E nunca mandar muitas de uma vez: mesmo no mesmo dia, um intervalo entre um envio e outro, para não
+bloquear o número.
+- **Campanhas:** texto editável com {nome} e {clinica}, data/hora de envio, para quem (todos os clientes, só os ativos…), prévia e cancelamento.
+- **Envio espaçado:** intervalo aleatório só nas mensagens em massa (aniversário e campanhas); respostas da conversa saem na hora. Valem também os limites de hoje (20/min, 300/dia, RN-DP-07) e a janela de silêncio.
+- **Tela Mensagens reorganizada** (pedido de 21/11/2026, "está confusa"):
+  - abas por andamento ("Na fila", "Enviadas", "Não enviadas") com contagem;
+  - uma linha por mensagem (tipo, cliente, quando, situação), com o texto inteiro ao clicar;
+  - campanhas numa área própria;
+  - o "Relógio de teste" recolhido num canto e só em desenvolvimento.
 
 ---
 

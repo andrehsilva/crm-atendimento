@@ -76,3 +76,7 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D66 | ✅ **Mensagens picadas:** a assistente espera 8 s depois da última mensagem do paciente (no máximo 30 s desde a primeira) e responde tudo de uma vez; enquanto espera, "digitando…" | Q57, 20/11/2026 |
 | D67 | ✅ **Áudio:** transcrito para texto (até 2 min) e respondido normalmente; o custo entra no "Uso da IA" e no teto. Mais longo: pede para resumir por texto ou passa para a equipe | Q58, 20/11/2026 |
 | D68 | ✅ **Imagem, vídeo, figurinha e documento:** resposta fixa pedindo para escrever ("Ainda não consigo ver imagens por aqui. Pode me escrever o que precisa?"); o tipo do arquivo fica registrado na conversa para a equipe | Q59, 20/11/2026 |
+| D69 | ✅ **Campanhas — público:** "todos os clientes", "atendidos nos últimos 12 meses" ou "com atendimento marcado"; nunca para quem pediu PARAR (RN-DP-04) | Q61, 21/11/2026 |
+| D70 | ✅ **Envio espaçado:** só mensagens em massa (aniversário e campanhas) — 20 a 45 s aleatórios entre uma e outra da mesma clínica. Conversa, confirmação, remarcação e lembrete seguem como hoje e passam na frente | Q62, 21/11/2026 |
+| D71 | ✅ **Modelos prontos** de Natal, Ano novo e férias, editáveis; o texto aceita {nome} (primeiro nome) e {clinica} | Q63, 21/11/2026 |
+| D72 | ✅ Só o **administrador da clínica** cria e dispara campanha; antes de confirmar, a tela mostra quantas pessoas recebem e quanto tempo o envio leva | Q64, 21/11/2026 |

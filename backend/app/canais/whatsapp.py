@@ -21,6 +21,7 @@ from app.agenda.erros import AgendaError
 from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
 from app.canais.waha import ROTULO_MIDIA, ClienteWaha, MensagemEntrada, WahaErro
 from app.config import get_settings
+from app import ia, transcricao, uso_ia
 from app.db import pool
 from app.eventos import avisar
 from app.painel import chat
@@ -33,6 +34,7 @@ _agrupando: dict[str, dict] = {}  # chat → {"primeira": instante, "timer": Tim
 
 RESPOSTA_MIDIA = "Ainda não consigo ver imagens e arquivos por aqui. 🙏 Pode me escrever o que precisa?"
 RESPOSTA_AUDIO = "Ainda não consigo ouvir áudios por aqui. 🙏 Pode me escrever o que precisa?"
+RESPOSTA_AUDIO_LONGO = "Recebi seu áudio, mas ele é um pouco longo para mim. 🙏 Pode me escrever em poucas palavras o que precisa?"
 
 
 def _trava(chave: str) -> threading.Lock:
@@ -128,6 +130,25 @@ def responder_agrupadas(conn, sessao: str, chat_id: str, clinic_id, telefone: st
     return respostas
 
 
+def _ouvir(conn, clinica: dict, conversa: dict, msg: MensagemEntrada, cliente: ClienteWaha) -> str | None:
+    """Transcreve o áudio se valer a pena: a assistente está atendendo (com IA e dentro do teto) e há transcrição
+    configurada. Devolve o texto, "longo" (passou do limite) ou None (não transcreveu)."""
+    if conversa["status"] == "humano" or not transcricao.configurada() or not msg.midia_url:
+        return None
+    if (clinica.get("settings") or {}).get("aceitar_audio") is False:  # a clínica escolheu não receber áudio
+        return None
+    if ia.config_da_clinica(conn, clinica["id"]) is None or uso_ia.pausada(conn, clinica["id"]):
+        return None
+    if msg.duracao_s and msg.duracao_s > get_settings().transcricao_max_s:
+        return "longo"
+    try:
+        dados = cliente.baixar_midia(msg.midia_url)
+    except WahaErro as e:
+        log.warning("não deu para baixar o áudio: %s", e)
+        return None
+    return transcricao.transcrever(conn, clinica["id"], conversa["id"], dados, msg.midia_mime, msg.duracao_s)
+
+
 def processar_com(conn, msg: MensagemEntrada, cliente: ClienteWaha | None = None, agrupar: bool = False) -> None:
     inst = instancia_por_sessao(conn, msg.sessao)
     if not inst or not inst["enabled"]:
@@ -149,6 +170,21 @@ def processar_com(conn, msg: MensagemEntrada, cliente: ClienteWaha | None = None
     if conversa.get("external_chat_id") != msg.chat_id:
         conn.execute("update conversations set external_chat_id = %s where id = %s", (msg.chat_id, conversa["id"]))
         conversa["external_chat_id"] = msg.chat_id
+
+    # D67: áudio vira texto (transcrição) e segue o caminho normal; longo demais, pede um resumo por texto
+    if msg.midia == "audio" and not msg.texto:
+        situacao = _ouvir(conn, clinica, conversa, msg, cliente)
+        if situacao == "longo":
+            novas = chat.processar(conn, clinica, paciente, conversa, "[🎤 Áudio longo]", external_id=msg.id_externo, adiar=True)
+            if novas and conversa["status"] != "humano":
+                resposta = chat._gravar(conn, clinica["id"], conversa["id"], "out", "isis", RESPOSTA_AUDIO_LONGO)
+                conn.commit()
+                _enviar(conn, msg.sessao, msg.chat_id, clinica["id"], conversa["id"], [resposta], cliente)
+            conn.commit()
+            return
+        if situacao:
+            msg.texto = f"🎤 {situacao}"
+            msg.midia = None
 
     # D68: mídia sem legenda não vai para a IA — fica registrada na conversa e o código pede para escrever
     if msg.midia and not msg.texto:

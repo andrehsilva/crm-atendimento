@@ -71,7 +71,7 @@ export type SituacaoUsoIa = { gasto_usd: number; teto_usd: number | null; pct: n
 export type UsoIa = {
   situacao: SituacaoUsoIa
   cotacao_brl: number | null
-  dias: { dia: string; respostas: number; tokens_entrada: number; tokens_saida: number; custo_usd: number }[]
+  dias: { dia: string; respostas: number; audio_segundos: number; tokens_entrada: number; tokens_saida: number; custo_usd: number }[]
   meses: { mes: string; respostas: number; tokens: number; custo_usd: number }[]
   sem_preco: { provider: string; model: string }[]
 }
@@ -283,6 +283,7 @@ export type Plataforma = {
   mensagens_automaticas: boolean
   modo_teste_numeros: number | null
   supabase: string | null
+  transcricao_configurada: boolean
 }
 
 // ---------------------------------------------------------------- configurações da clínica (7C)
@@ -340,6 +341,7 @@ export type AssistenteCfg = {
   nome_assistente: string
   tratamento: 'você' | 'senhor(a)'
   mostrar_precos: boolean
+  aceitar_audio: boolean
   antecedencia_min_horas: number
   horizonte_dias: number
   aviso_cancelamento_horas: number

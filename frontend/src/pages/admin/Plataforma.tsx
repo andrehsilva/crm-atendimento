@@ -19,6 +19,7 @@ export function AdminPlataforma() {
     ['Mensagens automáticas', sim(p.mensagens_automaticas, 'ligadas', 'desligadas')],
     ['Modo de teste (números liberados)', p.modo_teste_numeros === null ? 'desligado (produção)' : `${p.modo_teste_numeros} número(s)`],
     ['Banco e login (Supabase)', p.supabase ?? '—'],
+    ['Transcrição de áudio (WhatsApp)', sim(p.transcricao_configurada, 'ligada', 'desligada: áudio pede para escrever')],
   ]
   return (
     <>

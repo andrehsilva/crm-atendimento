@@ -43,6 +43,10 @@ export function Assistente({ podeEditar, comIa = true }: { podeEditar: boolean; 
               <input type="checkbox" checked={f.mostrar_precos} onChange={(e) => setF({ ...f, mostrar_precos: e.target.checked })} className="mt-0.5 size-4 accent-[var(--primary)]" />
               <span>Informar preços no chat <span className="block text-xs text-muted">Só os preços cadastrados em Procedimentos. Desligado: "a clínica não divulga preços pelo chat".</span></span>
             </label>
+            <label className="flex items-start gap-3 text-sm">
+              <input type="checkbox" checked={f.aceitar_audio} onChange={(e) => setF({ ...f, aceitar_audio: e.target.checked })} className="mt-0.5 size-4 accent-[var(--primary)]" />
+              <span>Aceitar áudios no WhatsApp <span className="block text-xs text-muted">O áudio vira texto e a assistente responde (até 2 min; o custo entra no Uso da IA). Desligado: ela pede para a pessoa escrever.</span></span>
+            </label>
           </fieldset>
         </Secao>
         <Secao titulo="Regras da agenda" icone={<CalendarClock className="size-5" />}>

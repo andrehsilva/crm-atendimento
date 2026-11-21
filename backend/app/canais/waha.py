@@ -14,6 +14,7 @@ import logging
 import random
 import re
 import time
+from urllib.parse import urlparse
 from dataclasses import dataclass
 
 import httpx
@@ -59,6 +60,9 @@ class MensagemEntrada:
     id_externo: str
     nome: str | None = None
     midia: str | None = None  # "foto", "audio"… (Etapa 13); texto = legenda, ou "" se veio sem legenda
+    midia_url: str | None = None   # 13B: onde o WAHA guardou o arquivo (só baixamos do próprio WAHA)
+    midia_mime: str | None = None
+    duracao_s: int | None = None   # duração do áudio, quando o WhatsApp informa
 
 
 def verificar_assinatura(corpo: bytes, assinatura: str | None, chave: str) -> bool:
@@ -114,7 +118,17 @@ def interpretar(evento: dict) -> MensagemEntrada | None:
         id_externo=str(p.get("id") or evento.get("id") or ""),
         nome=nome,
         midia=midia,
+        midia_url=(p.get("media") or {}).get("url") if isinstance(p.get("media"), dict) else None,
+        midia_mime=(p.get("media") or {}).get("mimetype") if isinstance(p.get("media"), dict) else None,
+        duracao_s=_inteiro(dados.get("duration") or dados.get("seconds")),
     )
+
+
+def _inteiro(v) -> int | None:
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return None
 
 
 class ClienteWaha:
@@ -162,6 +176,17 @@ class ClienteWaha:
         if isinstance(i, dict):
             i = i.get("_serialized") or i.get("id")
         return str(i) if i else None
+
+    def baixar_midia(self, url: str, limite: int = 5_000_000) -> bytes:
+        """Baixa um arquivo que o próprio WAHA guardou. Recusa qualquer outro endereço (evita usar o servidor
+        para buscar endereços de terceiros) e arquivos grandes demais."""
+        base, alvo = urlparse(self.s.waha_api_url), urlparse(url)
+        if not url or (alvo.scheme, alvo.netloc) != (base.scheme, base.netloc):
+            raise WahaErro("endereço de mídia fora do servidor WAHA")
+        r = self._req("GET", alvo.path + (f"?{alvo.query}" if alvo.query else ""))
+        if len(r.content) > limite:
+            raise WahaErro("arquivo grande demais")
+        return r.content
 
     def digitando(self, sessao: str, chat_id: str) -> None:
         """D66: "visto" e "digitando…" enquanto a assistente espera o paciente terminar de escrever."""

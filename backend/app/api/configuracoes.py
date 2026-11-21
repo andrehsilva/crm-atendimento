@@ -464,6 +464,7 @@ class Assistente(BaseModel):
     nome_assistente: str = Field(min_length=1, max_length=40)
     tratamento: str = Field(pattern="^(você|senhor\\(a\\))$")
     mostrar_precos: bool = False
+    aceitar_audio: bool = True  # 13B: áudio do WhatsApp é transcrito (desligado: pede para escrever)
     antecedencia_min_horas: float = Field(ge=0, le=168)
     horizonte_dias: int = Field(ge=1, le=365)
     aviso_cancelamento_horas: float = Field(ge=0, le=168)
@@ -482,6 +483,7 @@ def ver_assistente(clinic_id: UUID, conn=Depends(get_conn)):
     cfg, r = c["settings"] or {}, c["regras"]
     return {"nome_assistente": cfg.get("nome_assistente", "Ísis"), "tratamento": cfg.get("tratamento", "você"),
             "mostrar_precos": bool(cfg.get("mostrar_precos", False)),
+            "aceitar_audio": cfg.get("aceitar_audio", True) is not False,
             "antecedencia_min_horas": r.antecedencia_min_horas, "horizonte_dias": r.horizonte_dias,
             "aviso_cancelamento_horas": r.aviso_cancelamento_horas, "limite_consultas_futuras": r.limite_consultas_futuras,
             "lembrete_hora": r.lembrete_hora}

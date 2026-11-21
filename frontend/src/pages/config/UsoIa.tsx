@@ -91,8 +91,8 @@ export function UsoIa({ podeEditar }: { podeEditar: boolean }) {
 
       <Secao titulo="Dia a dia deste mês">
         {u.dias.length === 0 ? <p className="text-sm text-muted">Nenhuma resposta da assistente neste mês ainda.</p> : (
-          <Tabela cabecalho={['Dia', 'Respostas', 'Tokens de entrada', 'Tokens de saída', 'Custo (US$)']}
-            linhas={u.dias.map((d) => [diaLegivel(d.dia), inteiro(d.respostas), inteiro(d.tokens_entrada), inteiro(d.tokens_saida), dolar(d.custo_usd)])} />
+          <Tabela cabecalho={['Dia', 'Respostas', 'Áudio (min)', 'Tokens de entrada', 'Tokens de saída', 'Custo (US$)']}
+            linhas={u.dias.map((d) => [diaLegivel(d.dia), inteiro(d.respostas), (d.audio_segundos / 60).toLocaleString('pt-BR', { maximumFractionDigits: 1 }), inteiro(d.tokens_entrada), inteiro(d.tokens_saida), dolar(d.custo_usd)])} />
         )}
       </Secao>
 

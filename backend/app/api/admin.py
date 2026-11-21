@@ -354,7 +354,8 @@ def uso(conn=Depends(get_conn)):
                      and m.created_at >= date_trunc('month', now())) as conversas,
                   (select count(*) from messages m where m.clinic_id = c.id and m.direction = 'in'
                      and m.created_at >= date_trunc('month', now())) as mensagens_recebidas,
-                  (select count(*) from agent_runs r where r.clinic_id = c.id and r.created_at >= date_trunc('month', now())) as respostas_ia,
+                  (select count(*) from agent_runs r where r.clinic_id = c.id and r.tipo = 'resposta'
+                     and r.created_at >= date_trunc('month', now())) as respostas_ia,
                   (select round(avg(latency_ms) / 1000.0, 1) from agent_runs r where r.clinic_id = c.id
                      and r.created_at >= date_trunc('month', now())) as tempo_medio_s,
                   (select count(*) from agent_runs r where r.clinic_id = c.id and r.error is not null
@@ -388,4 +389,5 @@ def plataforma():
         "mensagens_automaticas": s.mensagens_automaticas,
         "modo_teste_numeros": len([x for x in s.envio_somente_para.split(",") if x.strip()]) if s.env == "dev" else None,
         "supabase": host(s.supabase_url),
+        "transcricao_configurada": bool(s.transcricao_api_key),  # 13B: áudio do WhatsApp vira texto
     }

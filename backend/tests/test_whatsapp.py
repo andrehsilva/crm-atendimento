@@ -272,3 +272,98 @@ def test_foto_com_conversa_na_equipe_nao_recebe_resposta_automatica(conn, ligada
     whatsapp.processar_com(c, _msg("", id_ext="M9", midia="audio"), w)
     assert len(w.enviadas) == 1  # só a resposta do "Oi"
 
+
+
+# ---------------------------------------------------------------------------
+# Etapa 13B — áudio transcrito (D67)
+# ---------------------------------------------------------------------------
+from app import transcricao  # noqa: E402
+
+
+@pytest.fixture
+def ouvindo(monkeypatch):
+    """Transcrição configurada e IA da clínica ligada (sem depender do .env)."""
+    monkeypatch.setattr(transcricao, "configurada", lambda: True)
+    monkeypatch.setattr(whatsapp.ia, "config_da_clinica", lambda conn, cid: object())
+    monkeypatch.setattr(whatsapp.uso_ia, "pausada", lambda conn, cid: False)
+
+
+class WahaComAudio(WahaFalso):
+    def baixar_midia(self, url, limite=5_000_000):
+        return b"OggS" + b"0" * 100
+
+
+def _audio(duracao=12):
+    return MensagemEntrada(sessao=SESSAO, chat_id="5511988887777@c.us", telefone="+5511988887777", texto="",
+                           id_externo="AUD1", midia="audio", midia_url="https://waha.x/api/files/a.oga",
+                           midia_mime="audio/ogg; codecs=opus", duracao_s=duracao)
+
+
+def test_audio_vira_texto_e_a_assistente_responde(conn, ligada, ouvindo, monkeypatch):
+    monkeypatch.setattr(transcricao, "transcrever", lambda conn, cid, conv, dados, mime, dur: "quero marcar uma limpeza")
+    monkeypatch.setattr(chat.isis, "responder", lambda conn, clinica, paciente, conversa, texto, em, ia=None: f"Resposta para: {texto}")
+    w = WahaComAudio()
+    whatsapp.processar_com(SemCommit(conn), _audio(), w)
+    assert w.enviadas == [(SESSAO, "5511988887777@c.us", "Resposta para: 🎤 quero marcar uma limpeza")]
+    assert _mensagens(conn, ligada)[0][1] == "🎤 quero marcar uma limpeza"
+
+
+def test_audio_longo_pede_resumo_sem_transcrever(conn, ligada, ouvindo, monkeypatch):
+    monkeypatch.setattr(transcricao, "transcrever", lambda *a: pytest.fail("não devia transcrever"))
+    w = WahaComAudio()
+    whatsapp.processar_com(SemCommit(conn), _audio(duracao=300), w)
+    assert w.enviadas[0][2] == whatsapp.RESPOSTA_AUDIO_LONGO
+
+
+def test_sem_transcricao_configurada_pede_para_escrever(conn, ligada, monkeypatch):
+    monkeypatch.setattr(transcricao, "configurada", lambda: False)
+    w = WahaComAudio()
+    whatsapp.processar_com(SemCommit(conn), _audio(), w)
+    assert w.enviadas[0][2] == whatsapp.RESPOSTA_AUDIO
+
+
+def test_transcricao_registra_custo_no_uso_da_clinica(conn, ligada, monkeypatch):
+    from types import SimpleNamespace
+    from app import uso_ia
+
+    monkeypatch.setattr(transcricao, "get_settings", lambda: SimpleNamespace(
+        transcricao_api_key="k", transcricao_base_url="https://x", transcricao_modelo="whisper-1", transcricao_usd_minuto=0.006))
+
+    class Falso:
+        def __init__(self, **_):
+            self.audio = SimpleNamespace(transcriptions=SimpleNamespace(create=lambda **_: SimpleNamespace(text=" olá ")))
+
+    monkeypatch.setattr(transcricao, "OpenAI", Falso)
+    pid = conn.execute("insert into patients (clinic_id, phone) values (%s, '+5511955551234') returning id", (ligada.id,)).fetchone()[0]
+    conv = conn.execute("insert into conversations (clinic_id, patient_id, channel) values (%s, %s, 'whatsapp') returning id",
+                        (ligada.id, pid)).fetchone()[0]
+    assert transcricao.transcrever(conn, ligada.id, conv, b"x" * 10, "audio/ogg", 90) == "olá"
+    tipo, seg, custo = conn.execute("select tipo, audio_segundos, custo_usd from agent_runs where conversation_id = %s", (conv,)).fetchone()
+    assert (tipo, seg, float(custo)) == ("transcricao", 90, 0.009)
+    assert uso_ia.situacao(conn, ligada.id)["gasto_usd"] >= 0.009  # entra no teto
+
+
+def test_baixar_midia_so_do_proprio_waha():
+    from types import SimpleNamespace
+    from app.canais.waha import ClienteWaha
+
+    c = ClienteWaha(SimpleNamespace(waha_api_url="https://waha.exemplo.com", waha_api_key="k"))
+    for ruim in ("https://golpe.com/a.oga", "http://waha.exemplo.com/a.oga", "", "file:///etc/passwd"):
+        with pytest.raises(WahaErro):
+            c.baixar_midia(ruim)
+
+
+def test_interpreta_audio_com_url_e_duracao():
+    m = interpretar(_evento(body="", hasMedia=True, media={"url": "https://waha.x/f.oga", "mimetype": "audio/ogg"},
+                            _data={"type": "ptt", "duration": "37"}))
+    assert (m.midia, m.midia_url, m.duracao_s) == ("audio", "https://waha.x/f.oga", 37)
+
+
+def test_clinica_que_nao_aceita_audio_pede_para_escrever(conn, ligada, ouvindo, monkeypatch):
+    from psycopg.types.json import Jsonb
+
+    conn.execute("update clinics set settings = settings || %s where id = %s", (Jsonb({"aceitar_audio": False}), ligada.id))
+    monkeypatch.setattr(transcricao, "transcrever", lambda *a: pytest.fail("não devia transcrever"))
+    w = WahaComAudio()
+    whatsapp.processar_com(SemCommit(conn), _audio(), w)
+    assert w.enviadas[0][2] == whatsapp.RESPOSTA_AUDIO

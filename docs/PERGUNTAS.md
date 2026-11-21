@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 57 de 67 resolvidas (54 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 61 de 71 resolvidas (58 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -65,6 +65,10 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente — Etapa 13 liberada.
 
+## 🟢 Bloqueia a Etapa 14 (Mensagens de campanha e envio espaçado)
+
+✅ Nada pendente — Etapa 14 liberada.
+
 ## ⚪ WhatsApp por clínica
 
 - [ ] **Q60 — Um servidor WAHA para todas ou um por clínica?**
@@ -103,6 +107,10 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q61 — Para quem vai a campanha:** ok — "todos os clientes", "atendidos nos últimos 12 meses" ou "com atendimento marcado"; nunca para quem pediu PARAR. *(21/11 → D69)*
+- [x] **Q62 — Intervalo entre envios:** ok — só aniversário e campanhas, 20 a 45 s aleatórios entre mensagens da mesma clínica; conversa, confirmação, remarcação e lembrete como hoje. *(21/11 → D70)*
+- [x] **Q63 — Modelos prontos:** ok — Natal, Ano novo e férias, editáveis, com {nome} e {clinica}. *(21/11 → D71)*
+- [x] **Q64 — Quem dispara:** ok — só o administrador da clínica; a tela mostra antes quantas pessoas recebem e quanto tempo leva. *(21/11 → D72)*
 - [x] **Q57 — Mensagens picadas:** ok — espera 8 s depois da última mensagem (no máximo 30 s no total) e responde tudo junto, com "digitando…". *(20/11 → D66)*
 - [x] **Q58 — Áudio:** ok — transcreve até 2 minutos; o custo entra no "Uso da IA" e no teto; mais longo, pede para resumir por texto ou passa para a equipe. *(20/11 → D67)*
 - [x] **Q59 — Imagem, vídeo, figurinha e documento:** ok — "Ainda não consigo ver imagens por aqui. Pode me escrever o que precisa?"; o arquivo fica registrado na conversa para a equipe. *(20/11 → D68)*

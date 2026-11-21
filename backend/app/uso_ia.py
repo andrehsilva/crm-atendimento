@@ -80,13 +80,14 @@ def relatorio(conn, clinic_id: UUID) -> dict:
     tz = conn.execute("select timezone from clinics where id = %s", (clinic_id,)).fetchone()[0]
     inicio = _inicio_do_mes(conn, clinic_id)
     dias = cur.execute(
-        """select (created_at at time zone %s)::date as dia, count(*) as respostas,
+        """select (created_at at time zone %s)::date as dia, count(*) filter (where tipo = 'resposta') as respostas,
+                  coalesce(sum(audio_segundos), 0) as audio_segundos,
                   coalesce(sum(tokens_entrada), 0) as tokens_entrada, coalesce(sum(tokens_saida), 0) as tokens_saida,
                   coalesce(sum(custo_usd), 0)::float as custo_usd
            from agent_runs where clinic_id = %s and created_at >= %s group by 1 order by 1 desc""",
         (tz, clinic_id, inicio)).fetchall()
     meses = cur.execute(
-        """select to_char(date_trunc('month', created_at at time zone %s), 'YYYY-MM') as mes, count(*) as respostas,
+        """select to_char(date_trunc('month', created_at at time zone %s), 'YYYY-MM') as mes, count(*) filter (where tipo = 'resposta') as respostas,
                   coalesce(sum(tokens_entrada), 0) + coalesce(sum(tokens_saida), 0) as tokens,
                   coalesce(sum(custo_usd), 0)::float as custo_usd
            from agent_runs where clinic_id = %s and created_at >= %s - interval '5 months'
