@@ -214,7 +214,7 @@ Configurações › Canais: status e número do WhatsApp (toda a equipe vê); o 
 ## Ajuste pós-21 — Faltas repetidas ✅ (22/11/2026; D91)
 Com 2 faltas em 45 dias (ajustável), a Ísis não marca e passa para a recepção.
 
-## Etapa 22 — Convênios — 🔨 em construção (D92–D95)
+## Etapa 22 — Convênios ✅ (22/11/2026; D92–D95)
 - Configurações: lista de convênios que a clínica atende.
 - Só no primeiro contato, a Ísis pergunta "convênio ou particular?"; com lista, confere o nome; sem lista, só registra sim/não.
 

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from psycopg.rows import dict_row
 
-from app import segmentos, tratamentos
+from app import convenios, segmentos, tratamentos
 from app.agenda import servico
 from app.painel.avisos import DIAS, quando
 
@@ -108,6 +108,7 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
                       "precisa remarcar ou cancelar uma destas. Explique isso antes de buscar horários.")
 
     secao_tratamentos = _tratamentos(conn, clinica, paciente, tz)
+    linha_convenio = _convenio(conn, clinica, paciente)
     # RN-AG-16 (D91): a assistente já sabe que não marca e passa para a recepção
     regras, t = clinica["regras"], segmentos.termos(cfg)
     if regras.faltas_limite > 0:
@@ -170,6 +171,7 @@ Significado das expressões (já calculado — use exatamente estas datas):
 
 - Nome: {paciente.get('name') or 'ainda não informado (peça o nome completo antes de marcar)'}
 - Telefone: já identificado pelo canal — não peça o telefone.
+- Convênio: {linha_convenio}
 - {segmentos.cap(segmentos.termos(cfg)['profissional'])} de referência: {ref or 'nenhum ainda'}
 - {segmentos.cap(segmentos.termos(cfg)['atendimentos'])} futuras (na ferramenta: "consultas"):
 {consultas}
@@ -182,6 +184,22 @@ Se a pessoa acabou de concordar com uma dessas ações, chame `confirmar_acao` c
 (não prepare de novo). Se ele mudou de ideia, ignore o token e prepare a nova ação.
 """
     return persona + "\n" + momento + _avisos_automaticos(conn, clinica) + jeito_da_clinica(cfg)
+
+
+def _convenio(conn, clinica: dict, paciente: dict) -> str:
+    """Etapa 22 (RN-CV): o que a assistente sabe e o que precisa perguntar sobre convênio."""
+    aceitos = [c["name"] for c in convenios.listar(conn, clinica["id"], so_ativos=True)]
+    lista = (f"a clínica atende: {', '.join(aceitos)}" if aceitos
+             else "a clínica não tem lista de convênios; registre só se é convênio ou particular")
+    atual = convenios.rotulo(conn, paciente)
+    if atual:
+        return f"{atual} (já registrado; não pergunte de novo). {lista.capitalize()}."
+    if convenios.precisa_perguntar(conn, clinica, paciente):
+        return (f"ainda não perguntado — é o primeiro contato. Antes de marcar, pergunte uma vez se é convênio ou "
+                f"particular e chame `registrar_convenio` (não peça carteirinha). {lista.capitalize()}.")
+    if not convenios.perguntar_ligado(clinica):
+        return "a clínica atende só particular; não pergunte sobre convênio."
+    return f"não informado (não é o primeiro contato: não pergunte). {lista.capitalize()}."
 
 
 def _avisos_automaticos(conn, clinica: dict) -> str:

@@ -119,12 +119,14 @@ def tags(conn, clinic_id: UUID, patient_ids: list) -> dict:
                                                               'motivo_espera', t.motivo_espera, 'motivo_texto', t.motivo_texto)
                                             order by t.created_at)
                             from treatments t join services s on s.id = t.service_id
-                            where t.patient_id = p.id and t.clinic_id = p.clinic_id and t.status = any(%s)), '[]'::json)
-           from patients p where p.clinic_id = %s and p.id = any(%s)""",
+                            where t.patient_id = p.id and t.clinic_id = p.clinic_id and t.status = any(%s)), '[]'::json),
+                  p.convenio, ci.name
+           from patients p left join clinic_insurances ci on ci.id = p.insurance_id and ci.clinic_id = p.clinic_id
+           where p.clinic_id = %s and p.id = any(%s)""",
         (list(ABERTOS), clinic_id, list(patient_ids)),
     ).fetchall()
     saida: dict = {}
-    for pid, realizadas, abertos in linhas:
+    for pid, realizadas, abertos, convenio, nome_convenio in linhas:
         lista = []
         if realizadas == 0:
             lista.append({"codigo": "novo", "rotulo": "Novo"})
@@ -136,6 +138,10 @@ def tags(conn, clinic_id: UUID, patient_ids: list) -> dict:
             else:
                 lista.append({"codigo": "em_tratamento", "rotulo": f"Em tratamento · {t['procedimento']}",
                               "procedimento": t["procedimento"]})
+        if convenio == "particular":  # Etapa 22 (D94)
+            lista.append({"codigo": "particular", "rotulo": "Particular"})
+        elif convenio == "convenio":
+            lista.append({"codigo": "convenio", "rotulo": nome_convenio or "Convênio"})
         saida[pid] = lista
     return saida
 

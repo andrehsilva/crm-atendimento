@@ -213,6 +213,17 @@ def cenarios() -> list[Cenario]:
                 lambda c: [(c.status_conversa() != "humano" or AVISO_EQUIPE in c.tudo,
                             "se passou para a equipe, avisou o paciente" if c.status_conversa() == "humano" else "respondeu sem inventar")]),
         # Etapa 21 — tratamentos (RN-TR)
+        Cenario("C29", "Primeiro contato: pergunta convênio; convênio não atendido vira particular", "CV-02, CV-03, D93",
+                lambda c: ["Oi! Quero marcar uma limpeza", "É pelo convênio Amil", "Ah, entendi. Então pode ser particular",
+                           f"Pode ser {DIAS[ter.weekday()]} ({ddmm(ter)}) de manhã, tanto faz o dentista", "Meu nome é Lúcia Prado",
+                           "Pode ser o primeiro horário que você falou", "Sim, pode confirmar"],
+                lambda c: [(tem(c.tudo, r"conv[eê]nio|particular"), "perguntou convênio ou particular"),
+                           (tem(c.tudo, r"n[ãa]o (atend|aceit|trabalh)"), "disse que não atende a Amil"),
+                           (c.conn.execute("select convenio from patients where clinic_id = %s and phone = %s",
+                                           (c.cid, S._telefone(c.tel))).fetchone() == ("particular",), "registrou particular"),
+                           (len(c.consultas()) == 1, "marcou depois de resolver o convênio")],
+                preparar=lambda c: (c.conn.execute("update clinics set settings = '{}'::jsonb where id = %s", (c.cid,)),
+                                    c.conn.execute("insert into clinic_insurances (clinic_id, name) values (%s, 'Unimed')", (c.cid,)))),
         Cenario("C26", "Tratamento aguardando protético: não marca a sessão", "TR-04, D87",
                 lambda c: ["Oi! Quero marcar a próxima sessão da minha restauração", f"Pode ser {DIAS[qui.weekday()]} ({ddmm(qui)})"],
                 lambda c: [(not any(r[1] == "Restauração" for r in c.consultas()), "não marcou sessão do tratamento"),
@@ -269,7 +280,8 @@ TESTES_AUTOMATICOS = [
 def preparar_clinica(conn) -> tuple:
     r = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
     if r:
-        for tabela in ("appointment_events", "outbound_messages", "appointments", "treatments", "agent_runs"):
+        for tabela in ("appointment_events", "outbound_messages", "appointments", "treatments", "agent_runs", "patients",
+                       "clinic_insurances"):
             conn.execute(f"delete from {tabela} where clinic_id = %s", r)  # noqa: S608 — nomes fixos
         conn.execute("delete from clinics where id = %s", r)
     cid, serv, prof = criar_estrutura(conn, "Clínica Cenários", FONE_CLINICA, SLUG, "Rua dos Testes, 100 — São Paulo/SP")
@@ -280,7 +292,8 @@ def preparar_clinica(conn) -> tuple:
 def rodar(conn, base: tuple, cen: Cenario, n: int) -> dict:
     cid, serv, prof = base
     ctx = Ctx(conn, cid, serv, prof, tel=f"+55119600{n:05d}")
-    conn.execute("update clinics set settings = '{}'::jsonb where id = %s", (cid,))
+    # cenários antigos não tratam da pergunta de convênio (Etapa 22); o C29 liga de novo
+    conn.execute("""update clinics set settings = '{"perguntar_convenio": false}'::jsonb where id = %s""", (cid,))
     if cen.preparar:
         cen.preparar(ctx)
     conn.commit()

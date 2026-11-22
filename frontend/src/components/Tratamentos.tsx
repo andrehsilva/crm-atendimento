@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Pause, Play, Plus, Sparkles, Stethoscope, Repeat, UserPlus, XCircle } from 'lucide-react'
+import { CheckCircle2, CreditCard, Pause, Play, Plus, Sparkles, Stethoscope, Repeat, UserPlus, Wallet, XCircle } from 'lucide-react'
 import { api, type MotivoEspera, type TagCliente, type Tratamento, type TratamentosPaciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, hora } from '../lib/formato'
@@ -9,8 +9,10 @@ import { Botao, Campo, Entrada, Modal, Selo, Seletor, type CorSelo } from './ui'
 
 const MOTIVOS: Record<MotivoEspera, string> = { protetico: 'Protético', exame: 'Exame', cicatrizacao: 'Cicatrização', outro: 'Outro motivo' }
 
-const COR_TAG: Record<TagCliente['codigo'], CorSelo> = { novo: 'azul', recorrente: 'roxo', em_tratamento: 'verde', aguardando: 'ambar' }
-const ICONE_TAG = { novo: UserPlus, recorrente: Repeat, em_tratamento: Play, aguardando: Pause }
+const COR_TAG: Record<TagCliente['codigo'], CorSelo> = {
+  novo: 'azul', recorrente: 'roxo', em_tratamento: 'verde', aguardando: 'ambar', particular: 'cinza', convenio: 'rosa',
+}
+const ICONE_TAG = { novo: UserPlus, recorrente: Repeat, em_tratamento: Play, aguardando: Pause, particular: Wallet, convenio: CreditCard }
 
 /** Etapa 21 (D90): tags automáticas — Novo · Recorrente · Em tratamento · Aguardando. */
 export function Tags({ tags, className = '' }: { tags: TagCliente[] | undefined; className?: string }) {

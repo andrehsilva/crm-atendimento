@@ -174,6 +174,8 @@ export type Paciente = {
   proxima_consulta: string | null
   foto_versao: number | null
   tags: TagCliente[]
+  convenio: 'particular' | 'convenio' | null
+  insurance_id: string | null
 }
 
 /** Etapa 9C: histórico de observações do cliente e pasta do Drive */
@@ -381,7 +383,7 @@ export type Notificacao = {
 export type Notificacoes = { itens: Notificacao[]; contador: number; aguardando: number }
 
 /** Etapa 21 (D90): tags automáticas do cliente */
-export type TagCliente = { codigo: 'novo' | 'recorrente' | 'em_tratamento' | 'aguardando'; rotulo: string; procedimento?: string }
+export type TagCliente = { codigo: 'novo' | 'recorrente' | 'em_tratamento' | 'aguardando' | 'particular' | 'convenio'; rotulo: string; procedimento?: string }
 
 /** Etapa 21 (RN-TR): tratamento em andamento */
 export type MotivoEspera = 'protetico' | 'exame' | 'cicatrizacao' | 'outro'
@@ -407,3 +409,6 @@ export type Tratamento = {
   proxima_sessao: string | null
 }
 export type TratamentosPaciente = { tratamentos: Tratamento[]; tags: TagCliente[] }
+
+/** Etapa 22 (RN-CV): convênios da clínica */
+export type ConveniosClinica = { perguntar: boolean; convenios: { id: string; name: string; active: boolean }[] }

@@ -23,7 +23,7 @@ from app.config import get_settings
 from app.auth.acesso import acesso, exigir_admin_clinica, exigir_super_admin
 from app.db import get_conn
 from app.eventos import avisar, distribuidor
-from app import tratamentos
+from app import convenios, tratamentos
 from app.canais import whatsapp
 from app.canais.conexao import isis_pausada_no_whatsapp
 from app.core import relogio
@@ -203,6 +203,7 @@ def mover_card(clinic_id: UUID, patient_id: UUID, body: MudancaEtapa, conn: Conn
 def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
     sql = """select p.id, p.name, p.phone, p.birth_date, p.origin, p.crm_stage, p.created_at, p.drive_url,
+                    p.convenio, p.insurance_id,
                     (select count(*) from patient_notes n where n.patient_id = p.id) as notas,
                     pr.name as dentista_referencia,
                     (select max(starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada') as ultima_consulta,
@@ -221,6 +222,8 @@ def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(ge
 class EdicaoPaciente(BaseModel):
     name: str | None = Field(None, max_length=200)
     birth_date: date | None = None
+    convenio: Literal["particular", "convenio"] | None = None  # Etapa 22 (D94); null = não informado
+    insurance_id: UUID | None = None
 
 
 @router.patch("/clinics/{clinic_id}/patients/{patient_id}", summary="Editar paciente")
@@ -229,6 +232,13 @@ def editar_paciente(clinic_id: UUID, patient_id: UUID, body: EdicaoPaciente, con
     campos = body.model_dump(exclude_unset=True)
     if not campos:
         raise AgendaError("DADOS_INVALIDOS", "Nada para alterar.")
+    if "convenio" in campos or "insurance_id" in campos:  # validado à parte: o convênio precisa ser desta clínica
+        _paciente_da_clinica(conn, clinic_id, patient_id)
+        convenios.editar_paciente(conn, clinic_id, patient_id, campos.pop("convenio", None), campos.pop("insurance_id", None))
+        if not campos:
+            avisar(conn, clinic_id, "crm", patient_id)
+            return _cur(conn).execute("select id, name, phone, birth_date, convenio, insurance_id from patients "
+                                      "where clinic_id = %s and id = %s", (clinic_id, patient_id)).fetchone()
     sets = ", ".join(f"{k} = %s" for k in campos)  # chaves vêm do modelo, não do usuário
     p = _cur(conn).execute(
         f"update patients set {sets} where clinic_id = %s and id = %s returning id, name, phone, birth_date",

@@ -2,6 +2,8 @@
 
 import json
 
+from psycopg.rows import dict_row
+
 from app.agent.ferramentas import Sessao, criar_ferramentas
 from app.agent.isis import AVISO_EQUIPE, AVISO_FECHADA, com_aviso_de_transferencia
 from app.agenda import servico as S
@@ -10,9 +12,13 @@ from tests.conftest import AGORA, as_
 TEL = "+5511977776666"
 
 
-def _sessao(conn, clinica, tel=TEL, nome="Paciente Ísis"):
+def _sessao(conn, clinica, tel=TEL, nome="Paciente Ísis", convenio="particular"):
+    """convenio: já respondido por padrão (Etapa 22); None = primeiro contato, ainda sem perguntar."""
     c = S.carregar_clinica(conn, clinica.id)
     p = S.obter_ou_criar_paciente(conn, clinica.id, tel, nome, "web")
+    if convenio:
+        p = conn.cursor(row_factory=dict_row).execute(
+            "update patients set convenio = %s where id = %s returning *", (convenio, p["id"])).fetchone()
     conv = conn.execute(
         "insert into conversations (clinic_id, patient_id, channel) values (%s, %s, 'web') returning id, channel, status",
         (clinica.id, p["id"]),

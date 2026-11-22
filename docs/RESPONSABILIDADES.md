@@ -23,6 +23,7 @@ Ele reúne as regras de [REGRAS-DE-NEGOCIO.md](REGRAS-DE-NEGOCIO.md) e as decis�
 | Confirmar presença | ✅ Quando o paciente responde ao lembrete | ✅ Pelo painel | ✅ "1" no lembrete confirma sem IA |
 | Registrar presença / falta | ❌ | ✅ A partir do dia da consulta | — |
 | Urgência | ✅ Orienta e passa para a equipe | ✅ Assume e resolve | Mostra o aviso no sino |
+| Convênio | ✅ Pergunta só no primeiro contato e confere na lista | ✅ Corrige no cadastro | Só deixa a Ísis marcar depois da resposta |
 | Tratamentos | ✅ Lê e respeita; marca a próxima sessão se estiver em andamento | ✅ Abre, põe em espera, retoma e encerra | Bloqueia a marcação se estiver aguardando |
 | Mensagens automáticas | ❌ Não dispara | ✅ Campanhas (só o administrador) | ✅ Confirmação, lembrete, aniversário, retomada |
 | Configurações | ❌ | Só vê | — |
@@ -35,6 +36,10 @@ Ele reúne as regras de [REGRAS-DE-NEGOCIO.md](REGRAS-DE-NEGOCIO.md) e as decis�
 - **Atende 24 horas** pelo WhatsApp e pelo chat do site, inclusive fora do expediente. Fora do horário, ela avisa que a resposta da equipe vem no próximo expediente.
 - **Identifica o paciente pelo telefone do canal.** Ela nunca pede o telefone e nunca aceita um número digitado no meio da conversa.
 - **Pede o nome completo** do paciente novo antes de marcar.
+- **Convênio, só no primeiro contato** (quem ainda não veio à clínica): antes de marcar, pergunta "convênio ou particular?".
+  - Com a lista da clínica, confere o nome. Se a clínica não atende aquele convênio, avisa com gentileza e oferece o particular; com dúvida ou insistência, passa para a recepção.
+  - Sem lista, registra só "convênio" ou "particular".
+  - Não pede carteirinha. Quem já veio não é perguntado.
 - **Responde dúvidas sobre a clínica:** endereço, horários, procedimentos cadastrados, o texto "Sobre a clínica" e o "Jeito da clínica".
 - **Informa preços** só se a clínica cadastrou o valor **e** ligou "mostrar preços". Ela não negocia nem faz orçamento.
 - **Busca horários livres de verdade na agenda.** Oferece no máximo 3 opções por vez, dando prioridade ao dia, ao turno e ao profissional que o paciente pediu.
@@ -113,7 +118,7 @@ O paciente **sempre** recebe um aviso fixo de que a equipe vai continuar ali mes
 - **Liga para quem não respondeu ao lembrete.** Isso aparece em destaque no painel.
 
 ### 3.3 Pacientes e tratamentos
-- **Edita o cadastro:** nome, data de nascimento, foto, observações e pasta do Drive.
+- **Edita o cadastro:** nome, data de nascimento, **convênio**, foto, observações e pasta do Drive.
 - **Abre tratamento:** procedimento, quantas sessões e recado para a assistente.
 - **Põe o tratamento em espera** (protético, exame, cicatrização ou outro motivo, com previsão). A partir daí, a Ísis não marca aquela sessão.
 - **Retoma** quando a espera acaba. Pode mandar ao paciente uma mensagem convidando a marcar (texto editável), e aí a Ísis conduz a marcação.
@@ -148,7 +153,7 @@ O paciente **sempre** recebe um aviso fixo de que a equipe vai continuar ali mes
   - faltas repetidas;
   - paciente que só mexe nas próprias consultas;
   - isolamento total entre clínicas.
-- **Tags automáticas:** Novo · Recorrente · Em tratamento · Aguardando.
+- **Tags automáticas:** Novo · Recorrente · Em tratamento · Aguardando · Particular / nome do convênio.
 - **Entregue/lida:** vem do WhatsApp e só avança, nunca volta.
 - **Sino e tempo real:** tudo o que muda aparece na hora para toda a equipe.
 
@@ -159,6 +164,7 @@ O paciente **sempre** recebe um aviso fixo de que a equipe vai continuar ali mes
 Ele faz tudo o que a secretária faz, e mais:
 - **Configurações:**
   - perfil, horários, procedimentos (duração, preço e "só recepção") e profissionais;
+  - **convênios atendidos** e se a assistente pergunta o convênio no primeiro contato;
   - assistente: nome, tratamento, preços, áudio, regras da agenda, **faltas para passar à recepção** e o "Jeito da clínica";
   - mensagens e campanhas;
   - site e usuários.
@@ -166,9 +172,3 @@ Ele faz tudo o que a secretária faz, e mais:
 - **Uso da IA:** acompanhar o gasto e ajustar o teto do mês.
 - **Campanhas:** criar e disparar (com contagem e prévia antes) e cancelar.
 - **Relatórios em Excel:** recall, atendimentos, produção, faltas, cadastro, aniversariantes e desempenho da assistente.
-
----
-
-## 6. Em construção (ainda não vale)
-
-**Convênios (Etapa 22, D92):** só no **primeiro contato**, a Ísis vai perguntar se é convênio ou particular. A clínica terá uma lista de convênios aceitos; sem lista, fica registrado só "convênio sim/não". Os detalhes estão em [PERGUNTAS.md](PERGUNTAS.md), Q83 a Q85.

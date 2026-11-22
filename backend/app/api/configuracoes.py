@@ -22,7 +22,7 @@ from app.auth.usuarios import criar_ou_ligar
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
-from app import aparencia, configuracao_inicial as inicial, ia, segmentos, uso_ia
+from app import aparencia, configuracao_inicial as inicial, convenios, ia, segmentos, uso_ia
 
 router = APIRouter(prefix="/api/clinics/{clinic_id}/config", tags=["configurações"], dependencies=[Depends(acesso)])
 
@@ -639,3 +639,52 @@ def editar_usuario(clinic_id: UUID, user_id: UUID, body: EdicaoUsuario, request:
             (body.ativo, body.papel, clinic_id, user_id)).fetchone():
         raise AgendaError("DADOS_INVALIDOS", "Usuário não encontrado nesta clínica.")
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Convênios (Etapa 22 — RN-CV). Ver: toda a equipe. Mudar: só o administrador da clínica.
+# ---------------------------------------------------------------------------
+def _convenios(conn, clinic_id: UUID) -> dict:
+    return {"perguntar": convenios.perguntar_ligado({"settings": c_settings(conn, clinic_id)}),
+            "convenios": convenios.listar(conn, clinic_id)}
+
+
+@router.get("/convenios", summary="Convênios que a clínica atende")
+def ver_convenios(clinic_id: UUID, conn=Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    return _convenios(conn, clinic_id)
+
+
+class NovoConvenio(BaseModel):
+    nome: str = Field(min_length=1, max_length=80)
+
+
+@router.post("/convenios", status_code=201, summary="Acrescentar convênio")
+def novo_convenio(clinic_id: UUID, body: NovoConvenio, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    convenios.criar(conn, clinic_id, body.nome)
+    return _convenios(conn, clinic_id)
+
+
+class MudancaConvenio(BaseModel):
+    nome: str | None = Field(None, min_length=1, max_length=80)
+    ativo: bool | None = None
+
+
+@router.patch("/convenios/{insurance_id}", summary="Renomear, desligar ou religar convênio")
+def mudar_convenio(clinic_id: UUID, insurance_id: UUID, body: MudancaConvenio, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    convenios.mudar(conn, clinic_id, insurance_id, nome=body.nome, ativo=body.ativo)
+    return _convenios(conn, clinic_id)
+
+
+class PerguntaConvenio(BaseModel):
+    perguntar: bool
+
+
+@router.put("/convenios/pergunta", summary="Ligar/desligar a pergunta de convênio no primeiro contato")
+def pergunta_convenio(clinic_id: UUID, body: PerguntaConvenio, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    _settings(conn, clinic_id, {"perguntar_convenio": body.perguntar})
+    return _convenios(conn, clinic_id)
+

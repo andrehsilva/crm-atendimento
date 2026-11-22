@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FolderOpen, NotebookPen, Pencil, Search, Stethoscope, Users } from 'lucide-react'
-import { api, type Etapa, type Paciente } from '../lib/api'
+import { api, type ConveniosClinica, type Etapa, type Paciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, telefone } from '../lib/formato'
 import { useAviso } from '../components/Aviso'
@@ -149,11 +149,19 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
   const [nome, setNome] = useState('')
   const [nasc, setNasc] = useState('')
   const [foto, setFoto] = useState<number | null>(null)
+  // Etapa 22 (D94): '' = não informado · 'particular' · 'convenio' (sem lista) · id de um convênio da lista
+  const [conv, setConv] = useState('')
   const qc = useQueryClient()
+  const lista = useQuery({
+    queryKey: ['config', 'convenios', clinica.id],
+    queryFn: () => api.get<ConveniosClinica>(`/clinics/${clinica.id}/config/convenios`),
+    enabled: !!paciente,
+  })
   useEffect(() => {
     setNome(paciente?.name ?? '')
     setNasc(paciente?.birth_date ?? '')
     setFoto(paciente?.foto_versao ?? null)
+    setConv(paciente?.insurance_id ?? paciente?.convenio ?? '')
   }, [paciente])
   const urlFoto = `/clinics/${clinica.id}/patients/${paciente?.id}/foto`
   const mudarFoto = useMutation({
@@ -168,7 +176,11 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
   })
 
   const salvar = useMutation({
-    mutationFn: () => api.patch(`/clinics/${clinica.id}/patients/${paciente!.id}`, { name: nome || null, birth_date: nasc || null }),
+    mutationFn: () => api.patch(`/clinics/${clinica.id}/patients/${paciente!.id}`, {
+      name: nome || null, birth_date: nasc || null,
+      convenio: conv === '' ? null : conv === 'particular' ? 'particular' : 'convenio',
+      insurance_id: conv && conv !== 'particular' && conv !== 'convenio' ? conv : null,
+    }),
     onSuccess: () => { aviso.ok(`${pal.Cliente} atualizado`); onFechar() },
     onError: aviso.erro,
   })
@@ -187,6 +199,14 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
         <p className="text-sm text-muted">Telefone: {paciente && telefone(paciente.phone)} (é a chave do {pal.cliente} e não muda)</p>
         <Campo rotulo="Nome completo"><Entrada value={nome} onChange={(e) => setNome(e.target.value)} /></Campo>
         <Campo rotulo="Data de nascimento" ajuda="Usada na mensagem de aniversário"><Entrada type="date" value={nasc} onChange={(e) => setNasc(e.target.value)} /></Campo>
+        <Campo rotulo="Convênio" ajuda="A assistente pergunta só no primeiro contato; aqui a recepção pode corrigir.">
+          <Seletor value={conv} onChange={(e) => setConv(e.target.value)}>
+            <option value="">Não informado</option>
+            <option value="particular">Particular</option>
+            {(lista.data?.convenios ?? []).filter((c) => c.active || c.id === conv).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {(!(lista.data?.convenios ?? []).some((c) => c.active) || conv === 'convenio') && <option value="convenio">Convênio</option>}
+          </Seletor>
+        </Campo>
       </div>
       <div className="mt-6 flex justify-end gap-2">
         <Botao variante="fantasma" onClick={onFechar}>Cancelar</Botao>

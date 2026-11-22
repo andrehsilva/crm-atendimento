@@ -15,7 +15,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from app import tratamentos
+from app import convenios, tratamentos
 from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.agent.contexto import dados_clinica
@@ -258,6 +258,11 @@ def criar_ferramentas(s: Sessao) -> list:
             if prof is None:
                 raise AgendaError("DADOS_INVALIDOS", "Informe o profissional do horário escolhido.")
             dt = _instante(inicio)
+            # RN-CV-02: primeiro contato → antes de marcar, a pergunta do convênio precisa estar respondida
+            if convenios.precisa_perguntar(conn, s.clinica, s.paciente):
+                raise AgendaError("CONVENIO_PENDENTE",
+                                  "Primeiro contato: antes de marcar, pergunte se é convênio ou particular e registre "
+                                  "com registrar_convenio.")
             _faltas_ok()
             _tratamento_liberado(serv)
             c = _validar(lambda: servico.marcar(
@@ -387,6 +392,34 @@ def criar_ferramentas(s: Sessao) -> list:
         except AgendaError as e:
             return log("confirmar_acao", args, _erro(e))
 
+    def registrar_convenio(tipo: str, convenio: str | None = None) -> str:
+        """Registra se a pessoa vem por convênio ou particular (pergunte só quando o contexto pedir).
+        Não peça carteirinha.
+
+        Args:
+            tipo: "particular" ou "convenio".
+            convenio: o nome do convênio que a pessoa disse (ex.: "Unimed"), quando for convênio.
+        """
+        args = {"tipo": tipo, "convenio": convenio}
+        try:
+            t = _sem_acento(tipo or "")
+            t = "convenio" if t.startswith("conv") else "particular" if t.startswith("part") else t
+            r = convenios.registrar(conn, s.cid, s.paciente["id"], t, convenio)
+            if r["ok"]:
+                s.paciente["convenio"] = t
+                avisar(conn, s.cid, "crm", s.paciente["id"])
+                return log("registrar_convenio", args, _json({"ok": True, "registrado": r["rotulo"],
+                                                               "proximo_passo": "siga com o atendimento"}))
+            dica = {
+                "qual_convenio": "pergunte qual é o convênio",
+                "mais_de_um": "pergunte qual destes é o da pessoa",
+                "nao_atende": ("a clínica NÃO atende esse convênio: diga com gentileza, ofereça o atendimento particular "
+                               "e, se a pessoa aceitar, registre tipo particular. Com dúvida ou insistência, use chamar_humano"),
+            }[r["motivo"]]
+            return log("registrar_convenio", args, _json({"ok": False, "convenios_atendidos": r["aceitos"], "observacao": dica}))
+        except AgendaError as e:
+            return log("registrar_convenio", args, _erro(e))
+
     def avisar_pedido_tratamento(procedimento: str) -> str:
         """Use quando a pessoa quer marcar a próxima sessão de um tratamento que está AGUARDANDO (ex.: protético).
         Registra o pedido e avisa a equipe pelo painel. Não marca nada e não passa a conversa para a equipe.
@@ -422,4 +455,5 @@ def criar_ferramentas(s: Sessao) -> list:
         return log("chamar_humano", {"motivo": motivo}, _json({"ok": True, "observacao": "a equipe assume a conversa e você para de responder; não prometa retorno (o aviso ao paciente é automático)"}))
 
     return [info_clinica, horarios_livres, minhas_consultas, salvar_nome, preparar_agendamento,
-            preparar_remarcacao, preparar_cancelamento, confirmar_acao, avisar_pedido_tratamento, chamar_humano]
+            preparar_remarcacao, preparar_cancelamento, confirmar_acao, registrar_convenio, avisar_pedido_tratamento,
+            chamar_humano]
