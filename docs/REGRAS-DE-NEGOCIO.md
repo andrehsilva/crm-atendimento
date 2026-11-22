@@ -114,6 +114,15 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-TR-10 | **Concluído:** a equipe informa "volta em X meses" (padrão = recall da clínica, D74); o recall usa essa data. Tratamento **aberto** nunca entra no recall. | Código | ✅ |
 | RN-TR-11 | **Tags (D90):** Novo (nenhum atendimento realizado) · Recorrente (2+ realizados) · Em tratamento · Aguardando (motivo) — calculadas, mostradas no CRM, em Clientes e na conversa; filtro em Clientes. | Código | ✅ |
 
+## Resumo do dia do profissional (RN-RS) — Etapa 23
+
+| Código | Regra | Onde | Status |
+|---|---|---|---|
+| RN-RS-01 | **Só recebe quem pediu (D97):** o administrador ativa no cadastro do profissional e informa o WhatsApp pessoal dele. Sai pelo WhatsApp da clínica. | Código + Config | ✅ |
+| RN-RS-02 | **Quando (D98):** no horário do profissional (padrão 07:00), só em dia que a clínica abre e só se ele tiver consulta no dia; **uma vez por dia**, mesmo que a agenda mude depois. Não segue o silêncio noturno dos pacientes. | Código | ✅ |
+| RN-RS-03 | **Conteúdo (D96):** consultas do dia (agendadas e confirmadas) com horário, **primeiro nome**, procedimento, "sessão X de N" quando é tratamento e ✅ confirmou / ⏳ a confirmar; pausas e horários livres. Nunca observação clínica, telefone ou convênio. | Código | ✅ |
+| RN-RS-04 | Modo de teste (ENVIO_SOMENTE_PARA) vale também aqui; falha do WhatsApp tenta de novo até 3 vezes no mesmo dia. | Código | ✅ |
+
 ## Disparos (RN-DP)
 
 | Código | Regra | Onde | Status |

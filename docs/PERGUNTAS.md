@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 83 de 95 resolvidas (81 respondidas · 2 adiadas) — 22/11/2026.
+**Progresso:** 86 de 95 resolvidas (84 respondidas · 2 adiadas) — 22/11/2026.
 
 ---
 
@@ -96,12 +96,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## ☀️ Bloqueia a Etapa 23 (Resumo do dia para o profissional)
 
-- [ ] **Q86 — O que vai no resumo:** sugestão — "Bom dia, Dra. Ana! Hoje você tem 6 consultas: 08:00 Maria Silva · Limpeza ✅ confirmada / 09:00 João · Restauração (sessão 2 de 4) ⏳ não confirmou / …", mais pausas e horários livres. Só o **primeiro nome** do paciente e o procedimento — nada de observações clínicas.
-  Resposta:
-- [ ] **Q87 — Privacidade (LGPD):** o resumo vai para o WhatsApp **pessoal** do profissional, com nomes de pacientes. Sugestão: cada profissional precisa **ativar** o envio (ninguém recebe sem pedir), e o administrador cadastra o número dele. Ok?
-  Resposta:
-- [ ] **Q88 — Dias sem agenda e mudanças:** sugestão — sem consultas no dia, **não manda nada**; mudanças depois do resumo **não** geram novo envio (o painel mostra na hora). Horário padrão **07:00**, ajustável por profissional; só em dias que a clínica abre.
-  Resposta:
+✅ Nada pendente — Etapa 23 liberada.
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
@@ -133,6 +128,9 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q86 — O que vai no resumo:** ok — grade do dia com horário, primeiro nome, procedimento, sessão do tratamento e se confirmou; pausas e horários livres; nada de observação clínica. *(22/11 → D96)*
+- [x] **Q87 — Privacidade:** ok — só recebe quem pediu (ativado no cadastro do profissional), no número que o administrador cadastrar. *(22/11 → D97)*
+- [x] **Q88 — Dias sem agenda e mudanças:** ok — sem consulta não manda; mudanças depois não reenviam; 07:00 por padrão, ajustável por profissional; só em dia que a clínica abre. *(22/11 → D98)*
 - [x] **Q83 — Convênio que a clínica não atende:** ok — a Ísis diz com gentileza que não atende e oferece o particular; com dúvida ou insistência, passa para a recepção. *(22/11 → D93)*
 - [x] **Q84 — Onde fica guardado:** ok — no cadastro do paciente (Particular / nome do convênio / "Convênio" sem lista), editável pela recepção, como tag e na conversa; vale até alguém mudar. *(22/11 → D94)*
 - [x] **Q85 — Carteirinha:** ok — a Ísis não pede; só o nome do convênio. *(22/11 → D95)*

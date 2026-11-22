@@ -103,3 +103,6 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D93 | ✅ **Convênio não atendido:** a Ísis diz com gentileza que a clínica não atende aquele convênio e oferece o particular; com dúvida ou insistência, passa para a recepção | Q83, 22/11/2026 |
 | D94 | ✅ **Convênio fica no cadastro do paciente:** Particular, o nome do convênio (da lista da clínica) ou só "Convênio" quando a clínica não tem lista; a recepção edita; aparece como tag e na conversa; vale para as próximas consultas | Q84, 22/11/2026 |
 | D95 | ✅ A Ísis **não pede** carteirinha — só o nome do convênio | Q85, 22/11/2026 |
+| D96 | ✅ **Resumo do dia do profissional:** pelo WhatsApp pessoal, a grade do dia — horário, **primeiro nome** do paciente, procedimento, sessão X de N do tratamento e ✅ confirmou / ⏳ a confirmar —, mais pausas e horários livres. Nenhuma observação clínica | Q86, 22/11/2026 |
+| D97 | ✅ **Privacidade:** só recebe o profissional que pediu — o administrador ativa no cadastro dele e informa o número pessoal; desativado, nada sai | Q87, 22/11/2026 |
+| D98 | ✅ Às **07:00** por padrão (ajustável por profissional), **só em dia que a clínica abre** e **só se houver consulta**; uma vez por dia; mudanças depois não geram novo envio (o painel mostra na hora). Não segue o silêncio noturno dos pacientes (é mensagem da equipe) | Q88, 22/11/2026 |
