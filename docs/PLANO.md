@@ -201,7 +201,7 @@ Configurações › Canais: status e número do WhatsApp (toda a equipe vê); o 
 - Tela Mensagens: selo enviada/entregue/lida. Conversa: ✓ / ✓✓ / ✓✓ azul nas respostas da Ísis e da equipe.
 - Clínicas já ligadas passam a mandar o aviso sozinhas (o backend atualiza o webhook ao subir).
 
-## Etapa 21 — Tratamentos em andamento (pacientes recorrentes) — 🔨 21A em construção (D87–D90)
+## Etapa 21 — Tratamentos em andamento (pacientes recorrentes) — 21A ✅ (22/11/2026) · 🔨 21B em construção (D87–D90)
 **21A — Tratamento, regras da Ísis e tags**
 - No paciente, a equipe abre um **Tratamento**: procedimento, profissional, sessões previstas, intervalo e uma orientação curta para a assistente.
 - Situações: em andamento · aguardando (protético, exame, cicatrização…, com previsão) · concluído (com "volta em X meses") · interrompido.

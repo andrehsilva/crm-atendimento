@@ -92,10 +92,18 @@ def gerar(conn, clinic_id: UUID, tipo: str, *, de: date, ate: date, prof: UUID |
                join lateral (select a.starts_at, a.service_id, a.professional_id from appointments a
                              where a.patient_id = p.id and a.status = 'realizada' order by a.starts_at desc limit 1) u on true
                join services s on s.id = u.service_id join professionals pr on pr.id = u.professional_id
-               where p.clinic_id = %s and u.starts_at < %s
+               -- RN-TR-10: o "volta em" do último tratamento concluído vale no lugar dos X meses sem vir
+               left join lateral (select t.volta_em from treatments t where t.patient_id = p.id and t.clinic_id = p.clinic_id
+                                  and t.status = 'concluido' and t.volta_em is not null
+                                  order by t.status_desde desc limit 1) v on true
+               where p.clinic_id = %s
+                 and (case when v.volta_em is not null then v.volta_em <= %s else u.starts_at < %s end)
                  and not exists (select 1 from appointments f where f.patient_id = p.id
                                  and f.status in ('agendada', 'confirmada') and f.starts_at >= now())
-               order by u.starts_at""", (clinic_id, limite)).fetchall()
+                 -- tratamento aberto (em andamento ou aguardando) nunca entra no recall
+                 and not exists (select 1 from treatments t where t.patient_id = p.id and t.clinic_id = p.clinic_id
+                                 and t.status in ('em_andamento', 'aguardando'))
+               order by u.starts_at""", (clinic_id, datetime.now(tz).date(), limite)).fetchall()
         agora = datetime.now(tz)
         _aba(wb, "Chamar de volta", ["Paciente", "Telefone", "Última consulta", "Último procedimento", "Profissional", "Meses sem vir"],
              [[n, f, local(u).date(), s, pr, round((agora - u).days / 30.44, 1)] for n, f, u, s, pr in linhas], {3: "DD/MM/YYYY"})

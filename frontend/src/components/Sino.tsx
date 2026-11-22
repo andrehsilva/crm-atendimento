@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ComponentType } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertCircle, Bell, CalendarCheck, CalendarClock, CalendarPlus, CalendarX, CheckCheck, Gauge, Headset, WifiOff,
+  AlertCircle, Bell, CalendarCheck, CalendarClock, CalendarPlus, CalendarX, CheckCheck, Gauge, Headset, Hourglass,
+  PauseCircle, UserX, WifiOff,
 } from 'lucide-react'
 import { api, type Notificacao, type Notificacoes } from '../lib/api'
 import { useClinica } from '../lib/clinica'
@@ -12,6 +13,7 @@ import { ModalConversa } from './ModalConversa'
 const ICONE: Record<Notificacao['tipo'], ComponentType<{ className?: string }>> = {
   humano: Headset, whatsapp: WifiOff, marcada: CalendarPlus, remarcada: CalendarClock, cancelada: CalendarX,
   confirmada: CalendarCheck, falhou: AlertCircle, resposta_falhou: AlertCircle, ia: Gauge,
+  tratamento_pedido: PauseCircle, tratamento_previsao: Hourglass, faltou_sessao: UserX,
 }
 
 /** "agora", "há 5 min", "há 2 h", "há 3 dias" */
@@ -100,7 +102,9 @@ export function Sino() {
   function abrir(n: Notificacao) {
     if (!n.situacao && !n.lida) lidas.mutate([n.chave])
     setAberto(false)
-    if ((n.tipo === 'humano' || n.tipo === 'resposta_falhou') && n.paciente) return setConversa(n.paciente)
+    // conversa e tratamentos (Etapa 21) abrem a janela do paciente, onde ficam o tratamento e o botão Retomar
+    const naConversa = ['humano', 'resposta_falhou', 'tratamento_pedido', 'tratamento_previsao']
+    if (naConversa.includes(n.tipo) && n.paciente) return setConversa(n.paciente)
     const destino: Partial<Record<Notificacao['tipo'], string>> = {
       whatsapp: '/configuracoes?aba=Canais', ia: '/configuracoes?aba=Uso da IA', falhou: '/mensagens',
       marcada: '/agenda', remarcada: '/agenda', cancelada: '/agenda', confirmada: '/agenda',

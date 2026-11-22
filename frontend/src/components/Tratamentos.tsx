@@ -1,0 +1,294 @@
+import { useState, type FormEvent } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2, Pause, Play, Plus, Sparkles, Stethoscope, Repeat, UserPlus, XCircle } from 'lucide-react'
+import { api, type MotivoEspera, type TagCliente, type Tratamento, type TratamentosPaciente } from '../lib/api'
+import { useClinica } from '../lib/clinica'
+import { dataCurta, hora } from '../lib/formato'
+import { useAviso } from './Aviso'
+import { Botao, Campo, Entrada, Modal, Selo, Seletor, type CorSelo } from './ui'
+
+const MOTIVOS: Record<MotivoEspera, string> = { protetico: 'Protético', exame: 'Exame', cicatrizacao: 'Cicatrização', outro: 'Outro motivo' }
+
+const COR_TAG: Record<TagCliente['codigo'], CorSelo> = { novo: 'azul', recorrente: 'roxo', em_tratamento: 'verde', aguardando: 'ambar' }
+const ICONE_TAG = { novo: UserPlus, recorrente: Repeat, em_tratamento: Play, aguardando: Pause }
+
+/** Etapa 21 (D90): tags automáticas — Novo · Recorrente · Em tratamento · Aguardando. */
+export function Tags({ tags, className = '' }: { tags: TagCliente[] | undefined; className?: string }) {
+  if (!tags?.length) return null
+  return (
+    <span className={`inline-flex flex-wrap gap-1 ${className}`}>
+      {tags.map((t) => {
+        const Icone = ICONE_TAG[t.codigo]
+        return <Selo key={t.codigo + (t.procedimento ?? '')} cor={COR_TAG[t.codigo]}><Icone className="size-3" />{t.rotulo}</Selo>
+      })}
+    </span>
+  )
+}
+
+const ISO = (d: Date) => d.toISOString().slice(0, 10)
+const emMeses = (m: number) => { const d = new Date(); d.setMonth(d.getMonth() + m); return ISO(d) }
+
+/** Etapa 21 (RN-TR): tratamentos do paciente — abrir, pôr em espera, retomar e encerrar. */
+export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId: string; compacto?: boolean }) {
+  const { clinica, cadastros } = useClinica()
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const tz = clinica.timezone
+  const chave = ['tratamentos', clinica.id, pacienteId]
+  const q = useQuery({ queryKey: chave, queryFn: () => api.get<TratamentosPaciente>(`/clinics/${clinica.id}/patients/${pacienteId}/tratamentos`) })
+  const [novo, setNovo] = useState(false)
+  const [espera, setEspera] = useState<Tratamento | null>(null)
+  const [retomar, setRetomar] = useState<Tratamento | null>(null)
+  const [encerrar, setEncerrar] = useState<Tratamento | null>(null)
+
+  const depois = (r: TratamentosPaciente, msg: string) => {
+    qc.setQueryData(chave, r)
+    qc.invalidateQueries({ queryKey: ['pacientes'] })
+    qc.invalidateQueries({ queryKey: ['kanban'] })
+    aviso.ok(msg)
+  }
+
+  const lista = q.data?.tratamentos ?? []
+  const abertos = lista.filter((t) => t.status === 'em_andamento' || t.status === 'aguardando')
+  const encerrados = lista.filter((t) => !abertos.includes(t))
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-2 text-sm font-semibold"><Stethoscope className="size-4 text-primary" />Tratamentos</span>
+        <Botao variante="fantasma" className="!px-2 !py-1 text-xs" onClick={() => setNovo(true)}><Plus className="size-3.5" />Abrir tratamento</Botao>
+      </div>
+      {q.isLoading && <p className="text-sm text-muted">Carregando…</p>}
+      {!q.isLoading && abertos.length === 0 && (
+        <p className="text-sm text-muted">Nenhum tratamento em andamento. Abra um quando o paciente precisar voltar várias vezes.</p>
+      )}
+      {abertos.map((t) => (
+        <div key={t.id} className={`rounded-2xl border p-3 ${t.status === 'aguardando' ? 'border-[#f0c86e] bg-[#fcf1dc]/40 dark:bg-[#43341a]/30' : 'border-line'}`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="font-medium">{t.procedimento}{t.profissional && <span className="font-normal text-muted"> · {t.profissional}</span>}</div>
+              <div className="text-xs text-muted">
+                {t.realizadas}{t.sessoes_previstas ? ` de ${t.sessoes_previstas}` : ''} sessões feitas
+                {t.intervalo_dias ? ` · a cada ${t.intervalo_dias} dias` : ''}
+                {t.proxima_sessao ? ` · próxima ${dataCurta(t.proxima_sessao, tz)} ${hora(t.proxima_sessao, tz)}` : ''}
+              </div>
+            </div>
+            {t.status === 'aguardando'
+              ? <Selo cor="ambar"><Pause className="size-3" />Aguardando {t.motivo_espera === 'outro' ? (t.motivo_texto ?? 'outro motivo') : MOTIVOS[t.motivo_espera!].toLowerCase()}
+                {t.previsao && ` · previsão ${t.previsao.split('-').reverse().slice(0, 2).join('/')}`}</Selo>
+              : <Selo cor="verde"><Play className="size-3" />Em andamento</Selo>}
+          </div>
+          {t.orientacao && !compacto && (
+            <p className="mt-2 flex gap-1.5 text-xs text-muted"><Sparkles className="mt-0.5 size-3 shrink-0" />Para a assistente: {t.orientacao}</p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {t.status === 'aguardando'
+              ? <Botao className="!py-1.5 text-xs" onClick={() => setRetomar(t)}><Play className="size-3.5" />Retomar</Botao>
+              : <Botao variante="secundario" className="!py-1.5 text-xs" onClick={() => setEspera(t)}><Pause className="size-3.5" />Aguardar</Botao>}
+            <Botao variante="secundario" className="!py-1.5 text-xs" onClick={() => setEncerrar(t)}><CheckCircle2 className="size-3.5" />Encerrar</Botao>
+          </div>
+        </div>
+      ))}
+      {!compacto && encerrados.length > 0 && (
+        <details className="text-sm">
+          <summary className="cursor-pointer text-muted">Encerrados ({encerrados.length})</summary>
+          <ul className="mt-2 space-y-1 text-muted">
+            {encerrados.map((t) => (
+              <li key={t.id} className="flex items-center gap-2">
+                {t.status === 'concluido' ? <CheckCircle2 className="size-3.5 text-[#1f7a43]" /> : <XCircle className="size-3.5" />}
+                {t.procedimento} — {t.status === 'concluido' ? 'concluído' : 'interrompido'} em {dataCurta(t.status_desde, tz)}
+                {t.volta_em && ` · volta em ${t.volta_em.split('-').reverse().join('/')}`}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      <ModalNovo aberto={novo} onFechar={() => setNovo(false)} pacienteId={pacienteId}
+        procedimentos={cadastros.procedimentos} profissionais={cadastros.profissionais}
+        onFeito={(r) => { setNovo(false); depois(r, 'Tratamento aberto.') }} />
+      <ModalEspera t={espera} onFechar={() => setEspera(null)} onFeito={(r) => { setEspera(null); depois(r, 'Tratamento em espera: a assistente não marca a próxima sessão.') }} />
+      <ModalRetomar t={retomar} onFechar={() => setRetomar(null)} onFeito={(r, avisou) => {
+        setRetomar(null)
+        depois(r, avisou ? 'Tratamento retomado. O paciente vai receber a mensagem para marcar.' : 'Tratamento retomado.')
+        if (avisou) qc.invalidateQueries({ queryKey: ['mensagens'] })
+      }} />
+      <ModalEncerrar t={encerrar} onFechar={() => setEncerrar(null)} onFeito={(r, s) => { setEncerrar(null); depois(r, s === 'concluido' ? 'Tratamento concluído.' : 'Tratamento interrompido.') }} />
+    </div>
+  )
+}
+
+function ModalNovo({ aberto, onFechar, pacienteId, procedimentos, profissionais, onFeito }: {
+  aberto: boolean; onFechar: () => void; pacienteId: string
+  procedimentos: { id: string; name: string }[]; profissionais: { id: string; name: string; service_ids: string[] }[]
+  onFeito: (r: TratamentosPaciente) => void
+}) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  const [f, setF] = useState({ service_id: '', professional_id: '', sessoes: '', intervalo: '7', orientacao: '' })
+  const profs = profissionais.filter((p) => !f.service_id || p.service_ids.includes(f.service_id))
+  const criar = useMutation({
+    mutationFn: () => api.post<TratamentosPaciente>(`/clinics/${clinica.id}/patients/${pacienteId}/tratamentos`, {
+      service_id: f.service_id, professional_id: f.professional_id || null,
+      sessoes_previstas: f.sessoes ? Number(f.sessoes) : null, intervalo_dias: f.intervalo ? Number(f.intervalo) : null,
+      orientacao: f.orientacao.trim() || null,
+    }),
+    onSuccess: (r) => { setF({ service_id: '', professional_id: '', sessoes: '', intervalo: '7', orientacao: '' }); onFeito(r) },
+    onError: aviso.erro,
+  })
+  const enviar = (e: FormEvent) => { e.preventDefault(); if (f.service_id) criar.mutate() }
+  return (
+    <Modal titulo="Abrir tratamento" aberto={aberto} onFechar={onFechar}>
+      <form onSubmit={enviar} className="grid gap-4 sm:grid-cols-2">
+        <Campo rotulo="Procedimento">
+          <Seletor value={f.service_id} onChange={(e) => setF({ ...f, service_id: e.target.value, professional_id: '' })} required>
+            <option value="">Escolha…</option>
+            {procedimentos.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Seletor>
+        </Campo>
+        <Campo rotulo="Profissional (opcional)">
+          <Seletor value={f.professional_id} onChange={(e) => setF({ ...f, professional_id: e.target.value })}>
+            <option value="">Qualquer um</option>
+            {profs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Seletor>
+        </Campo>
+        <Campo rotulo="Sessões previstas (opcional)" ajuda="Ex.: 4">
+          <Entrada type="number" min={1} max={100} value={f.sessoes} onChange={(e) => setF({ ...f, sessoes: e.target.value })} />
+        </Campo>
+        <Campo rotulo="Intervalo entre sessões (dias)" ajuda="7 = uma por semana">
+          <Entrada type="number" min={1} max={365} value={f.intervalo} onChange={(e) => setF({ ...f, intervalo: e.target.value })} />
+        </Campo>
+        <div className="sm:col-span-2">
+          <Campo rotulo="Orientação para a assistente (opcional)" ajuda={`${f.orientacao.length}/300 · Ex.: "não marcar antes de 10 dias da extração"`}>
+            <textarea value={f.orientacao} maxLength={300} rows={2} onChange={(e) => setF({ ...f, orientacao: e.target.value })}
+              className="rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-primary" />
+          </Campo>
+        </div>
+        <p className="text-xs text-muted sm:col-span-2">As consultas já marcadas desse procedimento passam a fazer parte do tratamento. Sessões de tratamento não contam no limite de consultas.</p>
+        <div className="flex justify-end gap-2 sm:col-span-2">
+          <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
+          <Botao type="submit" disabled={!f.service_id || criar.isPending}>Abrir tratamento</Botao>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function ModalEspera({ t, onFechar, onFeito }: { t: Tratamento | null; onFechar: () => void; onFeito: (r: TratamentosPaciente) => void }) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  const [motivo, setMotivo] = useState<MotivoEspera>('protetico')
+  const [texto, setTexto] = useState('')
+  const [previsao, setPrevisao] = useState('')
+  const salvar = useMutation({
+    mutationFn: () => api.post<TratamentosPaciente>(`/clinics/${clinica.id}/tratamentos/${t!.id}/aguardar`,
+      { motivo, motivo_texto: motivo === 'outro' ? texto.trim() || null : null, previsao: previsao || null }),
+    onSuccess: (r) => { setTexto(''); setPrevisao(''); onFeito(r) },
+    onError: aviso.erro,
+  })
+  return (
+    <Modal titulo={`Aguardar · ${t?.procedimento ?? ''}`} aberto={!!t} onFechar={onFechar}>
+      <div className="grid gap-4">
+        <Campo rotulo="Aguardando o quê?">
+          <Seletor value={motivo} onChange={(e) => setMotivo(e.target.value as MotivoEspera)}>
+            {Object.entries(MOTIVOS).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
+          </Seletor>
+        </Campo>
+        {motivo === 'outro' && (
+          <Campo rotulo="Qual?"><Entrada value={texto} maxLength={120} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: resultado da tomografia" /></Campo>
+        )}
+        <Campo rotulo="Previsão (opcional)" ajuda="Se passar dessa data, o sino avisa a equipe. O paciente não recebe nada sozinho.">
+          <Entrada type="date" value={previsao} min={ISO(new Date())} onChange={(e) => setPrevisao(e.target.value)} />
+        </Campo>
+        <p className="rounded-2xl bg-surface-muted px-4 py-3 text-sm text-muted">
+          Enquanto aguarda, a assistente <b>não marca</b> a próxima sessão deste tratamento. Se o paciente pedir, ela explica e avisa a equipe. Outros procedimentos seguem normais.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
+          <Botao onClick={() => salvar.mutate()} disabled={salvar.isPending || (motivo === 'outro' && !texto.trim())}><Pause className="size-4" />Pôr em espera</Botao>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function ModalRetomar({ t, onFechar, onFeito }: { t: Tratamento | null; onFechar: () => void; onFeito: (r: TratamentosPaciente, avisou: boolean) => void }) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  const [texto, setTexto] = useState<string | null>(null)
+  const [avisar, setAvisar] = useState(true)
+  const previa = useQuery({
+    queryKey: ['tratamento', 'retomar', t?.id],
+    queryFn: () => api.get<{ texto: string; tem_whatsapp: boolean }>(`/clinics/${clinica.id}/tratamentos/${t!.id}/retomar`),
+    enabled: !!t,
+  })
+  const valor = texto ?? previa.data?.texto ?? ''
+  const podeAvisar = previa.data?.tem_whatsapp ?? false
+  const salvar = useMutation({
+    mutationFn: () => api.post<TratamentosPaciente>(`/clinics/${clinica.id}/tratamentos/${t!.id}/retomar`,
+      { texto: valor, avisar_paciente: avisar && podeAvisar }),
+    onSuccess: (r) => { setTexto(null); onFeito(r, avisar && podeAvisar) },
+    onError: aviso.erro,
+  })
+  return (
+    <Modal titulo={`Retomar · ${t?.procedimento ?? ''}`} aberto={!!t} onFechar={() => { setTexto(null); onFechar() }}>
+      <div className="grid gap-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={avisar && podeAvisar} disabled={!podeAvisar} onChange={(e) => setAvisar(e.target.checked)} />
+          Mandar mensagem pelo WhatsApp convidando a marcar a próxima sessão
+        </label>
+        {!podeAvisar && previa.data && <p className="text-xs text-muted">A clínica não tem WhatsApp ligado: o tratamento volta a andar, mas ninguém é avisado.</p>}
+        {avisar && podeAvisar && (
+          <Campo rotulo="Mensagem" ajuda={`${valor.length}/1000 · Quando o paciente responder, a assistente marca a sessão.`}>
+            <textarea value={valor} maxLength={1000} rows={4} onChange={(e) => setTexto(e.target.value)}
+              className="rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-primary" />
+          </Campo>
+        )}
+        <div className="flex justify-end gap-2">
+          <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
+          <Botao onClick={() => salvar.mutate()} disabled={salvar.isPending || (avisar && podeAvisar && !valor.trim())}><Play className="size-4" />Retomar</Botao>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function ModalEncerrar({ t, onFechar, onFeito }: { t: Tratamento | null; onFechar: () => void; onFeito: (r: TratamentosPaciente, s: string) => void }) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  const [status, setStatus] = useState<'concluido' | 'interrompido'>('concluido')
+  const [volta, setVolta] = useState(emMeses(6))
+  const salvar = useMutation({
+    mutationFn: () => api.post<TratamentosPaciente>(`/clinics/${clinica.id}/tratamentos/${t!.id}/encerrar`,
+      { status, volta_em: status === 'concluido' && volta ? volta : null }),
+    onSuccess: (r) => onFeito(r, status),
+    onError: aviso.erro,
+  })
+  return (
+    <Modal titulo={`Encerrar · ${t?.procedimento ?? ''}`} aberto={!!t} onFechar={onFechar}>
+      <div className="grid gap-4">
+        <Campo rotulo="Como terminou?">
+          <Seletor value={status} onChange={(e) => setStatus(e.target.value as 'concluido' | 'interrompido')}>
+            <option value="concluido">Concluído</option>
+            <option value="interrompido">Interrompido (desistiu, mudou de plano…)</option>
+          </Seletor>
+        </Campo>
+        {status === 'concluido' && (
+          <Campo rotulo="Volta em" ajuda="Nessa data o paciente aparece no relatório de recall (chamar de volta).">
+            <div className="flex flex-wrap gap-2">
+              {[3, 6, 12].map((m) => (
+                <Botao key={m} variante={volta === emMeses(m) ? 'primario' : 'secundario'} className="!py-1.5 text-xs" onClick={() => setVolta(emMeses(m))}>{m} meses</Botao>
+              ))}
+              <Entrada type="date" value={volta} onChange={(e) => setVolta(e.target.value)} className="!py-1.5" />
+            </div>
+          </Campo>
+        )}
+        <p className="text-xs text-muted">Encerrado não reabre: se o paciente precisar de novo, abra outro tratamento. Consultas já marcadas continuam na agenda.</p>
+        <div className="flex justify-end gap-2">
+          <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
+          <Botao onClick={() => salvar.mutate()} disabled={salvar.isPending}><CheckCircle2 className="size-4" />Encerrar</Botao>
+        </div>
+      </div>
+    </Modal>
+  )
+}

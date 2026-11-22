@@ -212,7 +212,44 @@ def cenarios() -> list[Cenario]:
                 lambda c: ["Vocês têm estacionamento com manobrista?"],
                 lambda c: [(c.status_conversa() != "humano" or AVISO_EQUIPE in c.tudo,
                             "se passou para a equipe, avisou o paciente" if c.status_conversa() == "humano" else "respondeu sem inventar")]),
+        # Etapa 21 — tratamentos (RN-TR)
+        Cenario("C26", "Tratamento aguardando protético: não marca a sessão", "TR-04, D87",
+                lambda c: ["Oi! Quero marcar a próxima sessão da minha restauração", f"Pode ser {DIAS[qui.weekday()]} ({ddmm(qui)})"],
+                lambda c: [(not any(r[1] == "Restauração" for r in c.consultas()), "não marcou sessão do tratamento"),
+                           (tem(c.tudo, r"aguard|pront|cl[íi]nica (vai|entra|te)|avis|retorn|contato"), "explicou que está aguardando"),
+                           (c.conn.execute("""select perguntou_em is not null from treatments t join patients p on p.id = t.patient_id
+                                               where t.clinic_id = %s and p.phone = %s""", (c.cid, S._telefone(c.tel))).fetchone()[0],
+                            "o pedido foi registrado para o sino da equipe")],
+                preparar=lambda c: _tratamento(c, "aguardando")),
+        Cenario("C27", "Tratamento em andamento: marca a próxima sessão", "TR-03, TR-08",
+                lambda c: ["Oi! Quero marcar a próxima sessão da restauração", f"Pode ser {DIAS[qui.weekday()]} ({ddmm(qui)}), qualquer horário",
+                           "Pode ser o primeiro horário que você falou", "Sim, pode confirmar", "Sim"],
+                lambda c: [(any(r[1] == "Restauração" for r in c.consultas()), "marcou a sessão de restauração"),
+                           (len(c.consultas()) == 3, "passou do limite de 2 porque é sessão de tratamento (RN-TR-08)")],
+                preparar=lambda c: _tratamento(c, "em_andamento")),
+        Cenario("C28", "Aguardando protético, mas pede limpeza: marca normal", "TR-04, D87",
+                lambda c: ["Oi! Enquanto a peça não fica pronta, queria marcar uma limpeza",
+                           f"Pode ser {DIAS[qui.weekday()]} ({ddmm(qui)}) de manhã, tanto faz o dentista",
+                           "Pode ser o primeiro horário que você falou", "Sim, pode confirmar"],
+                lambda c: [(any(r[1] == "Limpeza (profilaxia)" for r in c.consultas()), "marcou a limpeza"),
+                           (not any(r[1] == "Restauração" for r in c.consultas()), "não marcou sessão do tratamento")],
+                preparar=lambda c: _tratamento(c, "aguardando", consultas_comuns=False)),
     ]
+
+
+def _tratamento(c: Ctx, status: str, consultas_comuns: bool = True) -> None:
+    """Paciente com tratamento de restauração (Dr. Bruno) e, por padrão, 2 consultas comuns já marcadas (limite cheio)."""
+    from app import tratamentos as T
+
+    if consultas_comuns:
+        dia = proximo(0, proximo(0)) + timedelta(days=int(c.tel[-2:]) % 4)  # semana seguinte; um dia por cenário
+        for h in (9, 10):
+            c.marcar("Rita Moura", dia, h)  # 2 consultas comuns = limite cheio
+    p = S.obter_ou_criar_paciente(c.conn, c.cid, c.tel, "Rita Moura", "web")
+    t = T.criar(c.conn, c.cid, p["id"], service_id=c.serv["Restauração"], professional_id=c.prof["Dr. Bruno Costa"],
+                sessoes_previstas=4, intervalo_dias=7, orientacao=None)
+    if status == "aguardando":
+        T.aguardar(c.conn, c.cid, t["id"], motivo_espera="protetico", motivo_texto=None, previsao=None)
 
 
 TESTES_AUTOMATICOS = [
@@ -232,7 +269,7 @@ TESTES_AUTOMATICOS = [
 def preparar_clinica(conn) -> tuple:
     r = conn.execute("select id from clinics where slug = %s", (SLUG,)).fetchone()
     if r:
-        for tabela in ("appointment_events", "outbound_messages", "appointments", "agent_runs"):
+        for tabela in ("appointment_events", "outbound_messages", "appointments", "treatments", "agent_runs"):
             conn.execute(f"delete from {tabela} where clinic_id = %s", r)  # noqa: S608 — nomes fixos
         conn.execute("delete from clinics where id = %s", r)
     cid, serv, prof = criar_estrutura(conn, "Clínica Cenários", FONE_CLINICA, SLUG, "Rua dos Testes, 100 — São Paulo/SP")

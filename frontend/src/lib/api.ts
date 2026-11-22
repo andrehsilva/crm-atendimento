@@ -139,6 +139,7 @@ export type CardCrm = {
   created_at: string
   atendimento_manual: boolean
   recorrente: boolean
+  tags: TagCliente[]
   consulta_id: string | null
   proxima_consulta: string | null
   procedimento: string | null
@@ -147,7 +148,7 @@ export type CardCrm = {
 
 export type Mensagem = {
   id: string
-  kind: 'confirmacao' | 'remarcacao' | 'cancelamento' | 'lembrete' | 'aniversario' | 'campanha'
+  kind: 'confirmacao' | 'remarcacao' | 'cancelamento' | 'lembrete' | 'aniversario' | 'campanha' | 'tratamento'
   channel: string
   body: string
   status: 'agendada' | 'enviada' | 'entregue' | 'lida' | 'falhou' | 'cancelada'
@@ -172,6 +173,7 @@ export type Paciente = {
   ultima_consulta: string | null
   proxima_consulta: string | null
   foto_versao: number | null
+  tags: TagCliente[]
 }
 
 /** Etapa 9C: histórico de observações do cliente e pasta do Drive */
@@ -364,6 +366,7 @@ export type CanalWhatsapp = {
 export type Notificacao = {
   chave: string
   tipo: 'humano' | 'whatsapp' | 'marcada' | 'remarcada' | 'cancelada' | 'confirmada' | 'falhou' | 'resposta_falhou' | 'ia'
+    | 'tratamento_pedido' | 'tratamento_previsao' | 'faltou_sessao'
   titulo: string
   texto: string
   quando: string
@@ -374,3 +377,31 @@ export type Notificacao = {
   dia: string | null
 }
 export type Notificacoes = { itens: Notificacao[]; contador: number; aguardando: number }
+
+/** Etapa 21 (D90): tags automáticas do cliente */
+export type TagCliente = { codigo: 'novo' | 'recorrente' | 'em_tratamento' | 'aguardando'; rotulo: string; procedimento?: string }
+
+/** Etapa 21 (RN-TR): tratamento em andamento */
+export type MotivoEspera = 'protetico' | 'exame' | 'cicatrizacao' | 'outro'
+export type Tratamento = {
+  id: string
+  patient_id: string
+  service_id: string
+  professional_id: string | null
+  procedimento: string
+  profissional: string | null
+  sessoes_previstas: number | null
+  intervalo_dias: number | null
+  orientacao: string | null
+  status: 'em_andamento' | 'aguardando' | 'concluido' | 'interrompido'
+  motivo_espera: MotivoEspera | null
+  motivo_texto: string | null
+  previsao: string | null
+  volta_em: string | null
+  status_desde: string
+  realizadas: number
+  marcadas: number
+  ultima_sessao: string | null
+  proxima_sessao: string | null
+}
+export type TratamentosPaciente = { tratamentos: Tratamento[]; tags: TagCliente[] }

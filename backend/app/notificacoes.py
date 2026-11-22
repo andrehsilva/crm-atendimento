@@ -19,7 +19,7 @@ from app.painel.avisos import quando
 DIAS_ACONTECIMENTOS = 7
 LIMITE = 100
 WHATSAPP_CAIU = ("SCAN_QR_CODE", "STOPPED", "FAILED")
-NOME_MENSAGEM = {"confirmacao": "Confirmação", "remarcacao": "Aviso de remarcação", "cancelamento": "Aviso de cancelamento",
+NOME_MENSAGEM = {"tratamento": "Convite para seguir o tratamento", "confirmacao": "Confirmação", "remarcacao": "Aviso de remarcação", "cancelamento": "Aviso de cancelamento",
                  "lembrete": "Lembrete", "aniversario": "Mensagem de aniversário", "campanha": "Campanha"}
 
 _SQL = """
@@ -58,6 +58,31 @@ with eventos as (
     join conversations cv on cv.id = m.conversation_id and cv.clinic_id = m.clinic_id
     join patients p on p.id = cv.patient_id and p.clinic_id = cv.clinic_id
    where m.clinic_id = %(c)s and m.author = 'sistema' and m.content like '⚠️ Não consegui enviar%%' and m.created_at >= %(desde)s
+  union all
+  -- Etapa 21: paciente pediu para marcar enquanto o tratamento aguardava (a chave muda a cada novo pedido)
+  select 'trp:' || t.id || ':' || extract(epoch from t.perguntou_em)::bigint, 'tratamento_pedido', t.perguntou_em,
+         p.id, p.name, p.phone, s.name, null, null, null, case t.motivo_espera when 'protetico' then 'protético' when 'exame' then 'exame'
+                                      when 'cicatrizacao' then 'cicatrização' else coalesce(t.motivo_texto, 'outro motivo') end || '|' || coalesce(to_char(t.previsao, 'DD/MM'), '')
+    from treatments t join patients p on p.id = t.patient_id and p.clinic_id = t.clinic_id join services s on s.id = t.service_id
+   where t.clinic_id = %(c)s and t.status = 'aguardando' and t.perguntou_em >= %(desde)s
+  union all
+  -- Etapa 21: previsão da espera passou e o tratamento continua aguardando
+  select 'trv:' || t.id || ':' || t.previsao, 'tratamento_previsao', (t.previsao + 1)::timestamp at time zone %(tz)s,
+         p.id, p.name, p.phone, s.name, null, null, null, case t.motivo_espera when 'protetico' then 'protético' when 'exame' then 'exame'
+                                      when 'cicatrizacao' then 'cicatrização' else coalesce(t.motivo_texto, 'outro motivo') end || '|' || to_char(t.previsao, 'DD/MM')
+    from treatments t join patients p on p.id = t.patient_id and p.clinic_id = t.clinic_id join services s on s.id = t.service_id
+   where t.clinic_id = %(c)s and t.status = 'aguardando' and t.previsao < %(hoje)s
+  union all
+  -- Etapa 21: falta numa sessão de tratamento
+  select 'ag:' || e.id, 'faltou_sessao', e.created_at, p.id, p.name, p.phone, s.name, a.starts_at, a.id, a.starts_at,
+         (select count(*) from appointments x where x.treatment_id = a.treatment_id and x.status in ('realizada', 'faltou')
+            and x.starts_at <= a.starts_at) || '|' || coalesce(t.sessoes_previstas::text, '')
+    from appointment_events e
+    join appointments a on a.id = e.appointment_id and a.clinic_id = e.clinic_id
+    join treatments t on t.id = a.treatment_id
+    join patients p on p.id = a.patient_id and p.clinic_id = a.clinic_id
+    join services s on s.id = a.service_id
+   where e.clinic_id = %(c)s and e.created_at >= %(desde)s and e.action = 'faltou'
 )
 select e.*, (r.chave is not null) as lida
   from eventos e
@@ -86,6 +111,18 @@ def _texto(linha: dict, clinica: dict, t: dict, ia: str) -> tuple[str, str]:
     if tipo == "falhou":
         return "Mensagem não enviada", f"{NOME_MENSAGEM.get(linha['extra'], 'Mensagem')} para {nome}" + (
             f" · {linha['detalhe']}" if linha["detalhe"] else "")
+    if tipo in ("tratamento_pedido", "tratamento_previsao"):
+        motivo, previsao = (linha["detalhe"] or "|").split("|", 1)
+        if tipo == "tratamento_pedido":
+            return (f"{nome} quer marcar {linha['extra']}",
+                    f"O tratamento está aguardando {motivo}" + (f" (previsão {previsao})" if previsao else "")
+                    + ". Clique em Retomar quando puder seguir.")
+        return (f"{linha['extra']} de {nome}: a previsão era {previsao}",
+                f"Ainda aguardando {motivo}. Já chegou? Retome o tratamento ou ajuste a previsão.")
+    if tipo == "faltou_sessao":
+        n, total = (linha["detalhe"] or "|").split("|", 1)
+        return (f"{nome} faltou à sessão {n}" + (f" de {total}" if total else ""),
+                f"{linha['extra']} · {quando(linha['inicio'], tz)}")
     return "Resposta não enviada pelo WhatsApp", f"A resposta para {nome} não chegou. Veja a conversa."
 
 
@@ -96,7 +133,8 @@ def listar(conn, clinic_id: UUID, user_id: UUID, agora: datetime | None = None) 
     ia = (clinica["settings"] or {}).get("nome_assistente") or "Ísis"
 
     linhas = conn.cursor(row_factory=dict_row).execute(
-        _SQL, {"c": clinic_id, "u": user_id, "desde": agora - timedelta(days=DIAS_ACONTECIMENTOS), "limite": LIMITE},
+        _SQL, {"c": clinic_id, "u": user_id, "desde": agora - timedelta(days=DIAS_ACONTECIMENTOS), "limite": LIMITE,
+               "hoje": agora.astimezone(clinica["tz"]).date(), "tz": clinica["timezone"]},
     ).fetchall()
 
     situacoes: list[dict] = []

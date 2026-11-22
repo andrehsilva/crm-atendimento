@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Bot, Check, CheckCheck, Hand, MessageSquareOff, Send } from 'lucide-react'
-import { api, type CardCrm, type MensagemChat } from '../lib/api'
+import { PainelTratamentos, Tags } from './Tratamentos'
+import { api, type CardCrm, type MensagemChat, type TratamentosPaciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, hora, telefone } from '../lib/formato'
 import { useAviso } from './Aviso'
@@ -29,6 +30,13 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
     enabled: !!card,
   })
   const conversa = q.data?.conversa
+  // Etapa 21: tags e tratamentos do paciente ao lado da conversa
+  const trat = useQuery({
+    queryKey: ['tratamentos', clinica.id, card?.id],
+    queryFn: () => api.get<TratamentosPaciente>(`/clinics/${clinica.id}/patients/${card!.id}/tratamentos`),
+    enabled: !!card,
+  })
+  const abertos = (trat.data?.tratamentos ?? []).filter((t) => t.status === 'em_andamento' || t.status === 'aguardando')
   const base = conversa ? `/clinics/${clinica.id}/conversations/${conversa.id}` : ''
 
   useEffect(() => {
@@ -61,6 +69,14 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
           ? <Botao variante="secundario" disabled={devolver.isPending} onClick={() => devolver.mutate()}><Bot className="size-4" />Devolver para {ia}</Botao>
           : <Botao variante="secundario" disabled={assumir.isPending} onClick={() => assumir.mutate()}><Hand className="size-4" />Assumir conversa</Botao>)}
       </div>
+
+      <Tags tags={trat.data?.tags} className="mb-3 flex" />
+      <details className="mb-3 rounded-2xl border border-line px-4 py-2" open={abertos.length > 0 || undefined}>
+        <summary className="cursor-pointer py-1 text-sm text-muted">
+          Tratamentos{abertos.length ? ` (${abertos.length} aberto${abertos.length > 1 ? 's' : ''})` : ''}
+        </summary>
+        <div className="pb-2 pt-2"><PainelTratamentos pacienteId={card.id} compacto /></div>
+      </details>
 
       <div className="h-[46vh] space-y-2 overflow-y-auto rounded-2xl bg-surface-muted p-3">
         {!q.data?.mensagens.length && <Vazio icone={<MessageSquareOff className="size-8" />} texto={q.isLoading ? 'Carregando…' : `Este ${pal.cliente} ainda não conversou.`} />}

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from psycopg.rows import dict_row
 
-from app import segmentos
+from app import segmentos, tratamentos
 from app.agenda import servico
 from app.painel.avisos import DIAS, quando
 
@@ -97,9 +97,12 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
         for c in futuras
     ) or "- nenhuma"
     limite = clinica["regras"].limite_consultas_futuras
-    if len(futuras) >= limite:  # RN-AG-08: a assistente já começa sabendo que não cabe consulta nova
+    # RN-AG-08: a assistente já começa sabendo que não cabe consulta nova (RN-TR-08: sessão de tratamento não conta)
+    if tratamentos.futuras_que_contam(conn, clinica["id"], paciente["id"], agora) >= limite:
         consultas += (f"\n- ⚠️ Já atingiu o limite da clínica ({limite} consultas futuras): para marcar outra, "
                       "precisa remarcar ou cancelar uma destas. Explique isso antes de buscar horários.")
+
+    secao_tratamentos = _tratamentos(conn, clinica, paciente, tz)
 
     ref = None
     if paciente.get("preferred_professional_id"):
@@ -157,7 +160,7 @@ Significado das expressões (já calculado — use exatamente estas datas):
 - {segmentos.cap(segmentos.termos(cfg)['profissional'])} de referência: {ref or 'nenhum ainda'}
 - {segmentos.cap(segmentos.termos(cfg)['atendimentos'])} futuras (na ferramenta: "consultas"):
 {consultas}
-
+{secao_tratamentos}
 # Ações preparadas aguardando o "sim" da pessoa
 
 {acoes}
@@ -166,6 +169,43 @@ Se a pessoa acabou de concordar com uma dessas ações, chame `confirmar_acao` c
 (não prepare de novo). Se ele mudou de ideia, ignore o token e prepare a nova ação.
 """
     return persona + "\n" + momento + jeito_da_clinica(cfg)
+
+
+def _tratamentos(conn, clinica: dict, paciente: dict, tz) -> str:
+    """Etapa 21 (RN-TR): o que a assistente pode fazer com cada tratamento aberto. O bloqueio de verdade está no
+    código (servico.marcar); isto é para ela explicar certo e sugerir o horário de costume."""
+    abertos = tratamentos.do_paciente(conn, clinica["id"], paciente["id"], so_abertos=True)
+    if not abertos:
+        return ""
+    linhas = []
+    for t in abertos:
+        prof = f" com {t['profissional']}" if t["profissional"] else ""
+        total = f" de {t['sessoes_previstas']}" if t["sessoes_previstas"] else ""
+        cab = f"- **{t['procedimento']}**{prof}: {t['realizadas']}{total} sessões feitas"
+        if t["proxima_sessao"]:
+            cab += f"; próxima já marcada: {quando(t['proxima_sessao'], tz)}"
+        linhas.append(cab)
+        if t["status"] == "aguardando":
+            prev = f" (previsão: {t['previsao']:%d/%m})" if t["previsao"] else ""
+            linhas.append(f"  - ⏸ AGUARDANDO {tratamentos.motivo(t)}{prev}. NÃO marque nova sessão de {t['procedimento']} "
+                          "(o sistema recusa). Se a pessoa pedir essa sessão, chame `avisar_pedido_tratamento` (avisa a equipe) "
+                          "e explique com gentileza que, assim que puder seguir, a clínica entra em contato. "
+                          "Outros procedimentos você pode marcar normalmente.")
+        else:
+            dica = ""
+            if t["ultima_sessao"]:
+                u = t["ultima_sessao"].astimezone(tz)
+                dica = f" Sugira primeiro o mesmo dia e horário da última sessão ({DIAS[u.weekday()]}, {u:%H:%M})"
+                if t["intervalo_dias"]:
+                    dica += f", com intervalo de {t['intervalo_dias']} dias"
+                dica += f"{prof}."
+            linhas.append(f"  - ▶ EM ANDAMENTO: pode marcar a próxima sessão quando a pessoa pedir; não conta no limite de "
+                          f"consultas.{dica}")
+            if t["ultima_falta"] and (not t["ultima_sessao"] or t["ultima_falta"] > t["ultima_sessao"]):
+                linhas.append(f"  - Faltou à sessão de {quando(t['ultima_falta'], tz)}: se a pessoa escrever, ofereça remarcar.")
+        if t["orientacao"]:
+            linhas.append(f"  - Orientação da clínica para você: {t['orientacao']}")
+    return "\n# Tratamentos em andamento\n\n" + "\n".join(linhas) + "\n"
 
 
 JEITO_MAX = 1500

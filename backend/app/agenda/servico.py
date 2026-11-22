@@ -20,6 +20,7 @@ from app.core import relogio
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.eventos import avisar
 from app.painel import avisos, crm
+from app import tratamentos
 
 Ator = Literal["isis", "recepcao", "paciente"]
 ATIVOS = ("agendada", "confirmada")
@@ -271,14 +272,13 @@ def marcar(
         if not paciente["name"]:
             raise AgendaError("NOME_OBRIGATORIO", "Preciso do nome completo do paciente para marcar.")
 
-        ativas = conn.execute(
-            """select count(*) from appointments
-               where clinic_id = %s and patient_id = %s and status = any(%s) and starts_at > %s
-                 and (%s::uuid is null or id <> %s::uuid)""",
-            (clinic_id, paciente["id"], list(ATIVOS), agora, _remarcando, _remarcando),
-        ).fetchone()[0]
+        # Etapa 21: sessão de tratamento aberto fica ligada a ele; aguardando → a Ísis não marca (RN-TR-04)
+        tratamento = tratamentos.conferir_marcacao(conn, clinic_id, paciente["id"], service_id, ator,
+                                                   remarcando=_remarcando is not None)
+        # RN-AG-08 com a exceção RN-TR-08: sessões de tratamento aberto não contam no limite
+        ativas = tratamentos.futuras_que_contam(conn, clinic_id, paciente["id"], agora, excluir=_remarcando)
         limite = clinica["regras"].limite_consultas_futuras
-        if ativas >= limite:
+        if tratamento is None and ativas >= limite:
             raise AgendaError(
                 "LIMITE_CONSULTAS", f"O paciente já tem {ativas} consulta(s) marcada(s); o limite é {limite}."
             )
@@ -290,11 +290,13 @@ def marcar(
             with conn.transaction():
                 consulta = _cur(conn).execute(
                     """insert into appointments
-                         (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at, source, rescheduled_from_id)
-                       values (%s, %s, %s, %s, %s, %s, %s, %s) returning *""",
+                         (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at, source, rescheduled_from_id,
+                          treatment_id)
+                       values (%s, %s, %s, %s, %s, %s, %s, %s, %s) returning *""",
                     (
                         clinic_id, paciente["id"], professional_id, service_id, inicio, fim,
                         "paciente_botao" if ator == "paciente" else ator, _remarcando,
+                        tratamento["id"] if tratamento else None,
                     ),
                 ).fetchone()
         except (errors.ExclusionViolation, errors.DeadlockDetected) as e:

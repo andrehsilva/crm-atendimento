@@ -23,6 +23,7 @@ from app.config import get_settings
 from app.auth.acesso import acesso, exigir_admin_clinica, exigir_super_admin
 from app.db import get_conn
 from app.eventos import avisar, distribuidor
+from app import tratamentos
 from app.canais import whatsapp
 from app.canais.conexao import isis_pausada_no_whatsapp
 from app.core import relogio
@@ -169,7 +170,16 @@ def kanban(clinic_id: UUID, conn: Conn = Depends(get_conn)):
            order by p.last_activity_at desc""",
         (clinic_id,),
     ).fetchall()
+    _com_tags(conn, clinic_id, cards)
     return {"colunas": list(crm.ETAPAS), "cards": cards}
+
+
+def _com_tags(conn, clinic_id: UUID, linhas: list[dict]) -> list[dict]:
+    """Etapa 21 (RN-TR-11, D90): tags automáticas — Novo · Recorrente · Em tratamento · Aguardando."""
+    t = tratamentos.tags(conn, clinic_id, [x["id"] for x in linhas])
+    for x in linhas:
+        x["tags"] = t.get(x["id"], [])
+    return linhas
 
 
 class MudancaEtapa(BaseModel):
@@ -205,7 +215,7 @@ def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(ge
     if busca:
         sql += " and (p.name ilike %s or p.phone like %s)"
         params += [f"%{busca}%", f"%{''.join(ch for ch in busca if ch.isdigit()) or busca}%"]
-    return _cur(conn).execute(sql + " order by p.name nulls last limit 500", params).fetchall()
+    return _com_tags(conn, clinic_id, _cur(conn).execute(sql + " order by p.name nulls last limit 500", params).fetchall())
 
 
 class EdicaoPaciente(BaseModel):

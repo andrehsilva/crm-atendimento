@@ -1,6 +1,6 @@
 import { useState, type DragEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Bot, Copy, Hand, Inbox, RefreshCw, User } from 'lucide-react'
+import { Bot, Copy, Hand, Inbox, User } from 'lucide-react'
 import { api, type CardCrm, type Etapa } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataHora, horasDesde, telefone, tempoParado } from '../lib/formato'
@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader'
 import { ModalNovaConsulta, type Previa } from '../components/agenda/ModalNovaConsulta'
 import { ModalConversa } from '../components/ModalConversa'
 import { Botao, Modal, Selo, type CorSelo } from '../components/ui'
+import { Tags } from '../components/Tratamentos'
 import { useTermos } from '../lib/termos'
 
 // Colunas provisórias (D19)
@@ -126,7 +127,6 @@ export function Crm() {
 function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
   card: CardCrm; cor: CorSelo; titulo: string; tz: string; onDragStart: () => void; onDragEnd: () => void; onAbrir: () => void
 }) {
-  const pal = useTermos()
   const clinicaId = useClinica().clinica.id
   const parado = horasDesde(card.last_activity_at) >= PARADO_ALERTA_H
   const dias = Math.floor(horasDesde(card.created_at) / 24)
@@ -137,7 +137,7 @@ function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
         {card.atendimento_manual
           ? <Selo cor="ambar"><Hand className="size-3" />Atendimento manual</Selo>
           : <Selo><Bot className="size-3" />Atendimento automático</Selo>}
-        {card.recorrente && <Selo cor="roxo"><RefreshCw className="size-3" />{pal.Cliente} recorrente</Selo>}
+        <Tags tags={card.tags} className="justify-end" />
       </div>
       <div className="flex items-center gap-3">
         {card.foto_versao

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FolderOpen, NotebookPen, Pencil, Search, Users } from 'lucide-react'
+import { FolderOpen, NotebookPen, Pencil, Search, Stethoscope, Users } from 'lucide-react'
 import { api, type Etapa, type Paciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, telefone } from '../lib/formato'
 import { useAviso } from '../components/Aviso'
 import { PageHeader } from '../components/PageHeader'
-import { Botao, Campo, Entrada, Modal, Selo, Vazio, type CorSelo } from '../components/ui'
+import { Botao, Campo, Entrada, Modal, Selo, Seletor, Vazio, type CorSelo } from '../components/ui'
+import { PainelTratamentos, Tags } from '../components/Tratamentos'
 import { useTermos } from '../lib/termos'
 import { EnviarImagem, Retrato } from '../components/Imagem'
 import { ModalObservacoes } from '../components/ModalObservacoes'
@@ -30,6 +31,8 @@ export function Clientes() {
   const [termo, setTermo] = useState('')
   const [editando, setEditando] = useState<Paciente | null>(null)
   const [notas, setNotas] = useState<Paciente | null>(null)
+  const [tratando, setTratando] = useState<Paciente | null>(null)
+  const [tag, setTag] = useState('') // filtro por tag automática (D90)
 
   useEffect(() => {
     const t = setTimeout(() => setTermo(busca.trim()), 300)
@@ -40,16 +43,26 @@ export function Clientes() {
     queryKey: ['pacientes', clinica.id, termo],
     queryFn: () => api.get<Paciente[]>(`/clinics/${clinica.id}/patients${termo ? `?busca=${encodeURIComponent(termo)}` : ''}`),
   })
+  const lista = (q.data ?? []).filter((p) => !tag || p.tags.some((t) => t.codigo === tag))
 
   return (
     <>
       <PageHeader titulo="Leads / Clientes" subtitulo={`${pal.Clientes} e contatos`} />
       <div className="rounded-3xl bg-surface p-5">
-        <div className="relative mb-4 max-w-sm">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <Entrada className="w-full pl-9" placeholder="Buscar por nome ou telefone" value={busca} onChange={(e) => setBusca(e.target.value)} />
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <Entrada className="w-full pl-9" placeholder="Buscar por nome ou telefone" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          </div>
+          <Seletor value={tag} onChange={(e) => setTag(e.target.value)} className="!w-auto" aria-label="Filtrar por tag">
+            <option value="">Todas as tags</option>
+            <option value="novo">Novos</option>
+            <option value="recorrente">Recorrentes</option>
+            <option value="em_tratamento">Em tratamento</option>
+            <option value="aguardando">Aguardando</option>
+          </Seletor>
         </div>
-        {!q.data?.length ? (
+        {!lista.length ? (
           <Vazio icone={<Users className="size-8" />} texto={q.isLoading ? 'Carregando…' : `Nenhum ${pal.cliente} encontrado.`} />
         ) : (
           <div className="overflow-x-auto">
@@ -67,14 +80,17 @@ export function Clientes() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {q.data.map((p) => {
+                {lista.map((p) => {
                   const [rot, cor] = ETAPA[p.crm_stage]
                   return (
                     <tr key={p.id}>
                       <td className="py-2.5 pr-4 font-medium">
                         <span className="flex items-center gap-3">
                           <Retrato nome={p.name} src={p.foto_versao ? `/api/clinics/${clinica.id}/patients/${p.id}/foto?v=${p.foto_versao}` : null} />
-                          {p.name ?? <span className="text-muted">sem nome</span>}
+                          <span className="min-w-0">
+                            {p.name ?? <span className="text-muted">sem nome</span>}
+                            <Tags tags={p.tags} className="mt-1 flex" />
+                          </span>
                         </span>
                       </td>
                       <td className="py-2.5 pr-4">{telefone(p.phone)}</td>
@@ -100,6 +116,10 @@ export function Clientes() {
                               </span>
                             )}
                           </button>
+                          <button type="button" title="Tratamentos" aria-label={`Tratamentos de ${p.name ?? ''}`}
+                            onClick={() => setTratando(p)} className={ACAO}>
+                            <Stethoscope className="size-[18px]" strokeWidth={1.75} />
+                          </button>
                           <button type="button" title="Editar cadastro" aria-label={`Editar ${p.name ?? ''}`} onClick={() => setEditando(p)} className={ACAO}>
                             <Pencil className="size-[18px]" strokeWidth={1.75} />
                           </button>
@@ -115,6 +135,9 @@ export function Clientes() {
       </div>
       <ModalEditar paciente={editando} onFechar={() => setEditando(null)} />
       <ModalObservacoes paciente={notas} onFechar={() => setNotas(null)} />
+      <Modal titulo={`Tratamentos · ${tratando?.name ?? ''}`} aberto={!!tratando} onFechar={() => setTratando(null)} largura="max-w-2xl">
+        {tratando && <PainelTratamentos pacienteId={tratando.id} />}
+      </Modal>
     </>
   )
 }

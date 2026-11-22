@@ -15,6 +15,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from app import tratamentos
 from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.agent.contexto import dados_clinica
@@ -154,6 +155,7 @@ def criar_ferramentas(s: Sessao) -> list:
         try:
             serv = _procedimento(procedimento)
             prof = _profissional(profissional)
+            _tratamento_liberado(serv)  # RN-TR-04: aguardando → nem busca horário
             ini = _data(data_inicio)
             fim = _data(data_fim) if data_fim else ini
             if (fim - ini).days > 14:
@@ -174,10 +176,14 @@ def criar_ferramentas(s: Sessao) -> list:
                  "observacao": "ofereça no máximo 3" if saida else "sem horários livres nesse período; sugira outros dias"}
             if not serv["bookable_by_ai"]:
                 r["aviso"] = "este procedimento é marcado só pela recepção: use chamar_humano"
-            # RN-AG-08 (achado da Etapa 8): avisa o limite ANTES de oferecer horários para uma consulta NOVA
+            # RN-AG-08 (achado da Etapa 8): avisa o limite ANTES de oferecer horários para uma consulta NOVA.
+            # RN-TR-08: sessão de tratamento aberto não conta (nem a que vai ser marcada, nem as já marcadas)
             limite = s.clinica["regras"].limite_consultas_futuras
-            futuras = len(servico.consultas_do_paciente(conn, s.cid, s.paciente["phone"], agora=s.agora))
-            if futuras >= limite:
+            futuras = tratamentos.futuras_que_contam(conn, s.cid, s.paciente["id"], s.agora)
+            sessao_de_tratamento = tratamentos.aberto(conn, s.cid, s.paciente["id"], serv["id"]) is not None
+            if sessao_de_tratamento:
+                r["tratamento"] = "é a próxima sessão do tratamento em andamento: não conta no limite de consultas"
+            elif futuras >= limite:
                 r["limite_de_consultas"] = (
                     f"o paciente já tem {futuras} consulta(s) futura(s) e o limite da clínica é {limite}: "
                     "uma consulta NOVA não pode ser marcada. Se ele quer marcar mais uma, explique o limite e ofereça "
@@ -207,6 +213,15 @@ def criar_ferramentas(s: Sessao) -> list:
         avisar(conn, s.cid, "crm", s.paciente["id"])
         return log("salvar_nome", {"nome_completo": nome}, _json({"ok": True}))
 
+    def _tratamento_liberado(serv: dict) -> None:
+        """RN-TR-04 (D87): tratamento aguardando → recusa e deixa o pedido registrado para o sino da equipe."""
+        try:
+            tratamentos.conferir_marcacao(conn, s.cid, s.paciente["id"], serv["id"], "isis")
+        except AgendaError:
+            tratamentos.registrar_pergunta(conn, s.cid, s.paciente["id"], serv["id"])
+            avisar(conn, s.cid, "crm", s.paciente["id"])
+            raise
+
     def preparar_agendamento(procedimento: str, inicio: str, profissional: str) -> str:
         """PASSO 1 para marcar: valida tudo SEM gravar e devolve um resumo e um token.
         Mostre o resumo ao paciente e pergunte se pode confirmar.
@@ -223,6 +238,7 @@ def criar_ferramentas(s: Sessao) -> list:
             if prof is None:
                 raise AgendaError("DADOS_INVALIDOS", "Informe o profissional do horário escolhido.")
             dt = _instante(inicio)
+            _tratamento_liberado(serv)
             c = _validar(lambda: servico.marcar(
                 conn, s.cid, telefone=s.paciente["phone"], nome=s.paciente.get("name"), professional_id=prof["id"],
                 service_id=serv["id"], inicio=dt, ator="isis", origem=s.conversa["channel"], agora=s.agora))
@@ -348,6 +364,27 @@ def criar_ferramentas(s: Sessao) -> list:
         except AgendaError as e:
             return log("confirmar_acao", args, _erro(e))
 
+    def avisar_pedido_tratamento(procedimento: str) -> str:
+        """Use quando a pessoa quer marcar a próxima sessão de um tratamento que está AGUARDANDO (ex.: protético).
+        Registra o pedido e avisa a equipe pelo painel. Não marca nada e não passa a conversa para a equipe.
+
+        Args:
+            procedimento: o procedimento do tratamento (ex.: "Restauração").
+        """
+        args = {"procedimento": procedimento}
+        try:
+            serv = _procedimento(procedimento)
+            t = tratamentos.aberto(conn, s.cid, s.paciente["id"], serv["id"])
+            if not t or t["status"] != "aguardando":
+                return log("avisar_pedido_tratamento", args, _json(
+                    {"ok": False, "observacao": "esse tratamento não está aguardando: pode buscar horários normalmente"}))
+            tratamentos.registrar_pergunta(conn, s.cid, s.paciente["id"], serv["id"])
+            avisar(conn, s.cid, "crm", s.paciente["id"])
+            return log("avisar_pedido_tratamento", args, _json(
+                {"ok": True, "observacao": "a equipe foi avisada; diga que a clínica entra em contato quando puder seguir"}))
+        except AgendaError as e:
+            return log("avisar_pedido_tratamento", args, _erro(e))
+
     def chamar_humano(motivo: str) -> str:
         """Passa a conversa para a equipe da clínica (a Ísis para de responder até a equipe devolver).
         Use para: pedido de falar com pessoa, reclamação, urgência, procedimento só da recepção, ou quando não conseguir resolver.
@@ -362,4 +399,4 @@ def criar_ferramentas(s: Sessao) -> list:
         return log("chamar_humano", {"motivo": motivo}, _json({"ok": True, "observacao": "a equipe assume a conversa e você para de responder; não prometa retorno (o aviso ao paciente é automático)"}))
 
     return [info_clinica, horarios_livres, minhas_consultas, salvar_nome, preparar_agendamento,
-            preparar_remarcacao, preparar_cancelamento, confirmar_acao, chamar_humano]
+            preparar_remarcacao, preparar_cancelamento, confirmar_acao, avisar_pedido_tratamento, chamar_humano]
