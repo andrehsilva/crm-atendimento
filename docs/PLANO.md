@@ -201,6 +201,16 @@ Configurações › Canais: status e número do WhatsApp (toda a equipe vê); o 
 - Tela Mensagens: selo enviada/entregue/lida. Conversa: ✓ / ✓✓ / ✓✓ azul nas respostas da Ísis e da equipe.
 - Clínicas já ligadas passam a mandar o aviso sozinhas (o backend atualiza o webhook ao subir).
 
+## Etapa 21 — Tratamentos em andamento (pacientes recorrentes) — 🔨 21A em construção (D87–D90)
+**21A — Tratamento, regras da Ísis e tags**
+- No paciente, a equipe abre um **Tratamento**: procedimento, profissional, sessões previstas, intervalo e uma orientação curta para a assistente.
+- Situações: em andamento · aguardando (protético, exame, cicatrização…, com previsão) · concluído (com "volta em X meses") · interrompido.
+- A Ísis vê o tratamento; aguardando → não marca aquela sessão (bloqueio no código) e avisa a equipe; "Retomar" chama o paciente.
+- Sessões de tratamento não contam no limite de 2; o recall ignora tratamento aberto e usa o "volta em".
+- Sino: perguntou do tratamento · previsão vencida · faltou à sessão. Tags automáticas no CRM, Clientes e conversa.
+
+**21B — Marcar série** (mesmo dia/hora por N semanas, mostrando as datas que não couberam).
+
 ---
 
 ## Depois da 1ª versão (backlog)

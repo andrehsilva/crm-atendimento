@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 74 de 83 resolvidas (71 respondidas · 3 adiadas) — 22/11/2026.
+**Progresso:** 78 de 89 resolvidas (75 respondidas · 3 adiadas) — 22/11/2026.
 
 ---
 
@@ -85,6 +85,13 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente — Etapa 19 liberada.
 
+## 🦷 Etapa 21 (Tratamentos) — sugestões que não bloqueiam
+
+- [ ] **Q81 — Faltas repetidas:** sugestão — com **2 faltas em 90 dias** (ajustável), a Ísis não marca sozinha e passa para a equipe. Responda "ok" ou ajuste.
+  Resposta:
+- [ ] **Q82 — Revisão das regras 🟡:** sugestão — revisar as regras que já estão no código e nos testes mas ainda aparecem como "proposta", e marcar ✅ as que já valem. Responda "ok".
+  Resposta:
+
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
 ✅ Nada pendente — Etapa 12 liberada (depois da 11).
@@ -116,6 +123,10 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q77 — Tratamento "aguardando" e paciente pede para marcar:** a Ísis explica e avisa a equipe; outros procedimentos ela marca normal. *(22/11 → D87)*
+- [x] **Q78 — "Retomar":** a Ísis chama o paciente pelo WhatsApp (texto editável) e conduz a marcação. *(22/11 → D88)*
+- [x] **Q79 — Sessões recorrentes:** a recepção marca a série; sessões de tratamento não contam no limite de 2; a Ísis marca uma por vez. *(22/11 → D89)*
+- [x] **Q80 — Tags:** automáticas (Novo · Recorrente · Em tratamento · Aguardando). *(22/11 → D90)*
 - [x] **Q75 — Onde mostrar entregue/lida:** na tela Mensagens (selo) e na conversa (✓ / ✓✓ / ✓✓ azul nas respostas da Ísis e da equipe). *(22/11 → D85)*
 - [x] **Q76 — Clínicas já ligadas:** o backend atualiza sozinho o webhook de todas, ao subir. *(22/11 → D86)*
 - [x] **Q72 — O que entra no sino:** ok — aguardando atendimento humano · consulta marcada/remarcada/cancelada pela Ísis · paciente confirmou pelo lembrete · mensagem não enviada · WhatsApp desconectado · gasto da IA em 80%/100%. *(22/11 → D81)*
