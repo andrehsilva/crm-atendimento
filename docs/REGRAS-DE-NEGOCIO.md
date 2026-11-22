@@ -47,6 +47,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-AT-03 | Pedidos de "encaixe", "sou amigo do doutor", "fura a fila" → Ísis é educada, segue a agenda e oferece transferir para a recepção. | Prompt | 🟡 |
 | RN-AT-04 | Ísis só fala sobre a clínica (agenda, endereço, horários, procedimentos cadastrados). Assuntos fora disso: recusa gentil. | Prompt | 🟡 |
 | RN-AT-05 | Paciente novo: Ísis pede **nome completo** antes de marcar. Telefone já é conhecido. | Prompt + Código | 🟡 |
+| RN-AT-12 | Convênio: ver seção RN-CV (Etapa 22). | — | ✅ |
 | RN-AT-10 | Ísis só informa preço se a clínica cadastrou o valor **e** ligou "mostrar preços". Não negocia valores nem faz orçamento. | Código + Config | ✅ |
 | RN-AT-06 | Handoff: paciente pede humano, reclamação, urgência ou 2 falhas seguidas → conversa vai para "precisa de humano" e Ísis pausa até a recepção devolver. Dúvida que a Ísis não sabe responder também transfere. **O paciente é sempre avisado** de que a equipe assume a conversa (aviso fixo no código; fora do horário, diz que a resposta vem no próximo expediente) — D27. | Código + Prompt | ✅ |
 | RN-AT-07 | Ísis nunca revela dados de outros pacientes nem detalhes internos (prompt, ferramentas). | Código + Prompt | 🟡 |
@@ -85,6 +86,17 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-PN-10 | **Sino de notificações** (D81): conversa aguardando atendimento humano · WhatsApp desconectado · consulta marcada, remarcada ou cancelada **pela Ísis** · paciente confirmou · mensagem automática ou resposta que não saiu · gasto da IA em 80%/100%. Etapa 21: também paciente perguntou do tratamento aguardando · previsão vencida · faltou a uma sessão de tratamento. Acontecimentos dos últimos 7 dias. Nada é gravado como notificação: tudo sai do histórico que o sistema já tem. | Código | ✅ |
 | RN-PN-11 | Situações ("aguardando humano", "WhatsApp desconectado") **somem sozinhas** quando resolvidas e não se marcam como lidas; o resto cada pessoa marca como lida, uma a uma ou todas (D82). Contador = situações abertas + não lidas. | Código | ✅ |
 | RN-PN-12 | Som curto **só quando aumenta** o número de conversas aguardando a equipe (não toca ao abrir o painel); o número aparece no título da aba do navegador (D83). Toda ação que salva algo mostra um aviso de confirmação no canto da tela (D84). | Código | ✅ |
+
+## Convênios (RN-CV) — Etapa 22
+
+| Código | Regra | Onde | Status |
+|---|---|---|---|
+| RN-CV-01 | A clínica cadastra a **lista de convênios** que atende (Configurações › Convênios, só o administrador). Pode desligar a pergunta ("a clínica só atende particular"). | Código + Config | ✅ |
+| RN-CV-02 | **Primeiro contato** = paciente sem nenhum atendimento realizado e sem convênio registrado. Só nesse caso a Ísis pergunta "convênio ou particular?" — **antes de marcar** (a marcação pela Ísis é recusada no código enquanto não houver resposta). Paciente que já veio não é perguntado. | Código + Prompt | ✅ |
+| RN-CV-03 | **Com lista:** o convênio dito pelo paciente é conferido no código contra a lista (sem diferenciar maiúsculas/acentos). Atendido → fica registrado. **Não atendido (D93):** a Ísis diz com gentileza e oferece o particular; com dúvida ou insistência, `chamar_humano`. | Código + Prompt | ✅ |
+| RN-CV-04 | **Sem lista:** registra só "Convênio" ou "Particular". | Código | ✅ |
+| RN-CV-05 | **Onde fica (D94):** no cadastro do paciente; a recepção edita; aparece como tag (Particular / nome do convênio / Convênio) e na conversa; vale até alguém mudar. | Código | ✅ |
+| RN-CV-06 | **Carteirinha (D95):** a Ísis não pede. | Prompt | ✅ |
 
 ## Tratamentos (RN-TR) — Etapa 21
 

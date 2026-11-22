@@ -100,3 +100,6 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D90 | ✅ **Tags automáticas:** Novo (nunca veio) · Recorrente (2+ atendimentos realizados) · Em tratamento · Aguardando (com motivo) — calculadas pelo sistema, ninguém coloca à mão. Substitui D20 | Q80, 22/11/2026 |
 | D91 | ✅ **Faltas repetidas:** com **2 faltas em 45 dias** (ajustável em Configurações › Assistente; 0 desliga), a assistente não marca consulta nova e passa a conversa para a recepção — bloqueio no código. Remarcar/cancelar o que já existe continua | Q81, 22/11/2026 |
 | D92 | ✅ **Convênios:** só no primeiro contato a Ísis pergunta se é convênio ou particular; a clínica cadastra a lista de convênios aceitos; sem lista, só registra convênio sim/não (Etapa 22) | Q10, pedido do usuário, 22/11/2026 |
+| D93 | ✅ **Convênio não atendido:** a Ísis diz com gentileza que a clínica não atende aquele convênio e oferece o particular; com dúvida ou insistência, passa para a recepção | Q83, 22/11/2026 |
+| D94 | ✅ **Convênio fica no cadastro do paciente:** Particular, o nome do convênio (da lista da clínica) ou só "Convênio" quando a clínica não tem lista; a recepção edita; aparece como tag e na conversa; vale para as próximas consultas | Q84, 22/11/2026 |
+| D95 | ✅ A Ísis **não pede** carteirinha — só o nome do convênio | Q85, 22/11/2026 |
