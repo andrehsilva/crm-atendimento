@@ -37,10 +37,15 @@ export function AgendaSemana({
   compacta = false,
   onVazio,
   onConsulta,
+  ir,
+  onIrFeito,
 }: {
   compacta?: boolean
   onVazio?: (dia: string, hora: string, professionalId?: string) => void
   onConsulta?: (c: Consulta) => void
+  /** Vindo do sino: abre neste dia e, se der, já com a consulta aberta. */
+  ir?: { dia: string; consultaId: string | null }
+  onIrFeito?: () => void
 }) {
   const { clinica, cadastros } = useClinica()
   const pal = useTermos()
@@ -92,6 +97,19 @@ export function AgendaSemana({
     queryKey: ['agenda', clinica.id, segunda],
     queryFn: () => api.get<Consulta[]>(`/clinics/${clinica.id}/appointments?de=${segunda}T00:00:00&ate=${somarDias(segunda, 7)}T00:00:00`),
   })
+
+  // Sino → "Ísis marcou…": vai para o dia (visão Dia, sem mudar a preferência salva) e abre a consulta
+  useEffect(() => {
+    if (!ir) return
+    setDia(ir.dia)
+    setModoBruto('dia')
+  }, [ir])
+  useEffect(() => {
+    if (!ir || segunda !== segundaDaSemana(ir.dia) || !consultas.data || consultas.isFetching) return
+    const c = ir.consultaId ? consultas.data.find((x) => x.id === ir.consultaId) : undefined
+    if (c) onConsulta?.(c)
+    onIrFeito?.() // achou ou não (ex.: cancelada não aparece), não tenta de novo
+  }, [ir, segunda, consultas.data, consultas.isFetching, onConsulta, onIrFeito])
 
   const profs = cadastros.profissionais
   const visiveis = (consultas.data ?? []).filter((c) => filtro === 'todas' || c.professional_id === filtro)

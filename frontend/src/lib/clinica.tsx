@@ -13,12 +13,12 @@ const Ctx = createContext<Contexto | null>(null)
 
 // Qual "tipo" de aviso do backend atualiza quais dados da tela
 const INVALIDA: Record<string, string[]> = {
-  agenda: ['agenda', 'dashboard', 'kanban', 'pacientes', 'slots'],
-  crm: ['kanban', 'pacientes', 'dashboard'],
-  mensagens: ['mensagens', 'dashboard'],
-  conversa: ['kanban', 'dashboard', 'chat'],
-  clinica: ['clinica', 'config'],
-  whatsapp: ['canais', 'clinica'], // D79: conexão ou pausa mudou // 10C: configuração concluída libera o painel na hora para toda a equipe
+  agenda: ['agenda', 'dashboard', 'kanban', 'pacientes', 'slots', 'notificacoes'],
+  crm: ['kanban', 'pacientes', 'dashboard', 'notificacoes'],
+  mensagens: ['mensagens', 'dashboard', 'notificacoes'],
+  conversa: ['kanban', 'dashboard', 'chat', 'notificacoes'],
+  clinica: ['clinica', 'config'], // 10C: configuração concluída libera o painel na hora para toda a equipe
+  whatsapp: ['canais', 'clinica', 'notificacoes'], // D79: conexão ou pausa mudou
 }
 
 /** Escuta o backend (SSE) e recarrega só o que mudou. */
@@ -81,7 +81,6 @@ export function ProvedorClinica({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!dados) return
     lembrarClinica({ id: dados.id, nome: dados.name, cor: dados.cor, logo_versao: dados.logo_versao })
-    document.title = `${dados.name} · Painel`
   }, [dados])
 
   if (lista.isError || clinica.isError) {

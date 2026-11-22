@@ -280,12 +280,13 @@ function Usuarios({ id }: { id: string }) {
       setCriado({ email: r.email, senha: r.senha_provisoria })
       setF({ email: '', nome: '', papel: 'reception' })
       qc.invalidateQueries({ queryKey: ['admin'] })
+      aviso.ok('Usuário criado.')
     },
     onError: aviso.erro,
   })
   const editar = useMutation({
     mutationFn: ({ uid, dados }: { uid: string; dados: Partial<{ ativo: boolean; papel: string }> }) => api.patch(`/admin/clinicas/${id}/usuarios/${uid}`, dados),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'usuarios', id] }),
+    onSuccess: (_, v) => { qc.invalidateQueries({ queryKey: ['admin', 'usuarios', id] }); aviso.ok(v.dados.papel ? 'Papel atualizado.' : v.dados.ativo === false ? 'Acesso desativado.' : 'Acesso reativado.') },
     onError: aviso.erro,
   })
 

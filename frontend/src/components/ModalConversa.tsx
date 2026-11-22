@@ -40,7 +40,7 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
 
   const assumir = useMutation({ mutationFn: () => api.post(`${base}/takeover`), onSuccess: () => aviso.ok(`Você assumiu a conversa. A assistente ${ia} está pausada.`), onError: aviso.erro })
   const devolver = useMutation({ mutationFn: () => api.post(`${base}/release`), onSuccess: () => aviso.ok(`Conversa devolvida para a assistente ${ia}.`), onError: aviso.erro })
-  const responder = useMutation({ mutationFn: (t: string) => api.post(`${base}/reply`, { texto: t }), onSuccess: () => setTexto(''), onError: aviso.erro })
+  const responder = useMutation({ mutationFn: (t: string) => api.post(`${base}/reply`, { texto: t }), onSuccess: () => { setTexto(''); aviso.ok('Mensagem enviada.') }, onError: aviso.erro })
 
   function enviar(e: FormEvent) {
     e.preventDefault()

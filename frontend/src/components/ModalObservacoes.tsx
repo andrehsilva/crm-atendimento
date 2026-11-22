@@ -35,7 +35,7 @@ export function ModalObservacoes({ paciente, onFechar }: { paciente: Paciente | 
   }
   const criar = useMutation({
     mutationFn: () => api.post<Observacoes>(`${base}/observacoes`, { texto: nova }),
-    onSuccess: (o) => { depois(o); setNova('') },
+    onSuccess: (o) => { depois(o); setNova(''); aviso.ok('Observação salva.') },
     onError: aviso.erro,
   })
 
@@ -92,12 +92,12 @@ function ItemNota({ nota, base, onSalvo }: { nota: NotaCliente; base: string; on
   const [confirmar, setConfirmar] = useState(false)
   const salvar = useMutation({
     mutationFn: () => api.patch<Observacoes>(`${base}/observacoes/${nota.id}`, { texto: editando }),
-    onSuccess: (o) => { onSalvo(o); setEditando(null) },
+    onSuccess: (o) => { onSalvo(o); setEditando(null); aviso.ok('Observação atualizada.') },
     onError: aviso.erro,
   })
   const apagar = useMutation({
     mutationFn: () => api.delete<Observacoes>(`${base}/observacoes/${nota.id}`),
-    onSuccess: onSalvo,
+    onSuccess: (o) => { onSalvo(o); aviso.ok('Observação apagada.') },
     onError: aviso.erro,
   })
 
@@ -149,7 +149,7 @@ function PastaDrive({ url, base, onSalvo }: { url: string | null; base: string; 
   const [valor, setValor] = useState('')
   const salvar = useMutation({
     mutationFn: (u: string | null) => api.put<Observacoes>(`${base}/drive`, { url: u }),
-    onSuccess: (o) => { onSalvo(o); setEditando(false); setValor('') },
+    onSuccess: (o, u) => { onSalvo(o); setEditando(false); setValor(''); aviso.ok(u ? 'Pasta do Drive salva.' : 'Pasta do Drive removida.') },
     onError: aviso.erro,
   })
   const valido = DRIVE.test(valor.trim())

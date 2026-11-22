@@ -20,12 +20,12 @@ export function Usuarios() {
   const [criado, setCriado] = useState<{ email: string; senha: string | null } | null>(null)
   const criar = useMutation({
     mutationFn: () => api.post<{ email: string; senha_provisoria: string | null }>(base, { ...f, nome: f.nome || null }),
-    onSuccess: (r) => { setCriado({ email: r.email, senha: r.senha_provisoria }); setF({ email: '', nome: '', papel: 'reception' }); qc.invalidateQueries({ queryKey: ['config', 'usuarios'] }) },
+    onSuccess: (r) => { setCriado({ email: r.email, senha: r.senha_provisoria }); setF({ email: '', nome: '', papel: 'reception' }); qc.invalidateQueries({ queryKey: ['config', 'usuarios'] }); aviso.ok('Usuário criado.') },
     onError: aviso.erro,
   })
   const editar = useMutation({
     mutationFn: ({ id, dados }: { id: string; dados: Partial<{ ativo: boolean; papel: string }> }) => api.patch(`${base}/${id}`, dados),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['config', 'usuarios'] }),
+    onSuccess: (_, v) => { qc.invalidateQueries({ queryKey: ['config', 'usuarios'] }); aviso.ok(v.dados.papel ? 'Papel atualizado.' : v.dados.ativo === false ? 'Acesso desativado.' : 'Acesso reativado.') },
     onError: aviso.erro,
   })
 

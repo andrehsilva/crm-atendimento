@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { useAuth } from '../lib/auth'
 import { useClinica } from '../lib/clinica'
@@ -23,7 +24,10 @@ export function Configuracoes() {
   const papel = usuario.super_admin ? 'super_admin' : usuario.clinicas.find((c) => c.clinic_id === clinica.id)?.papel
   const podeEditar = papel === 'clinic_admin' || papel === 'super_admin'
   const abas = ABAS.filter((a) => a !== 'Usuários' || podeEditar)
-  const [aba, setAba] = useState<Aba>('Perfil')
+  const [busca] = useSearchParams()
+  const pedida = abas.find((a) => a === busca.get('aba')) // ?aba=Canais (o sino leva direto para a aba certa)
+  const [aba, setAba] = useState<Aba>(pedida ?? 'Perfil')
+  useEffect(() => { if (pedida) setAba(pedida) }, [pedida])
 
   return (
     <>

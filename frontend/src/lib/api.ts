@@ -358,3 +358,18 @@ export type CanalWhatsapp = {
   numero: string | null
   isis_pausada: boolean
 }
+
+/** Sino (Etapa 19, D81–D83). situacao = some sozinha quando resolvida; o resto cada pessoa marca como lida. */
+export type Notificacao = {
+  chave: string
+  tipo: 'humano' | 'whatsapp' | 'marcada' | 'remarcada' | 'cancelada' | 'confirmada' | 'falhou' | 'resposta_falhou' | 'ia'
+  titulo: string
+  texto: string
+  quando: string
+  situacao: boolean
+  lida: boolean
+  paciente: { id: string; name: string | null; phone: string } | null
+  consulta_id: string | null
+  dia: string | null
+}
+export type Notificacoes = { itens: Notificacao[]; contador: number; aguardando: number }

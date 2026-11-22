@@ -80,6 +80,9 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-PN-07 | ⏸ Tags do cliente (novo · recorrente · em tratamento → "volta em X tempo") — futuro (D20). | — | ⏸ |
 | RN-PN-08 | "Parado há Xh" = tempo desde a última mensagem ou mudança de etapa; fica vermelho acima de **24h** (config). | Código + Config | 🟡 |
 | RN-PN-09 | Etapas movem sozinhas: 1ª mensagem → Novo Contato; consulta marcada → Agendados; confirmada → Confirmado; cancelada → Cancelados. Remarcar volta para Agendados. | Código | 🟡 |
+| RN-PN-10 | **Sino de notificações** (D81): conversa aguardando atendimento humano · WhatsApp desconectado · consulta marcada, remarcada ou cancelada **pela Ísis** · paciente confirmou · mensagem automática ou resposta que não saiu · gasto da IA em 80%/100%. Acontecimentos dos últimos 7 dias. Nada é gravado como notificação: tudo sai do histórico que o sistema já tem. | Código | ✅ |
+| RN-PN-11 | Situações ("aguardando humano", "WhatsApp desconectado") **somem sozinhas** quando resolvidas e não se marcam como lidas; o resto cada pessoa marca como lida, uma a uma ou todas (D82). Contador = situações abertas + não lidas. | Código | ✅ |
+| RN-PN-12 | Som curto **só quando aumenta** o número de conversas aguardando a equipe (não toca ao abrir o painel); o número aparece no título da aba do navegador (D83). Toda ação que salva algo mostra um aviso de confirmação no canto da tela (D84). | Código | ✅ |
 
 ## Disparos (RN-DP)
 

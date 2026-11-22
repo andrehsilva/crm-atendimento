@@ -51,7 +51,7 @@ export function PrimeirosPassos() {
   })
   const confirmarAparencia = useMutation({
     mutationFn: () => api.post<ConfigInicial>(`${url}/aparencia`),
-    onSuccess: (e) => { qc.setQueryData(chave, e); setAtual(null) },
+    onSuccess: (e) => { qc.setQueryData(chave, e); setAtual(null); aviso.ok('Aparência confirmada.') },
     onError: aviso.erro,
   })
 

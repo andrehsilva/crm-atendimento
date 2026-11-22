@@ -34,6 +34,7 @@ export function Crm() {
 
   const mover = useMutation({
     mutationFn: ({ card, etapa }: { card: CardCrm; etapa: Etapa }) => api.post(`/clinics/${clinica.id}/patients/${card.id}/stage`, { etapa }),
+    onSuccess: (_, v) => aviso.ok(`${v.card.name ?? 'Contato'} movido para "${COLUNAS.find((c) => c.etapa === v.etapa)?.titulo ?? v.etapa}".`),
     onError: aviso.erro,
   })
   const confirmar = useMutation({

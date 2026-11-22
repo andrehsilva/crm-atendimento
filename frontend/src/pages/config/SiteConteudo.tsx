@@ -122,13 +122,13 @@ export function SiteConteudo({ podeEditar, onSalvo }: { podeEditar: boolean; onS
 
 function Galeria({ c, base, podeEditar, onMudou }: { c: Conteudo; base: string; podeEditar: boolean; onMudou: (c: Conteudo) => void }) {
   const aviso = useAviso()
-  const enviar = useMutation({ mutationFn: (f: File) => api.post<Conteudo>(`${base}/galeria`, f), onSuccess: onMudou, onError: aviso.erro })
-  const apagar = useMutation({ mutationFn: (id: string) => api.delete<Conteudo>(`${base}/galeria/${id}`), onSuccess: onMudou, onError: aviso.erro })
+  const enviar = useMutation({ mutationFn: (f: File) => api.post<Conteudo>(`${base}/galeria`, f), onSuccess: (r) => { onMudou(r); aviso.ok('Foto adicionada à galeria.') }, onError: aviso.erro })
+  const apagar = useMutation({ mutationFn: (id: string) => api.delete<Conteudo>(`${base}/galeria/${id}`), onSuccess: (r) => { onMudou(r); aviso.ok('Foto removida da galeria.') }, onError: aviso.erro })
   const legenda = useMutation({
     mutationFn: ({ id, texto }: { id: string; texto: string }) => api.patch<Conteudo>(`${base}/galeria/${id}`, { legenda: texto }),
-    onSuccess: onMudou, onError: aviso.erro,
+    onSuccess: (r) => { onMudou(r); aviso.ok('Legenda salva.') }, onError: aviso.erro,
   })
-  const ordenar = useMutation({ mutationFn: (ids: string[]) => api.put<Conteudo>(`${base}/galeria-ordem`, { ids }), onSuccess: onMudou, onError: aviso.erro })
+  const ordenar = useMutation({ mutationFn: (ids: string[]) => api.put<Conteudo>(`${base}/galeria-ordem`, { ids }), onSuccess: (r) => { onMudou(r); aviso.ok('Ordem da galeria salva.') }, onError: aviso.erro })
   const mover = (i: number, d: number) => {
     const ids = c.galeria.map((g) => g.id)
     ;[ids[i], ids[i + d]] = [ids[i + d], ids[i]]

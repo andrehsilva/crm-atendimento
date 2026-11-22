@@ -3,6 +3,7 @@ import { Moon, Sun } from 'lucide-react'
 import { useClinicaOpcional } from '../lib/clinica'
 import { useSaude } from '../lib/saude'
 import { aplicarTema, temaAtual, type Tema } from '../lib/tema'
+import { Sino } from './Sino'
 
 export function Topbar() {
   const [tema, setTema] = useState<Tema>(temaAtual)
@@ -35,6 +36,7 @@ export function Topbar() {
         <span className={`size-2 rounded-full ${cor}`} />
         {texto}
       </span>
+      {clinica && <Sino />}
       <button
         type="button"
         onClick={alternar}

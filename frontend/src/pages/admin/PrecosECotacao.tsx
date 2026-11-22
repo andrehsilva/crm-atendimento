@@ -30,7 +30,7 @@ export function PrecosECotacao() {
   })
   const apagar = useMutation({
     mutationFn: (p: { provider: string; model: string }) => api.delete<Precos>(`/admin/precos/${p.provider}/${encodeURIComponent(p.model)}`),
-    onSuccess: depois,
+    onSuccess: (p) => { depois(p); aviso.ok('Preço apagado.') },
     onError: aviso.erro,
   })
   const salvarCotacao = useMutation({

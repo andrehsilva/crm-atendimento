@@ -135,7 +135,8 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
   const urlFoto = `/clinics/${clinica.id}/patients/${paciente?.id}/foto`
   const mudarFoto = useMutation({
     mutationFn: (f: File | null) => (f ? api.put<{ foto_versao: number | null }>(urlFoto, f) : api.delete<{ foto_versao: null }>(urlFoto)),
-    onSuccess: (r) => {
+    onSuccess: (r, f) => {
+      aviso.ok(f ? 'Foto atualizada.' : 'Foto removida.')
       setFoto(r.foto_versao)
       qc.invalidateQueries({ queryKey: ['pacientes'] })
       qc.invalidateQueries({ queryKey: ['kanban'] })

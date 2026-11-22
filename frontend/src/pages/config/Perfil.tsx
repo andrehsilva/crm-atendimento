@@ -188,7 +188,7 @@ function MinhaFoto() {
   const qc = useQueryClient()
   const mudar = useMutation({
     mutationFn: (f: File | null) => (f ? api.put<Usuario>('/auth/foto', f) : api.delete<Usuario>('/auth/foto')),
-    onSuccess: (u) => qc.setQueryData(['me'], u),
+    onSuccess: (u, f) => { qc.setQueryData(['me'], u); aviso.ok(f ? 'Foto atualizada.' : 'Foto removida.') },
     onError: aviso.erro,
   })
   return (
@@ -227,7 +227,7 @@ function AparenciaClinica({ podeEditar }: { podeEditar: boolean }) {
   const logo = useMutation({
     mutationFn: (f: File | null) => (f ? api.put<Aparencia>(`/clinics/${clinica.id}/config/logo`, f)
       : api.delete<Aparencia>(`/clinics/${clinica.id}/config/logo`)),
-    onSuccess: depois,
+    onSuccess: (a, f) => { depois(a); aviso.ok(f ? 'Logo atualizada.' : 'Logo removida.') },
     onError: aviso.erro,
   })
   if (!q.data) return null
