@@ -18,7 +18,12 @@ TIPOS = {
     "atendimentos": "Atendimentos do período",
     "producao": "Produção por profissional e procedimento",
     "faltas": "Faltas e cancelamentos",
+    "pacientes": "Cadastro de pacientes",
+    "aniversariantes": "Aniversariantes do mês",
+    "assistente": "Desempenho da assistente",
 }
+MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
+ORIGEM_PACIENTE = {"whatsapp": "WhatsApp", "web": "Site/chat", "manual": "Cadastro manual"}
 SITUACAO = {"agendada": "Agendada", "confirmada": "Confirmada", "realizada": "Realizada", "faltou": "Faltou", "cancelada": "Cancelada"}
 ORIGEM = {"isis": "Assistente", "recepcao": "Recepção", "paciente_botao": "Paciente"}
 DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
@@ -154,6 +159,75 @@ def gerar(conn, clinic_id: UUID, tipo: str, *, de: date, ate: date, prof: UUID |
                 freq[(r[1], r[2])] = freq.get((r[1], r[2]), 0) + 1
         _aba(wb, "Quem mais falta", ["Paciente", "Telefone", "Faltas"],
              sorted([[n, f, q] for (n, f), q in freq.items() if q >= 2], key=lambda r: -r[2]))
+        filtro = f"{de:%d/%m/%Y} a {ate:%d/%m/%Y}"
+    elif tipo == "pacientes":
+        linhas = conn.execute(
+            """select p.name, p.phone, p.birth_date, p.origin, p.created_at,
+                      (select min(a.starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada'),
+                      (select max(a.starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada'),
+                      (select min(a.starts_at) from appointments a where a.patient_id = p.id
+                         and a.status in ('agendada', 'confirmada') and a.starts_at >= now()),
+                      (select count(*) from appointments a where a.patient_id = p.id and a.status = 'realizada'),
+                      pr.name, p.optout_disparos
+               from patients p left join professionals pr on pr.id = p.preferred_professional_id
+               where p.clinic_id = %s order by p.name nulls last""", (clinic_id,)).fetchall()
+        d = lambda v: local(v).date() if v else None  # noqa: E731
+        _aba(wb, "Pacientes", ["Nome", "Telefone", "Nascimento", "Origem", "Cadastrado em", "Primeira consulta", "Última consulta",
+                               "Próxima consulta", "Consultas realizadas", "Profissional de referência", "Não recebe mensagens"],
+             [[n, f, nasc, ORIGEM_PACIENTE.get(o, o), d(cad), d(pri), d(ult), d(prox), q, pr, "sim" if opt else ""]
+              for n, f, nasc, o, cad, pri, ult, prox, q, pr, opt in linhas],
+             {3: "DD/MM/YYYY", 5: "DD/MM/YYYY", 6: "DD/MM/YYYY", 7: "DD/MM/YYYY", 8: "DD/MM/YYYY"})
+        filtro = "Todos os pacientes cadastrados"
+
+    elif tipo == "aniversariantes":
+        mes = de.month
+        linhas = conn.execute(
+            """select p.name, p.phone, p.birth_date, p.optout_disparos,
+                      (select max(a.starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada')
+               from patients p where p.clinic_id = %s and p.birth_date is not null and extract(month from p.birth_date) = %s
+               order by extract(day from p.birth_date), p.name""", (clinic_id, mes)).fetchall()
+        ano = de.year
+        _aba(wb, "Aniversariantes", ["Dia", "Nome", "Telefone", "Faz (anos)", "Última consulta", "Não recebe mensagens"],
+             [[nasc.day, n, f, ano - nasc.year, local(u).date() if u else None, "sim" if opt else ""]
+              for n, f, nasc, opt, u in linhas], {5: "DD/MM/YYYY"})
+        filtro = f"Aniversariantes de {MESES[mes - 1]} de {ano}"
+
+    elif tipo == "assistente":
+        ini, fim = _periodo(de, ate, tz)
+        p = {"c": clinic_id, "i": ini, "f": fim}
+        um = lambda sql: conn.execute(sql, p).fetchone()[0]  # noqa: E731
+        origem = dict(conn.execute(
+            """select source, count(*) from appointments where clinic_id = %(c)s and created_at >= %(i)s and created_at < %(f)s
+               group by source""", p).fetchall())
+        resumo = [
+            ["Conversas com mensagem no período", um("""select count(distinct conversation_id) from messages
+                                                      where clinic_id = %(c)s and created_at >= %(i)s and created_at < %(f)s""")],
+            ["Mensagens recebidas de pacientes", um("""select count(*) from messages where clinic_id = %(c)s and author = 'paciente'
+                                                     and created_at >= %(i)s and created_at < %(f)s""")],
+            ["Respostas da assistente", um("""select count(*) from agent_runs where clinic_id = %(c)s and tipo = 'resposta'
+                                             and created_at >= %(i)s and created_at < %(f)s""")],
+            ["Tempo médio de resposta (s)", um("""select round(avg(latency_ms) / 1000.0, 1) from agent_runs where clinic_id = %(c)s
+                                                 and tipo = 'resposta' and created_at >= %(i)s and created_at < %(f)s""")],
+            ["Falhas da assistente", um("""select count(*) from agent_runs where clinic_id = %(c)s and error is not null
+                                          and created_at >= %(i)s and created_at < %(f)s""")],
+            ["Conversas passadas para a equipe", um("""select count(*) from crm_events where clinic_id = %(c)s
+                                                       and event = 'aguardando_humano' and created_at >= %(i)s and created_at < %(f)s""")],
+            ["Consultas marcadas pela assistente", origem.get("isis", 0)],
+            ["Consultas marcadas pela recepção", origem.get("recepcao", 0)],
+            ["Consultas marcadas pelo paciente (botão)", origem.get("paciente_botao", 0)],
+            ["Áudios transcritos (minutos)", round((um("""select coalesce(sum(audio_segundos), 0) from agent_runs where clinic_id = %(c)s
+                                                       and tipo = 'transcricao' and created_at >= %(i)s and created_at < %(f)s""") or 0) / 60, 1)],
+            ["Custo estimado da IA (US$)", float(um("""select coalesce(sum(custo_usd), 0) from agent_runs where clinic_id = %(c)s
+                                                     and created_at >= %(i)s and created_at < %(f)s""") or 0)],
+        ]
+        _aba(wb, "Resumo", ["Indicador", "Valor"], resumo)
+        por_dia = conn.execute(
+            """select (r.created_at at time zone %(tz)s)::date, count(*) filter (where r.tipo = 'resposta'),
+                      round(avg(r.latency_ms) filter (where r.tipo = 'resposta') / 1000.0, 1), coalesce(sum(r.custo_usd), 0)::float
+               from agent_runs r where r.clinic_id = %(c)s and r.created_at >= %(i)s and r.created_at < %(f)s group by 1 order by 1""",
+            {**p, "tz": tz_nome}).fetchall()
+        _aba(wb, "Por dia", ["Dia", "Respostas", "Tempo médio (s)", "Custo (US$)"], [list(r) for r in por_dia],
+             {1: "DD/MM/YYYY", 4: '"US$" #,##0.0000'})
         filtro = f"{de:%d/%m/%Y} a {ate:%d/%m/%Y}"
     else:
         raise ValueError("tipo")

@@ -79,3 +79,17 @@ def test_dashboard_filtra_a_agenda_por_profissional(cliente, conn, clinica, outr
     assert len(c.get(f"{base}?profissional={clinica.prof_a}").json()["consultas_hoje"]) == 1
     assert len(c.get(f"{base}?profissional={clinica.prof_b}").json()["consultas_hoje"]) == 0
     assert c.get(f"{base}?profissional={outra_clinica.prof_a}").status_code == 404
+
+
+def test_relatorios_15b_abrem_com_as_colunas_certas(conn, clinica):
+    conn.execute("insert into patients (clinic_id, phone, name, birth_date) values (%s, '+5511955550009', '=cmd()', '1990-03-15')",
+                 (clinica.id,))
+    _consulta(conn, clinica, "2026-03-02 09:00-03", "realizada", "Ana", "+5511955550001")
+    p = _abrir(R.gerar(conn, clinica.id, "pacientes", de=date(2026, 3, 1), ate=date(2026, 3, 31), prof=None, meses=6)[0])
+    nomes = {r[0]: r for r in p["Pacientes"].iter_rows(min_row=2, values_only=True)}
+    assert "'=cmd()" in nomes and nomes["Ana"][8] == 1  # fórmula neutralizada; 1 consulta realizada
+    a = _abrir(R.gerar(conn, clinica.id, "aniversariantes", de=date(2026, 3, 1), ate=date(2026, 3, 31), prof=None, meses=6)[0])
+    linha = next(a["Aniversariantes"].iter_rows(min_row=2, values_only=True))
+    assert linha[0] == 15 and linha[3] == 36
+    s = _abrir(R.gerar(conn, clinica.id, "assistente", de=date(2026, 3, 1), ate=date(2026, 3, 31), prof=None, meses=6)[0])
+    assert [r[0] for r in s["Resumo"].iter_rows(min_row=2, values_only=True)][0] == "Conversas com mensagem no período"

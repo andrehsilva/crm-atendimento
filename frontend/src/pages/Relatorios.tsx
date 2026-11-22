@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { CalendarX, Download, FileSpreadsheet, TrendingUp, UserRoundSearch, type LucideIcon } from 'lucide-react'
+import { Bot, Cake, CalendarX, Contact, Download, FileSpreadsheet, TrendingUp, UserRoundSearch, type LucideIcon } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { Campo, Entrada, Secao, Seletor } from '../components/ui'
 import { useClinica } from '../lib/clinica'
 import { hojeYmd } from '../lib/formato'
 import { useTermos } from '../lib/termos'
 
-type Tipo = 'recall' | 'atendimentos' | 'producao' | 'faltas'
+type Tipo = 'recall' | 'atendimentos' | 'producao' | 'faltas' | 'pacientes' | 'aniversariantes' | 'assistente'
 type Periodo = 'mes' | 'mes_passado' | '3meses' | 'outro'
 
 function intervalo(p: Periodo, hoje: string, de: string, ate: string): [string, string] {
@@ -31,7 +31,8 @@ export function Relatorios() {
   const [ini, fim] = intervalo(periodo, hoje, de, ate)
 
   const url = (t: Tipo) => {
-    const q = new URLSearchParams(t === 'recall' ? { meses: String(meses) } : { de: ini, ate: fim, ...(prof ? { profissional: prof } : {}) })
+    const q = new URLSearchParams(t === 'recall' ? { meses: String(meses) } : t === 'pacientes' ? {}
+      : { de: ini, ate: fim, ...(prof && !['aniversariantes', 'assistente'].includes(t) ? { profissional: prof } : {}) })
     return `/api/clinics/${clinica.id}/relatorios/${t}.xlsx?${q}`
   }
   const cards: { tipo: Tipo; titulo: string; texto: string; icone: LucideIcon }[] = [
@@ -43,6 +44,12 @@ export function Relatorios() {
       texto: 'Por profissional, por procedimento e por mês: realizados, faltas, comparecimento e valor estimado.' },
     { tipo: 'faltas', titulo: 'Faltas e cancelamentos', icone: CalendarX,
       texto: 'A lista, a taxa por dia da semana e por horário, e quem falta com frequência.' },
+    { tipo: 'pacientes', titulo: `Cadastro de ${pal.clientes}`, icone: Contact,
+      texto: 'Todos os cadastros: nascimento, origem, primeira, última e próxima consulta, profissional de referência.' },
+    { tipo: 'aniversariantes', titulo: 'Aniversariantes do mês', icone: Cake,
+      texto: `Quem faz aniversário no mês de ${new Date(`${ini}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long' })} (o mês do início do período), com a idade.` },
+    { tipo: 'assistente', titulo: 'Desempenho da assistente', icone: Bot,
+      texto: 'Conversas, respostas, tempo de resposta, conversas passadas para a equipe, consultas marcadas por quem e custo da IA.' },
   ]
 
   return (
