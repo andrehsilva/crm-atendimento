@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 78 de 89 resolvidas (75 respondidas · 3 adiadas) — 22/11/2026.
+**Progresso:** 80 de 95 resolvidas (78 respondidas · 2 adiadas) — 22/11/2026.
 
 ---
 
@@ -87,9 +87,25 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## 🦷 Etapa 21 (Tratamentos) — sugestões que não bloqueiam
 
-- [ ] **Q81 — Faltas repetidas:** sugestão — com **2 faltas em 90 dias** (ajustável), a Ísis não marca sozinha e passa para a equipe. Responda "ok" ou ajuste.
-  Resposta:
 - [ ] **Q82 — Revisão das regras 🟡:** sugestão — revisar as regras que já estão no código e nos testes mas ainda aparecem como "proposta", e marcar ✅ as que já valem. Responda "ok".
+  Resposta:
+
+## 🏥 Bloqueia a Etapa 22 (Convênios)
+
+- [ ] **Q83 — Convênio que a clínica não atende:** o paciente diz um convênio que não está na lista. Sugestão: a Ísis diz com gentileza que a clínica não atende esse convênio e oferece o atendimento particular; se a pessoa insistir ou tiver dúvida, passa para a recepção.
+  Resposta:
+- [ ] **Q84 — Onde fica guardado:** sugestão — no cadastro do paciente ("Particular" ou o nome do convênio, ou só "Convênio" quando a clínica não tem lista), editável pela recepção, e aparece como tag e na conversa. Vale para as próximas consultas até alguém mudar.
+  Resposta:
+- [ ] **Q85 — Carteirinha:** a Ísis pede o número da carteirinha? Sugestão: **não** (a recepção confere no dia); só o nome do convênio.
+  Resposta:
+
+## ☀️ Bloqueia a Etapa 23 (Resumo do dia para o profissional)
+
+- [ ] **Q86 — O que vai no resumo:** sugestão — "Bom dia, Dra. Ana! Hoje você tem 6 consultas: 08:00 Maria Silva · Limpeza ✅ confirmada / 09:00 João · Restauração (sessão 2 de 4) ⏳ não confirmou / …", mais pausas e horários livres. Só o **primeiro nome** do paciente e o procedimento — nada de observações clínicas.
+  Resposta:
+- [ ] **Q87 — Privacidade (LGPD):** o resumo vai para o WhatsApp **pessoal** do profissional, com nomes de pacientes. Sugestão: cada profissional precisa **ativar** o envio (ninguém recebe sem pedir), e o administrador cadastra o número dele. Ok?
+  Resposta:
+- [ ] **Q88 — Dias sem agenda e mudanças:** sugestão — sem consultas no dia, **não manda nada**; mudanças depois do resumo **não** geram novo envio (o painel mostra na hora). Horário padrão **07:00**, ajustável por profissional; só em dias que a clínica abre.
   Resposta:
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
@@ -115,7 +131,6 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ⏸ Adiadas (não bloqueiam; voltamos nelas depois)
 
-- [ ] **Q10 — Convênios:** a Ísis pergunta/filtra convênio? → *"veremos depois"*. Por ora nada de convênio no sistema.
 - [ ] **Q17 — Selos/tags do cliente:** *"futuramente teremos tags por clientes, poucas: cliente novo / recorrente / em tratamento; ao sair de 'em tratamento' será colocado um 'volta em X tempo'"*. Registrado como ideia futura (D20).
 - [ ] **Q21 — Data de nascimento:** como entra no sistema? → *"veremos depois"*. Por ora: campo no cadastro, editável pela recepção.
 
@@ -123,6 +138,8 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q81 — Faltas repetidas:** com **2 faltas em 45 dias**, a Ísis passa para a secretaria e não tenta mais marcar. *(22/11 → D91)*
+- [x] **Q10 — Convênios** (estava adiada): só no **primeiro contato** a Ísis pergunta se é convênio ou particular; a clínica cadastra a **lista de convênios** que atende; sem convênio cadastrado, só registra "convênio: sim/não". *(22/11 → D92; detalhes em Q83–Q85)*
 - [x] **Q77 — Tratamento "aguardando" e paciente pede para marcar:** a Ísis explica e avisa a equipe; outros procedimentos ela marca normal. *(22/11 → D87)*
 - [x] **Q78 — "Retomar":** a Ísis chama o paciente pelo WhatsApp (texto editável) e conduz a marcação. *(22/11 → D88)*
 - [x] **Q79 — Sessões recorrentes:** a recepção marca a série; sessões de tratamento não contam no limite de 2; a Ísis marca uma por vez. *(22/11 → D89)*

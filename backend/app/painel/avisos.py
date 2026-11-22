@@ -15,12 +15,12 @@ DIAS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-
 MODELOS = {
     "confirmacao": (
         "Olá, {nome}! {Sua} {atendimento} na {clinica} está marcad{o} ✅\n\n"
-        "📅 {quando}\n{linha}\n📍 {endereco}\n\n"
+        "📅 {quando}\n{linha}\n📍 {endereco}{lembrete}\n\n"
         "Precisa remarcar ou cancelar? É só me chamar por aqui."
     ),
     "remarcacao": (
         "Olá, {nome}! {Sua} {atendimento} na {clinica} foi remarcad{o} 🔄\n\n"
-        "Antes: {antes}\nAgora: 📅 {quando}\n{linha}"
+        "Antes: {antes}\nAgora: 📅 {quando}\n{linha}{lembrete}"
     ),
     "cancelamento": (
         "Olá, {nome}. {Sua} {atendimento} de {quando} com {profissional} na {clinica} foi cancelad{o}.\n\n"
@@ -77,7 +77,15 @@ def primeiro_nome(nome: str | None) -> str:
 def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | None = None,
                agora: datetime | None = None) -> None:
     tz = clinica["tz"]
+    lembrete = ""
+    if tipo in ("confirmacao", "remarcacao"):  # avisa quando vem o lembrete (pedido do usuário, 22/11/2026)
+        from app.mensagens.lembretes import horario_do_lembrete  # import aqui para evitar import circular
+
+        momento = horario_do_lembrete(conn, clinica, consulta["starts_at"], agora or datetime.now(UTC))
+        if momento:
+            lembrete = f"\n🔔 Lembrete por aqui: {quando(momento, tz)}"
     texto = MODELOS[tipo].format(
+        lembrete=lembrete,
         nome=primeiro_nome(consulta["paciente"]),
         clinica=clinica["name"],
         quando=quando(consulta["starts_at"], tz),

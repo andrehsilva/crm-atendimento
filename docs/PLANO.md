@@ -211,10 +211,20 @@ Configurações › Canais: status e número do WhatsApp (toda a equipe vê); o 
 
 **21B — Marcar série** (mesmo dia/hora por N semanas, mostrando as datas que não couberam).
 
+## Ajuste pós-21 — Faltas repetidas ✅ (22/11/2026; D91)
+Com 2 faltas em 45 dias (ajustável), a Ísis não marca e passa para a recepção.
+
+## Etapa 22 — Convênios — ⏳ esperando respostas (Q83–Q85) (D92)
+- Configurações: lista de convênios que a clínica atende.
+- Só no primeiro contato, a Ísis pergunta "convênio ou particular?"; com lista, confere o nome; sem lista, só registra sim/não.
+
+## Etapa 23 — Resumo do dia para o profissional — ⏳ esperando respostas (Q86–Q88)
+De manhã (horário ajustável), o profissional recebe no WhatsApp pessoal a grade do dia: horários, pacientes, procedimentos e quem confirmou.
+
 ---
 
 ## Depois da 1ª versão (backlog)
 - Mensagens programadas (ex.: férias coletivas) e automações (retorno, pós-consulta) — D24.
 - Tags de cliente: novo · recorrente · em tratamento → "volta em X tempo" — D20.
-- Convênios — Q10. Forma de captar a data de nascimento — Q21.
+- Forma de captar a data de nascimento — Q21.
 - Mais indicadores no Dashboard — Q19.

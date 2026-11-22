@@ -63,6 +63,12 @@ export function Assistente({ podeEditar, comIa = true }: { podeEditar: boolean; 
             <Campo rotulo={`${pal.Atendimentos} futur${pal.o}s por ${pal.cliente}`}>
               <Entrada type="number" min={1} max={10} value={f.limite_consultas_futuras} onChange={num('limite_consultas_futuras')} />
             </Campo>
+            <Campo rotulo="Faltas para passar à recepção" ajuda={`Com tantas faltas no período abaixo, a assistente não marca e passa para a recepção. 0 = desliga.`}>
+              <Entrada type="number" min={0} max={10} value={f.faltas_limite} onChange={num('faltas_limite')} />
+            </Campo>
+            <Campo rotulo="Período das faltas (dias)">
+              <Entrada type="number" min={7} max={365} value={f.faltas_janela_dias} onChange={num('faltas_janela_dias')} />
+            </Campo>
             <Campo rotulo="Horário do lembrete" ajuda={`No dia útil anterior ${pal.o === 'a' ? 'à' : 'ao'} ${pal.atendimento}.`}>
               <Entrada type="time" value={f.lembrete_hora} onChange={(e) => setF({ ...f, lembrete_hora: e.target.value })} />
             </Campo>

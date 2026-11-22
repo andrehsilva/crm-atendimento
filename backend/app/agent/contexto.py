@@ -92,8 +92,13 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
     semana_que_vem = f"segunda {seg:%d/%m} a sábado {seg + timedelta(days=5):%d/%m}"
 
     futuras = servico.consultas_do_paciente(conn, clinica["id"], paciente["phone"], agora=agora)
+    lembretes = dict(conn.execute(
+        """select appointment_id, min(scheduled_for) from outbound_messages where clinic_id = %s and kind = 'lembrete'
+           and status = 'agendada' and appointment_id = any(%s) group by appointment_id""",
+        (clinica["id"], [c["id"] for c in futuras])).fetchall()) if futuras else {}
     consultas = "\n".join(
         f"- {quando(c['starts_at'], tz)}: {c['procedimento']} com {c['profissional']} ({c['status']}) [id {c['id']}]"
+        + (f" — lembrete agendado: {quando(lembretes[c['id']], tz)}" if c["id"] in lembretes else " — sem lembrete agendado")
         for c in futuras
     ) or "- nenhuma"
     limite = clinica["regras"].limite_consultas_futuras
@@ -103,6 +108,14 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
                       "precisa remarcar ou cancelar uma destas. Explique isso antes de buscar horários.")
 
     secao_tratamentos = _tratamentos(conn, clinica, paciente, tz)
+    # RN-AG-16 (D91): a assistente já sabe que não marca e passa para a recepção
+    regras, t = clinica["regras"], segmentos.termos(cfg)
+    if regras.faltas_limite > 0:
+        n = servico.faltas_recentes(conn, clinica, paciente["id"], agora)
+        if n >= regras.faltas_limite:
+            consultas += (f"\n- ⚠️ Faltou {n} vezes nos últimos {regras.faltas_janela_dias} dias: você NÃO marca "
+                          f"{t['atendimento']} nov{t['o']}. Se a pessoa quiser marcar, chame `chamar_humano` "
+                          "(a recepção continua). Remarcar ou cancelar o que já existe você pode.")
 
     ref = None
     if paciente.get("preferred_professional_id"):
@@ -168,7 +181,27 @@ Significado das expressões (já calculado — use exatamente estas datas):
 Se a pessoa acabou de concordar com uma dessas ações, chame `confirmar_acao` com o token correspondente
 (não prepare de novo). Se ele mudou de ideia, ignore o token e prepare a nova ação.
 """
-    return persona + "\n" + momento + jeito_da_clinica(cfg)
+    return persona + "\n" + momento + _avisos_automaticos(conn, clinica) + jeito_da_clinica(cfg)
+
+
+def _avisos_automaticos(conn, clinica: dict) -> str:
+    """O que a clínica manda sozinha — para a assistente responder "vocês me lembram?" sem inventar."""
+    r = clinica["regras"]
+    tem_wpp = conn.execute("select 1 from whatsapp_instances where clinic_id = %s and enabled", (clinica["id"],)).fetchone()
+    if not tem_wpp:
+        return ("\n# Avisos automáticos\n\nA clínica ainda não manda lembretes automáticos. Se perguntarem, diga que a "
+                "equipe confirma a consulta e não prometa lembrete.\n")
+    dias = "no dia útil anterior" if r.lembrete_dias_uteis == 1 else f"{r.lembrete_dias_uteis} dias úteis antes"
+    return (f"""
+# Avisos automáticos (pelo WhatsApp)
+
+- Ao marcar, remarcar ou cancelar: a pessoa recebe na hora uma mensagem com a data, o horário e o endereço.
+- Lembrete: {dias} à consulta, às {r.lembrete_hora}, com as opções 1 Confirmar · 2 Remarcar · 3 Cancelar.
+- Se a consulta for marcada depois do horário do lembrete, não há lembrete (a mensagem de confirmação já vale).
+- Nada sai entre {r.silencio_inicio} e {r.silencio_fim}.
+- Se perguntarem "vocês me lembram?", responda com isso e com o lembrete da consulta (está na lista de consultas).
+  Ao terminar de marcar ou remarcar, diga numa frase quando vem o lembrete.
+""")
 
 
 def _tratamentos(conn, clinica: dict, paciente: dict, tz) -> str:

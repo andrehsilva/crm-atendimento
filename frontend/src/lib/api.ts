@@ -351,6 +351,8 @@ export type AssistenteCfg = {
   horizonte_dias: number
   aviso_cancelamento_horas: number
   limite_consultas_futuras: number
+  faltas_limite: number
+  faltas_janela_dias: number
   lembrete_hora: string
 }
 

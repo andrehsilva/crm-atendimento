@@ -273,6 +273,9 @@ def marcar(
         if not paciente["name"]:
             raise AgendaError("NOME_OBRIGATORIO", "Preciso do nome completo do paciente para marcar.")
 
+        # RN-AG-16 (D91): com faltas repetidas, a assistente não marca — a recepção decide
+        if ator != "recepcao" and not _remarcando:
+            conferir_faltas(conn, clinica, paciente["id"], agora)
         # Etapa 21: sessão de tratamento aberto fica ligada a ele; aguardando → a Ísis não marca (RN-TR-04)
         tratamento = tratamentos.conferir_marcacao(conn, clinic_id, paciente["id"], service_id, ator,
                                                    remarcando=_remarcando is not None)
@@ -310,6 +313,28 @@ def marcar(
             if avisar_paciente:
                 avisos.enfileirar(conn, clinica, detalhe, "confirmacao", agora=agora)
     return detalhe
+
+
+def faltas_recentes(conn, clinica: dict, patient_id: UUID, agora: datetime) -> int:
+    """Faltas (status 'faltou') dentro da janela da clínica (RN-AG-16)."""
+    janela = clinica["regras"].faltas_janela_dias
+    return conn.execute(
+        """select count(*) from appointments where clinic_id = %s and patient_id = %s and status = 'faltou'
+           and starts_at >= %s and starts_at <= %s""",
+        (clinica["id"], patient_id, agora - timedelta(days=janela), agora),
+    ).fetchone()[0]
+
+
+def conferir_faltas(conn, clinica: dict, patient_id: UUID, agora: datetime) -> None:
+    limite = clinica["regras"].faltas_limite
+    if limite <= 0:
+        return
+    n = faltas_recentes(conn, clinica, patient_id, agora)
+    if n >= limite:
+        raise AgendaError(
+            "FALTAS_REPETIDAS",
+            f"O paciente faltou {n} vezes nos últimos {clinica['regras'].faltas_janela_dias} dias: "
+            "a marcação fica com a recepção.")
 
 
 SERIE_MAX = 20

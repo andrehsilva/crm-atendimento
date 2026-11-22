@@ -470,6 +470,8 @@ class Assistente(BaseModel):
     horizonte_dias: int = Field(ge=1, le=365)
     aviso_cancelamento_horas: float = Field(ge=0, le=168)
     limite_consultas_futuras: int = Field(ge=1, le=10)
+    faltas_limite: int = Field(2, ge=0, le=10)  # RN-AG-16 (D91); 0 = desliga
+    faltas_janela_dias: int = Field(45, ge=7, le=365)
     lembrete_hora: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
 
     @field_validator("nome_assistente")
@@ -488,6 +490,7 @@ def ver_assistente(clinic_id: UUID, conn=Depends(get_conn)):
             "jeito_clinica": cfg.get("jeito_clinica") or "",
             "antecedencia_min_horas": r.antecedencia_min_horas, "horizonte_dias": r.horizonte_dias,
             "aviso_cancelamento_horas": r.aviso_cancelamento_horas, "limite_consultas_futuras": r.limite_consultas_futuras,
+            "faltas_limite": r.faltas_limite, "faltas_janela_dias": r.faltas_janela_dias,
             "lembrete_hora": r.lembrete_hora}
 
 

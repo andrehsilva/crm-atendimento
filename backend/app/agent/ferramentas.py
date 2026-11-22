@@ -155,6 +155,7 @@ def criar_ferramentas(s: Sessao) -> list:
         try:
             serv = _procedimento(procedimento)
             prof = _profissional(profissional)
+            _faltas_ok()  # RN-AG-16: faltas repetidas → a recepção marca
             _tratamento_liberado(serv)  # RN-TR-04: aguardando → nem busca horário
             ini = _data(data_inicio)
             fim = _data(data_fim) if data_fim else ini
@@ -213,6 +214,25 @@ def criar_ferramentas(s: Sessao) -> list:
         avisar(conn, s.cid, "crm", s.paciente["id"])
         return log("salvar_nome", {"nome_completo": nome}, _json({"ok": True}))
 
+    def _lembrete_de(consulta_id) -> str:
+        """Diz à assistente se há lembrete agendado para a consulta (e quando), para ela contar ao paciente."""
+        r = conn.execute("""select scheduled_for from outbound_messages where clinic_id = %s and appointment_id = %s
+                            and kind = 'lembrete' and status = 'agendada' order by scheduled_for limit 1""",
+                         (s.cid, consulta_id)).fetchone()
+        if r:
+            return f". Lembrete automático pelo WhatsApp agendado para {quando(r[0], s.tz)} (conte isso ao paciente)"
+        return (". Sem lembrete automático para esta consulta (a confirmação enviada agora já vale; "
+                "não prometa lembrete)")
+
+    def _faltas_ok() -> None:
+        """RN-AG-16 (D91): faltas repetidas → a assistente não tenta marcar; passa para a recepção (no código)."""
+        try:
+            servico.conferir_faltas(conn, s.clinica, s.paciente["id"], s.agora)
+        except AgendaError:
+            if s.conversa.get("status") != "humano":
+                chamar_humano("faltas repetidas: a recepção marca")
+            raise
+
     def _tratamento_liberado(serv: dict) -> None:
         """RN-TR-04 (D87): tratamento aguardando → recusa e deixa o pedido registrado para o sino da equipe."""
         try:
@@ -238,6 +258,7 @@ def criar_ferramentas(s: Sessao) -> list:
             if prof is None:
                 raise AgendaError("DADOS_INVALIDOS", "Informe o profissional do horário escolhido.")
             dt = _instante(inicio)
+            _faltas_ok()
             _tratamento_liberado(serv)
             c = _validar(lambda: servico.marcar(
                 conn, s.cid, telefone=s.paciente["phone"], nome=s.paciente.get("name"), professional_id=prof["id"],
@@ -348,12 +369,14 @@ def criar_ferramentas(s: Sessao) -> list:
                                    professional_id=UUID(p["professional_id"]), service_id=UUID(p["service_id"]),
                                    inicio=datetime.fromisoformat(p["inicio"]), ator="isis", origem=s.conversa["channel"], agora=s.agora)
                 feito = f"Marcada: {c['procedimento']} com {c['profissional']} em {quando(c['starts_at'], s.tz)}"
+                feito += _lembrete_de(c["id"])
             elif t["action"] == "remarcar":
                 r = servico.remarcar(conn, s.cid, appointment_id=UUID(p["consulta_id"]), telefone=s.paciente["phone"], ator="isis",
                                      novo_inicio=datetime.fromisoformat(p["novo_inicio"]),
                                      professional_id=UUID(p["professional_id"]) if p.get("professional_id") else None, agora=s.agora)
                 c = r["consulta"]
                 feito = f"Remarcada para {quando(c['starts_at'], s.tz)} com {c['profissional']}"
+                feito += _lembrete_de(c["id"])
             else:
                 r = servico.cancelar(conn, s.cid, appointment_id=UUID(p["consulta_id"]), telefone=s.paciente["phone"],
                                      ator="isis", motivo=p.get("motivo"), agora=s.agora)

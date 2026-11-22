@@ -20,15 +20,27 @@ import {
   Users,
 } from 'lucide-react'
 
-// Menu definido na decisão D21 (docs/DECISOES.md)
-const itens = [
-  { to: '/', rotulo: 'Dashboard', icone: LayoutDashboard },
-  { to: '/crm', rotulo: 'CRM', icone: KanbanSquare },
-  { to: '/agenda', rotulo: 'Agenda', icone: CalendarDays },
-  { to: '/mensagens', rotulo: 'Mensagens', icone: MessageSquare },
-  { to: '/clientes', rotulo: 'Leads / Clientes', icone: Users },
-  { to: '/relatorios', rotulo: 'Relatórios', icone: FileSpreadsheet, soAdmin: true },
-  { to: '/configuracoes', rotulo: 'Configurações', icone: Settings },
+type Item = { to: string; rotulo: string; icone: typeof Users; soAdmin?: boolean }
+
+// Menu definido na decisão D21 (docs/DECISOES.md), em duas seções: o dia a dia e a gestão interna
+const secoes: { titulo: string; itens: Item[] }[] = [
+  {
+    titulo: 'Atendimento',
+    itens: [
+      { to: '/', rotulo: 'Dashboard', icone: LayoutDashboard },
+      { to: '/crm', rotulo: 'CRM', icone: KanbanSquare },
+      { to: '/agenda', rotulo: 'Agenda', icone: CalendarDays },
+      { to: '/mensagens', rotulo: 'Mensagens', icone: MessageSquare },
+      { to: '/clientes', rotulo: 'Leads / Clientes', icone: Users },
+    ],
+  },
+  {
+    titulo: 'Gestão',
+    itens: [
+      { to: '/relatorios', rotulo: 'Relatórios', icone: FileSpreadsheet, soAdmin: true },
+      { to: '/configuracoes', rotulo: 'Configurações', icone: Settings },
+    ],
+  },
 ]
 
 export function Sidebar() {
@@ -78,7 +90,15 @@ export function Sidebar() {
       </button>
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {itens.filter((i) => !('soAdmin' in i) || papel === 'clinic_admin' || papel === 'super_admin').map(({ to, rotulo, icone: Icone }) => (
+        {secoes.map((secao, n) => {
+          const visiveis = secao.itens.filter((i) => !i.soAdmin || papel === 'clinic_admin' || papel === 'super_admin')
+          if (!visiveis.length) return null
+          return (
+            <div key={secao.titulo} className={`flex flex-col gap-1 ${n > 0 ? 'mt-4 border-t border-line pt-4' : ''}`}>
+              {recolhida
+                ? null
+                : <span className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted/70">{secao.titulo}</span>}
+              {visiveis.map(({ to, rotulo, icone: Icone }) => (
           <NavLink
             key={to}
             to={to}
@@ -93,7 +113,10 @@ export function Sidebar() {
             <Icone className="size-5 shrink-0" />
             {!recolhida && rotulo}
           </NavLink>
-        ))}
+              ))}
+            </div>
+          )
+        })}
       </nav>
 
       <div className="flex flex-col gap-2 px-3 pb-3">
