@@ -51,12 +51,13 @@ def _entrega(conn, mid):
 
 def test_so_avanca_nunca_volta(conn, clinica):
     cv, m = _conversa_com_resposta(conn, clinica)
-    assert [x["entrega"] for x in chat.historico(conn, cv["id"])] == [None, "enviada"]  # recebida não tem tracinho
+    # mesma transação = mesmo horário: confere por sentido, não pela ordem
+    assert {x["direction"]: x["entrega"] for x in chat.historico(conn, cv["id"])} == {"in": None, "out": "enviada"}
     assert registrar_entrega(conn, "clinica_a", ID, 1) is False  # "chegou ao servidor" = já é enviada
     assert registrar_entrega(conn, "clinica_a", ID, 2) and _entrega(conn, m["id"]) == "entregue"
     assert registrar_entrega(conn, "clinica_a", ID, 3) and _entrega(conn, m["id"]) == "lida"
     assert registrar_entrega(conn, "clinica_a", ID, 2) is False and _entrega(conn, m["id"]) == "lida"  # atrasado
-    assert chat.historico(conn, cv["id"])[-1]["entrega"] == "lida"
+    assert {x["direction"]: x["entrega"] for x in chat.historico(conn, cv["id"])}["out"] == "lida"
 
 
 def test_sessao_de_outra_clinica_nao_mexe(conn, clinica, outra_clinica):
