@@ -218,7 +218,7 @@ Com 2 faltas em 45 dias (ajustável), a Ísis não marca e passa para a recepç�
 - Configurações: lista de convênios que a clínica atende.
 - Só no primeiro contato, a Ísis pergunta "convênio ou particular?"; com lista, confere o nome; sem lista, só registra sim/não.
 
-## Etapa 23 — Resumo do dia para o profissional — 🔨 em construção (D96–D98)
+## Etapa 23 — Resumo do dia para o profissional ✅ (22/11/2026; D96–D98)
 De manhã (horário ajustável), o profissional recebe no WhatsApp pessoal a grade do dia: horários, pacientes, procedimentos e quem confirmou.
 
 ---

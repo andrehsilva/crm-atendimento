@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarOff, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CalendarOff, Pencil, Plus, Sun, Trash2 } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
 import { EnviarImagem, Retrato } from '../../components/Imagem'
 import { Botao, Campo, Entrada, Modal, Selo } from '../../components/ui'
 import { api, type ProcedimentoCfg, type ProfissionalCfg } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
 import { dataHora } from '../../lib/formato'
+import { ModalResumoDia } from './ResumoDia'
 
 type Form = { nome: string; especialidade: string; bio: string; cor: string; ativo: boolean; procedimentos: string[] }
 const CORES = ['#B85C74', '#2F80C9', '#2E9E6A', '#C98A1B', '#7A5AC9', '#D0573D']
@@ -20,6 +21,7 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
   const servs = useQuery({ queryKey: ['config', 'procedimentos', clinica.id], queryFn: () => api.get<ProcedimentoCfg[]>(`${base}/procedimentos`) })
   const [editando, setEditando] = useState<{ id: string | null; f: Form } | null>(null)
   const [folga, setFolga] = useState<ProfissionalCfg | null>(null)
+  const [resumo, setResumo] = useState<{ id: string; nome: string } | null>(null)
 
   const atualizar = () => {
     qc.invalidateQueries({ queryKey: ['config'] })
@@ -79,6 +81,7 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
               </div>
               {podeEditar && (
                 <div className="flex gap-1">
+                  <Botao variante="fantasma" onClick={() => setResumo({ id: p.id, nome: p.nome })} title="Agenda do dia no WhatsApp pessoal"><Sun className="size-4" /> Resumo do dia</Botao>
                   <Botao variante="fantasma" onClick={() => setFolga(p)} title="Férias ou folga"><CalendarOff className="size-4" /> Folga</Botao>
                   <button type="button" aria-label="Editar" onClick={() => setEditando({ id: p.id, f: paraForm(p) })} className="rounded-lg p-2 text-muted hover:bg-surface-muted"><Pencil className="size-4" /></button>
                 </div>
@@ -96,6 +99,7 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
         </Modal>
       )}
       {folga && <NovaFolga p={folga} onFechar={() => setFolga(null)} onFeita={atualizar} />}
+      <ModalResumoDia prof={resumo} podeEditar={podeEditar} onFechar={() => setResumo(null)} />
     </div>
   )
 }

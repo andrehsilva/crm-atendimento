@@ -1,4 +1,5 @@
-"""Roda em segundo plano dentro do backend: a cada 30 s gera os aniversários do dia e envia a fila vencida."""
+"""Roda em segundo plano dentro do backend: a cada 30 s gera os aniversários do dia, envia a fila vencida e os
+resumos do dia dos profissionais (Etapa 23)."""
 
 import logging
 import threading
@@ -7,6 +8,7 @@ from app.core import relogio
 from app.db import pool
 from app.mensagens.envio import enviar_pendentes
 from app.mensagens.lembretes import gerar_aniversarios
+from app.mensagens.resumo_dia import enviar_resumos
 
 log = logging.getLogger("isis.agendador")
 INTERVALO_S = 30
@@ -24,7 +26,8 @@ def rodada() -> dict:
             aniversarios = gerar_aniversarios(conn, agora)
             conn.commit()
             enviadas = enviar_pendentes(conn, agora)
-        return {"ok": True, "aniversarios_na_fila": aniversarios, "enviadas": enviadas}
+            resumos = enviar_resumos(conn, agora)  # Etapa 23: resumo do dia do profissional
+        return {"ok": True, "aniversarios_na_fila": aniversarios, "enviadas": enviadas, "resumos": resumos}
     finally:
         _rodando.release()
 
@@ -51,7 +54,7 @@ class Agendador:
         while not self._parar.wait(INTERVALO_S):
             try:
                 r = rodada()
-                if r.get("enviadas") or r.get("aniversarios_na_fila"):
+                if r.get("enviadas") or r.get("aniversarios_na_fila") or r.get("resumos"):
                     log.info("mensagens automáticas: %s", r)
             except Exception:  # noqa: BLE001 — o agendador nunca pode morrer
                 log.exception("falha na rodada de mensagens automáticas")

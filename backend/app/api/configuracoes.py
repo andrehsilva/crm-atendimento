@@ -4,7 +4,7 @@ Ver: qualquer usuário da clínica. Mudar: só o administrador da clínica (ou o
 Regra da spec 07: mudanças valem para NOVAS ações; consultas já marcadas não são alteradas.
 """
 
-from datetime import datetime, time
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
@@ -688,3 +688,78 @@ def pergunta_convenio(clinic_id: UUID, body: PerguntaConvenio, request: Request,
     _settings(conn, clinic_id, {"perguntar_convenio": body.perguntar})
     return _convenios(conn, clinic_id)
 
+
+
+# ---------------------------------------------------------------------------
+# Resumo do dia do profissional (Etapa 23 — RN-RS, D96–D98). Ver: toda a equipe. Ativar: só o administrador.
+# ---------------------------------------------------------------------------
+def _resumo(conn, clinic_id: UUID, professional_id: UUID) -> dict:
+    r = _cur(conn).execute(
+        """select p.resumo_ativo as ativo, p.whatsapp_pessoal as whatsapp, p.resumo_hora as hora,
+                  d.dia, d.status, d.error as erro, d.sent_at as enviado_em
+           from professionals p
+           left join lateral (select * from professional_digests x where x.professional_id = p.id
+                              order by x.dia desc limit 1) d on true
+           where p.clinic_id = %s and p.id = %s""", (clinic_id, professional_id)).fetchone()
+    if not r:
+        raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
+    ultimo = {"dia": r.pop("dia"), "status": r.pop("status"), "erro": r.pop("erro"), "enviado_em": r.pop("enviado_em")}
+    return {**r, "ultimo": ultimo if ultimo["dia"] else None}
+
+
+@router.get("/profissionais/{professional_id}/resumo", summary="Resumo do dia: ativado, número e horário")
+def ver_resumo(clinic_id: UUID, professional_id: UUID, conn=Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    return _resumo(conn, clinic_id, professional_id)
+
+
+class ResumoDia(BaseModel):
+    ativo: bool
+    whatsapp: str | None = Field(None, max_length=30)
+    hora: str = Field("07:00", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+@router.put("/profissionais/{professional_id}/resumo", summary="Ativar o resumo do dia (D97: só quem pediu)")
+def salvar_resumo(clinic_id: UUID, professional_id: UUID, body: ResumoDia, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    _profissional(conn, clinic_id, professional_id)
+    numero = None
+    if body.whatsapp and body.whatsapp.strip():
+        try:
+            numero = normalizar_telefone(body.whatsapp)
+        except TelefoneInvalido as e:
+            raise AgendaError("DADOS_INVALIDOS", "WhatsApp pessoal inválido.") from e
+    if body.ativo and not numero:
+        raise AgendaError("DADOS_INVALIDOS", "Informe o WhatsApp pessoal do profissional para ativar o resumo.")
+    conn.execute("update professionals set resumo_ativo = %s, whatsapp_pessoal = %s, resumo_hora = %s where id = %s",
+                 (body.ativo, numero, body.hora, professional_id))
+    return _resumo(conn, clinic_id, professional_id)
+
+
+@router.get("/profissionais/{professional_id}/resumo/previa", summary="Como fica o resumo de um dia (padrão: amanhã)")
+def previa_resumo(clinic_id: UUID, professional_id: UUID, dia: date | None = None, conn=Depends(get_conn)):
+    from app.mensagens.resumo_dia import montar
+
+    clinica = servico.carregar_clinica(conn, clinic_id)
+    prof = _cur(conn).execute("select id, name from professionals where clinic_id = %s and id = %s",
+                              (clinic_id, professional_id)).fetchone()
+    if not prof:
+        raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
+    dia = dia or (datetime.now(clinica["tz"]).date() + timedelta(days=1))
+    return {"dia": dia, "texto": montar(conn, clinica, prof, dia)}
+
+
+@router.post("/profissionais/{professional_id}/resumo/teste", summary="Mandar um resumo de teste agora (só o administrador)")
+def testar_resumo(clinic_id: UUID, professional_id: UUID, request: Request, conn=Depends(get_conn)):
+    from app.canais.waha import WahaErro
+    from app.mensagens.resumo_dia import enviar_teste
+
+    clinica = _admin(request, clinic_id, conn)
+    prof = _cur(conn).execute("select id, name, whatsapp_pessoal, resumo_hora from professionals where clinic_id = %s and id = %s",
+                              (clinic_id, professional_id)).fetchone()
+    if not prof:
+        raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
+    try:
+        return enviar_teste(conn, clinica, prof, datetime.now(clinica["tz"]))
+    except WahaErro as e:
+        raise AgendaError("ENVIO_FALHOU", str(e)) from e

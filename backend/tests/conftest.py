@@ -69,3 +69,33 @@ def as_(dia: int, hora: int, minuto: int = 0) -> datetime:
 
 
 __all__ = ["AGORA", "TZ", "as_", "time"]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _nada_gravado_de_verdade():
+    """Rede de segurança: ao fim da rodada, nenhuma clínica de teste pode ter ficado gravada no banco.
+    (Já aconteceu duas vezes por funções que fazem commit no meio — use SemCommit nesses casos.)"""
+    yield
+    url = get_settings().database_url
+    if not url:
+        return
+    with psycopg.connect(url) as c:
+        vazou = c.execute("select id from clinics where slug in ('teste-a', 'teste-b')").fetchall()
+        if not vazou:
+            return
+        tabelas = [r[0] for r in c.execute(
+            """select distinct table_name from information_schema.columns where column_name = 'clinic_id'
+               and table_schema = 'public' and table_name in
+               (select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE')""")]
+        for (cid,) in vazou:
+            for _ in range(6):  # apaga em várias passadas por causa das chaves estrangeiras
+                for t in tabelas:
+                    try:
+                        with c.transaction():
+                            c.execute(f"delete from {t} where clinic_id = %s", (cid,))  # noqa: S608 — nomes do catálogo
+                    except psycopg.Error:
+                        pass
+            c.execute("delete from clinics where id = %s", (cid,))
+        c.commit()
+    pytest.fail("Um teste gravou a clínica de teste de verdade no banco (foi apagada agora). "
+                "Procure uma função com commit no meio e use SemCommit.", pytrace=False)

@@ -143,6 +143,7 @@ O paciente **sempre** recebe um aviso fixo de que a equipe vai continuar ali mes
 - **"1" confirma e "PARAR" desliga os disparos**, resolvidos direto no código, sem IA.
 - **Série de sessões:** **uma confirmação só**, com todas as datas, e um lembrete para cada sessão.
 - **Aniversário** às 09:00 (se ligado), uma vez por ano.
+- **Resumo do dia do profissional:** no horário dele (padrão 07:00), pelo WhatsApp pessoal, a agenda do dia com o primeiro nome dos pacientes, o procedimento e quem confirmou. Só para quem pediu, só em dia com consulta e uma vez por dia.
 - **Mensagem de retomada** do tratamento, quando a recepção clica em "Retomar".
 - **Silêncio:** nada sai entre 21h e 08h. Também há limite de envios por minuto e por dia, e intervalo entre mensagens em massa.
 - **Bloqueios no código:**
@@ -165,6 +166,7 @@ Ele faz tudo o que a secretária faz, e mais:
 - **Configurações:**
   - perfil, horários, procedimentos (duração, preço e "só recepção") e profissionais;
   - **convênios atendidos** e se a assistente pergunta o convênio no primeiro contato;
+  - **resumo do dia** de cada profissional: ativar (só se ele pediu), WhatsApp pessoal e horário;
   - assistente: nome, tratamento, preços, áudio, regras da agenda, **faltas para passar à recepção** e o "Jeito da clínica";
   - mensagens e campanhas;
   - site e usuários.
