@@ -83,3 +83,6 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D73 | ✅ Relatórios em Excel: só o **administrador da clínica** baixa; cada download fica registrado (LGPD) | Q65, 21/11/2026 |
 | D74 | ✅ Recall: paciente sem vir há **6 meses** (ajustável de 3 a 24) e sem nada marcado | Q66, 21/11/2026 |
 | D75 | ✅ 1ª leva de relatórios: recall, atendimentos, produção e faltas (15A); cadastro, aniversariantes e desempenho da assistente na 15B | Q67, 21/11/2026 |
+| D76 | ✅ **WhatsApp próprio por clínica:** no Admin geral › clínica, número do WhatsApp, servidor WAHA (da plataforma ou próprio, chave criptografada) e webhook exclusivo `/webhooks/waha/<código>` com segredo próprio; a sessão de uma clínica nunca entra no webhook de outra | Q60, pedido do usuário, 22/11/2026 |
+| D77 | ✅ **Personalização do prompt em camadas:** o núcleo (segurança, ferramentas, confirmação) fica no código; a clínica ganha o campo **"Jeito da clínica"** (até 1.500 caracteres), numa seção própria que não pode contrariar o núcleo. Texto editável por segmento fica para depois | Q68, 22/11/2026 |
+| D78 | ✅ Quem edita o "Jeito da clínica": o administrador da clínica (e o admin geral) | Q69, 22/11/2026 |

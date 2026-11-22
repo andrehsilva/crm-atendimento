@@ -10,6 +10,7 @@ import { escolherClinica } from '../../lib/clinicaGuardada'
 import { telefone } from '../../lib/formato'
 import { FUSOS, SeloWhatsapp } from './Clinicas'
 import { SenhaProvisoria } from './SenhaProvisoria'
+import { ConexaoWhatsApp } from './ConexaoWhatsApp'
 
 const ABAS = ['Dados', 'WhatsApp', 'IA', 'Usuários'] as const
 
@@ -246,6 +247,7 @@ function WhatsApp({ id }: { id: string }) {
           <Botao variante="fantasma" onClick={() => desligar.mutate()} disabled={desligar.isPending}><Unplug className="size-4" /> Desligar da clínica</Botao>
         </div>
       </Secao>
+      <ConexaoWhatsApp id={id} />
       <Secao titulo="Conectar o número">
         {qr ? (
           <div className="flex flex-col items-center gap-3">

@@ -160,7 +160,7 @@ bloquear o número.
   - campanhas numa área própria;
   - o "Relógio de teste" recolhido num canto e só em desenvolvimento.
 
-## Etapa 15 — Relatórios em Excel — 🔨 em andamento (D73–D75)
+## Etapa 15 — Relatórios em Excel ✅ (22/11/2026)
 Tela "Relatórios" com período, profissional e o botão "Baixar Excel" (.xlsx feito no servidor, com cabeçalho fixo, filtro e R$).
 Relatórios propostos:
 1. **Pacientes para chamar de volta (recall):** sem vir há N meses e sem nada marcado.
@@ -174,7 +174,20 @@ Relatórios propostos:
 Cada download fica registrado (LGPD); nenhum relatório traz conversas nem observações clínicas.
 - **15A — Recall, atendimentos, produção e faltas:** ✅ feito e testado (21/11/2026; D73–D75). Menu "Relatórios" (só admin), período, profissional, meses do recall e "Baixar Excel".
 - **Filtro por profissional no Dashboard:** ✅ feito e testado (22/11/2026) (pedido de 21/11/2026). A agenda do dia muda; conversas, leads, fila e aniversariantes seguem "clínica toda".
-- **15B — Cadastro, aniversariantes e desempenho da assistente:** 🔨 em andamento.
+- **15B — Cadastro, aniversariantes e desempenho da assistente:** ✅ feito e testado (22/11/2026).
+
+## Etapa 16 — WhatsApp próprio de cada clínica ✅ (22/11/2026; D76)
+No Admin geral › clínica › WhatsApp:
+- número do WhatsApp da clínica;
+- servidor WAHA da plataforma ou próprio (endereço e chave criptografada, com "Testar conexão");
+- webhook exclusivo (`/webhooks/waha/<código>`) com segredo próprio, e botões para apontar e trocar o segredo.
+
+Envio, recebimento, QR e áudio passam a usar o servidor de cada clínica.
+
+## Etapa 17 — "Jeito da clínica" — 🔨 em andamento (D77, D78); texto por segmento fica para depois
+O núcleo do prompt (segurança, ferramentas, confirmação em dois passos) **continua no código**, versionado e testado pela bateria de cenários. Em cima dele:
+- **por segmento:** texto editável pelo admin geral, com histórico e "Voltar ao padrão";
+- **por clínica:** campo "Jeito da clínica" (até 1.500 caracteres), que entra numa seção própria e não pode contrariar o núcleo.
 
 ---
 

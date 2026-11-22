@@ -20,6 +20,7 @@ from psycopg.rows import dict_row
 from app.agenda.erros import AgendaError
 from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
 from app.canais.waha import ROTULO_MIDIA, ClienteWaha, MensagemEntrada, WahaErro
+from app.canais.conexao import cliente_da_clinica
 from app.config import get_settings
 from app import ia, transcricao, uso_ia
 from app.db import pool
@@ -126,7 +127,7 @@ def responder_agrupadas(conn, sessao: str, chat_id: str, clinic_id, telefone: st
     conversa = chat._conversa(conn, clinic_id, paciente["id"], "whatsapp")
     respostas = chat.responder_pendentes(conn, clinica, paciente, conversa)
     conn.commit()
-    _enviar(conn, sessao, chat_id, clinic_id, conversa["id"], respostas, cliente or ClienteWaha())
+    _enviar(conn, sessao, chat_id, clinic_id, conversa["id"], respostas, cliente or cliente_da_clinica(conn, clinic_id))
     return respostas
 
 
@@ -154,7 +155,7 @@ def processar_com(conn, msg: MensagemEntrada, cliente: ClienteWaha | None = None
     if not inst or not inst["enabled"]:
         log.warning("mensagem de sessão WAHA sem clínica ligada: %s", msg.sessao)
         return
-    cliente = cliente or ClienteWaha()
+    cliente = cliente or cliente_da_clinica(conn, inst["clinic_id"])
     telefone = msg.telefone or (cliente.numero_do_lid(msg.sessao, msg.chat_id) if msg.chat_id.endswith("@lid") else None)
     if not telefone:
         log.warning("não deu para saber o telefone do remetente %s; mensagem ignorada", msg.chat_id)
@@ -216,6 +217,6 @@ def enviar_da_equipe(conn, clinic_id: UUID, conversa: dict, texto: str, cliente:
     if not inst or not inst["enabled"] or not conversa.get("external_chat_id"):
         raise AgendaError("DADOS_INVALIDOS", "Esta clínica não tem WhatsApp conectado para responder esta conversa.")
     try:
-        return (cliente or ClienteWaha()).enviar_texto(inst["session"], conversa["external_chat_id"], texto, simular_digitacao=False)
+        return (cliente or cliente_da_clinica(conn, clinic_id)).enviar_texto(inst["session"], conversa["external_chat_id"], texto, simular_digitacao=False)
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", f"Não consegui enviar pelo WhatsApp: {e}") from e

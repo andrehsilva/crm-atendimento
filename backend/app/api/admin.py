@@ -16,10 +16,12 @@ from app.auth.acesso import acesso, exigir_super_admin, usuario_da_requisicao
 from app.auth.usuarios import PAPEIS, criar_ou_ligar
 from app.canais.waha import ClienteWaha, WahaErro
 from app.config import get_settings
+from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
 from app.segmentos import SEGMENTOS
 from app import ia, uso_ia
+from app.canais import conexao
 
 
 def _so_super_admin(request: Request, _=Depends(acesso)) -> None:
@@ -86,9 +88,10 @@ class LigarSessao(BaseModel):
     sessao: str = Field(min_length=2, max_length=40)
 
 
-def _waha() -> ClienteWaha:
+def _waha(conn=None, clinic_id: UUID | None = None) -> ClienteWaha:
+    """Servidor WAHA da clínica (Etapa 16) ou, sem clínica/servidor próprio, o da plataforma."""
     try:
-        return ClienteWaha()
+        return conexao.cliente_da_clinica(conn, clinic_id) if conn is not None and clinic_id else ClienteWaha()
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", str(e)) from e
 
@@ -209,7 +212,7 @@ def whatsapp_status(clinic_id: UUID, conn=Depends(get_conn)):
     if not r:
         return {"ligado": False}
     try:
-        info = _waha().sessao(r[0])
+        info = _waha(conn, clinic_id).sessao(r[0])
     except WahaErro as e:
         return {"ligado": True, **_instancia(conn, clinic_id), "erro": str(e)}
     status = info.get("status") or "DESCONHECIDO"
@@ -231,7 +234,7 @@ def whatsapp_ligar(clinic_id: UUID, body: LigarSessao, request: Request, criar: 
     dono = conn.execute("select clinic_id from whatsapp_instances where session = %s", (body.sessao,)).fetchone()
     if dono and dono[0] != clinic_id:
         raise AgendaError("DADOS_INVALIDOS", "Essa sessão já está ligada a outra clínica (1 número = 1 clínica, D29).")
-    w = _waha()
+    w = _waha(conn, clinic_id)
     try:
         info = w.criar_sessao(body.sessao, _url_webhook(), get_settings().waha_webhook_hmac_key) if criar else w.sessao(body.sessao)
     except WahaErro as e:
@@ -257,7 +260,8 @@ def whatsapp_desligar(clinic_id: UUID, request: Request, conn=Depends(get_conn))
 def whatsapp_webhook(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
     inst = _instancia(conn, clinic_id)
     try:
-        _waha().configurar_webhook(inst["sessao"], _url_webhook(), get_settings().waha_webhook_hmac_key)
+        url, segredo = conexao.webhook_da_clinica(conn, clinic_id)
+        _waha(conn, clinic_id).configurar_webhook(inst["sessao"], url, segredo)
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", str(e)) from e
     adm.auditar(conn, usuario_da_requisicao(request).id, "configurar_webhook", clinic_id, {"sessao": inst["sessao"]})
@@ -268,7 +272,7 @@ def whatsapp_webhook(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
 def whatsapp_reiniciar(clinic_id: UUID, conn=Depends(get_conn)):
     inst = _instancia(conn, clinic_id)
     try:
-        _waha().reiniciar(inst["sessao"])
+        _waha(conn, clinic_id).reiniciar(inst["sessao"])
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", str(e)) from e
     return {"ok": True}
@@ -278,10 +282,62 @@ def whatsapp_reiniciar(clinic_id: UUID, conn=Depends(get_conn)):
 def whatsapp_qr(clinic_id: UUID, conn=Depends(get_conn)):
     inst = _instancia(conn, clinic_id)
     try:
-        png = _waha().qr_png(inst["sessao"])
+        png = _waha(conn, clinic_id).qr_png(inst["sessao"])
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", f"QR indisponível agora (a sessão precisa estar em SCAN_QR_CODE). {e}") from e
     return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
+
+
+# ---------------------------------------------------------------------------
+# Etapa 16 (D76): número, servidor WAHA próprio e webhook exclusivo da clínica
+# ---------------------------------------------------------------------------
+class ServidorClinica(BaseModel):
+    numero: str | None = Field(None, max_length=20)
+    url: str | None = Field(None, max_length=200)   # vazio = servidor da plataforma
+    chave: str | None = Field(None, max_length=300)  # vazio = mantém a salva
+
+
+@router.get("/clinicas/{clinic_id}/whatsapp/conexao", summary="Número, servidor e webhook da clínica (sem segredos)")
+def ver_conexao(clinic_id: UUID, conn=Depends(get_conn)):
+    _instancia(conn, clinic_id)
+    return conexao.estado(conn, clinic_id)
+
+
+@router.put("/clinicas/{clinic_id}/whatsapp/conexao", summary="Salvar número e servidor WAHA da clínica")
+def salvar_conexao(clinic_id: UUID, body: ServidorClinica, conn=Depends(get_conn)):
+    _instancia(conn, clinic_id)
+    numero = None
+    if body.numero and body.numero.strip():
+        try:
+            numero = normalizar_telefone(body.numero)
+        except TelefoneInvalido as e:
+            raise AgendaError("TELEFONE_INVALIDO", f"Número do WhatsApp: {e}") from e
+    try:
+        conexao.salvar_servidor(conn, clinic_id, numero=numero, url=(body.url or "").strip() or None, chave=(body.chave or "").strip() or None)
+    except ValueError as e:
+        raise AgendaError("DADOS_INVALIDOS", str(e)) from e
+    return conexao.estado(conn, clinic_id)
+
+
+@router.post("/clinicas/{clinic_id}/whatsapp/testar", summary="Testar o servidor WAHA da clínica (lista as sessões)")
+def testar_conexao(clinic_id: UUID, conn=Depends(get_conn)):
+    try:
+        sessoes = _waha(conn, clinic_id).listar_sessoes()
+    except WahaErro:
+        return {"ok": False, "detalhe": "Não consegui falar com o servidor WAHA. Confira o endereço e a chave."}
+    return {"ok": True, "sessoes": [x.get("name") for x in sessoes if isinstance(x, dict)]}
+
+
+@router.post("/clinicas/{clinic_id}/whatsapp/webhook-exclusivo", summary="Criar ou trocar o webhook exclusivo e o segredo")
+def webhook_exclusivo(clinic_id: UUID, conn=Depends(get_conn)):
+    inst = _instancia(conn, clinic_id)
+    conexao.gerar_webhook(conn, clinic_id)
+    url, segredo = conexao.webhook_da_clinica(conn, clinic_id)
+    try:  # já aponta o WAHA para o endereço novo
+        _waha(conn, clinic_id).configurar_webhook(inst["sessao"], url, segredo)
+    except (WahaErro, AgendaError) as e:
+        return {**conexao.estado(conn, clinic_id), "aviso": f"Salvo, mas não consegui apontar o WAHA agora: {ia.explicar_erro(e) if not isinstance(e, AgendaError) else e.mensagem}"}
+    return conexao.estado(conn, clinic_id)
 
 
 # ---------------------------------------------------------------------------

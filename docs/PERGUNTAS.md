@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 64 de 74 resolvidas (61 respondidas · 3 adiadas) — 21/11/2026.
+**Progresso:** 67 de 76 resolvidas (64 respondidas · 3 adiadas) — 21/11/2026.
 
 ---
 
@@ -73,12 +73,13 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente — Etapa 15 liberada.
 
+## 🟢 Bloqueia a Etapa 17 ("Jeito da clínica")
+
+✅ Nada pendente — Etapa 17 liberada.
+
 ## ⚪ WhatsApp por clínica
 
-- [ ] **Q60 — Um servidor WAHA para todas ou um por clínica?**
-  Hoje há **um servidor WAHA** (endereço e chave no `.env`) com **uma sessão (um número) por clínica**: Admin geral › clínica › WhatsApp liga a sessão, aponta o webhook e mostra o QR. O webhook é único; cada mensagem traz a sessão, que identifica a clínica.
-  *Sugestão:* manter um servidor para todas (mais simples, um lugar só para cuidar) e, só se algum cliente exigir, permitir no Admin geral um servidor próprio para aquela clínica, com endereço e chave criptografada.
-  Resposta:
+✅ Nada pendente.
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
@@ -111,6 +112,9 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q68 — Camadas:** ok — começar só pelo "Jeito da clínica"; o editor por segmento fica para depois. *(22/11 → D77)*
+- [x] **Q69 — Quem edita o "Jeito da clínica":** ok — o administrador da clínica (e o admin geral). *(22/11 → D78)*
+- [x] **Q60 — Servidor WAHA por clínica:** cada clínica pode ter servidor WAHA próprio, número e webhook exclusivo, cadastrados no Admin geral; sem servidor próprio, usa o da plataforma. *(22/11 → D76)*
 - [x] **Q65 — Quem baixa relatórios:** ok — só o administrador da clínica; cada download registrado. *(21/11 → D73)*
 - [x] **Q66 — Recall:** ok — 6 meses por padrão, ajustável de 3 a 24. *(21/11 → D74)*
 - [x] **Q67 — 1ª leva:** ok — recall, atendimentos, produção e faltas; os outros 3 numa parte B. *(21/11 → D75)*

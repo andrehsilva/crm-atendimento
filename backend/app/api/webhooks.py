@@ -52,3 +52,32 @@ def _atualizar_status(evento: dict) -> None:
         ).fetchone()
         if r:
             avisar(conn, r[0], "whatsapp", r[0])
+
+
+@router.post("/waha/{token}", summary="Webhook exclusivo de uma clínica (Etapa 16): segredo e sessão dela")
+async def webhook_da_clinica(token: str, request: Request, tarefas: BackgroundTasks):
+    from app.canais import conexao
+
+    corpo = await request.body()
+    with pool().connection() as conn:
+        achado = conexao.por_token(conn, token)
+    if not achado:
+        raise HTTPException(404, "webhook desconhecido")
+    _, sessao, segredo = achado
+    if not segredo or not waha.verificar_assinatura(corpo, request.headers.get("x-webhook-hmac"), segredo):
+        raise HTTPException(401, "assinatura inválida")
+    try:
+        evento = json.loads(corpo)
+    except ValueError as e:
+        raise HTTPException(400, "JSON inválido") from e
+    if evento.get("session") != sessao:  # nunca aceita a sessão de outra clínica neste endereço
+        return {"ok": True, "ignorada": True}
+    if evento.get("event") == "session.status":
+        _atualizar_status(evento)
+        return {"ok": True}
+    msg = waha.interpretar(evento)
+    if msg is None:
+        return {"ok": True, "ignorada": True}
+    tarefas.add_task(whatsapp.processar, msg)
+    return {"ok": True}
+
