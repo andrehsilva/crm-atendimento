@@ -88,3 +88,7 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D78 | ✅ Quem edita o "Jeito da clínica": o administrador da clínica (e o admin geral) | Q69, 22/11/2026 |
 | D79 | ✅ **Aba Configurações › Canais:** o administrador da clínica vê status e número do WhatsApp, mostra o QR code e reinicia a sessão para reconectar, e pode **pausar a Ísis no WhatsApp** (as mensagens continuam chegando no painel e vão para a equipe, sem aviso ao paciente; lembretes, confirmações e "1"/"PARAR" seguem normais). Servidor WAHA, sessão e webhook continuam só com o admin geral | Q70, 22/11/2026 |
 | D80 | ✅ Toda a equipe vê a aba Canais (status); só o administrador da clínica mexe | Q71, 22/11/2026 |
+| D81 | ✅ **Sino de notificações** com: aguardando atendimento humano · consulta marcada/remarcada/cancelada pela Ísis · paciente confirmou pelo lembrete · mensagem não enviada · WhatsApp desconectado · gasto da IA em 80%/100% | Q72, 22/11/2026 |
+| D82 | ✅ Notificações de **situação** ("aguardando humano", "WhatsApp desconectado") somem sozinhas quando resolvidas; as de **acontecimento** são marcadas como lidas por pessoa (uma a uma ou todas) | Q73, 22/11/2026 |
+| D83 | ✅ Chamar atenção: contador no sino, **som curto só para "aguardando humano"** e o número no título da aba do navegador | Q74, 22/11/2026 |
+| D84 | ✅ Toda ação que salva ou muda algo no painel mostra um aviso de confirmação no canto da tela (os erros já apareciam) | pedido do usuário, 22/11/2026 |

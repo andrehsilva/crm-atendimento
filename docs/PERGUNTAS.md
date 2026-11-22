@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 69 de 81 resolvidas (66 respondidas · 3 adiadas) — 22/11/2026.
+**Progresso:** 72 de 81 resolvidas (69 respondidas · 3 adiadas) — 22/11/2026.
 
 ---
 
@@ -83,12 +83,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## 🔔 Bloqueia a Etapa 19 (Notificações e confirmação de ação)
 
-- [ ] **Q72 — O que entra no sino?** Sugestão: conversa aguardando atendimento humano · consulta marcada, remarcada ou cancelada pela Ísis · paciente confirmou pelo lembrete · mensagem que não foi enviada · WhatsApp desconectado · gasto da IA em 80%/100%.
-  Resposta:
-- [ ] **Q73 — Quando a notificação some?** Sugestão: "aguardando humano" e "WhatsApp desconectado" somem sozinhos quando o problema é resolvido (alguém assumiu a conversa, reconectou); as demais cada pessoa marca como lida (ou "marcar todas como lidas").
-  Resposta:
-- [ ] **Q74 — Chamar atenção como?** Sugestão: contador no sino + som curto só para "aguardando humano"; o título da aba do navegador mostra o número, ex.: "(2) Ísis".
-  Resposta:
+✅ Nada pendente — Etapa 19 liberada.
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
@@ -121,6 +116,9 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q72 — O que entra no sino:** ok — aguardando atendimento humano · consulta marcada/remarcada/cancelada pela Ísis · paciente confirmou pelo lembrete · mensagem não enviada · WhatsApp desconectado · gasto da IA em 80%/100%. *(22/11 → D81)*
+- [x] **Q73 — Quando some:** ok — "aguardando humano" e "WhatsApp desconectado" somem sozinhos quando resolvidos; as demais cada pessoa marca como lida (ou todas). *(22/11 → D82)*
+- [x] **Q74 — Como chamar atenção:** ok — contador no sino, som curto só para "aguardando humano" e o número no título da aba. *(22/11 → D83)*
 - [x] **Q70 — Aba Canais, o que o admin da clínica faz:** ver status e número, mostrar o QR / reiniciar para reconectar e pausar a Ísis no WhatsApp. Servidor WAHA e webhook continuam só com o admin geral. *(22/11 → D79)*
 - [x] **Q71 — Quem vê a aba Canais:** toda a equipe vê o status; só o administrador da clínica mexe. *(22/11 → D80)*
 - [x] **Q68 — Camadas:** ok — começar só pelo "Jeito da clínica"; o editor por segmento fica para depois. *(22/11 → D77)*
