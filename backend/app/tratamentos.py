@@ -36,6 +36,9 @@ select t.*, s.name as procedimento, pr.name as profissional,
        (select count(*) from appointments a where a.treatment_id = t.id and a.status = any(%(ativos)s)
           and a.starts_at > now()) as marcadas,
        (select max(a.starts_at) from appointments a where a.treatment_id = t.id and a.status = 'realizada') as ultima_sessao,
+       (select p2.name from appointments a join professionals p2 on p2.id = a.professional_id
+         where a.treatment_id = t.id and a.status in ('realizada', 'agendada', 'confirmada')
+         order by a.starts_at desc limit 1) as profissional_das_sessoes,
        (select min(a.starts_at) from appointments a where a.treatment_id = t.id and a.status = any(%(ativos)s)
           and a.starts_at > now()) as proxima_sessao,
        (select a.starts_at from appointments a where a.treatment_id = t.id and a.status = 'faltou'

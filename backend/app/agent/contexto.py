@@ -179,7 +179,9 @@ def _tratamentos(conn, clinica: dict, paciente: dict, tz) -> str:
         return ""
     linhas = []
     for t in abertos:
-        prof = f" com {t['profissional']}" if t["profissional"] else ""
+        # sem profissional definido no tratamento, vale o das sessões (o mesmo de sempre)
+        quem = t["profissional"] or t["profissional_das_sessoes"]
+        prof = f" com {quem}" if quem else ""
         total = f" de {t['sessoes_previstas']}" if t["sessoes_previstas"] else ""
         cab = f"- **{t['procedimento']}**{prof}: {t['realizadas']}{total} sessões feitas"
         if t["proxima_sessao"]:

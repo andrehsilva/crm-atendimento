@@ -78,8 +78,8 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
                 {t.previsao && ` · previsão ${t.previsao.split('-').reverse().slice(0, 2).join('/')}`}</Selo>
               : <Selo cor="verde"><Play className="size-3" />Em andamento</Selo>}
           </div>
-          {t.orientacao && !compacto && (
-            <p className="mt-2 flex gap-1.5 text-xs text-muted"><Sparkles className="mt-0.5 size-3 shrink-0" />Para a assistente: {t.orientacao}</p>
+          {t.orientacao && (
+            <p className="mt-2 flex gap-1.5 text-xs text-muted"><Sparkles className="mt-0.5 size-3 shrink-0" />Recado para a assistente: {t.orientacao}</p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             {t.status === 'aguardando'
@@ -105,7 +105,7 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
       )}
 
       <ModalNovo aberto={novo} onFechar={() => setNovo(false)} pacienteId={pacienteId}
-        procedimentos={cadastros.procedimentos} profissionais={cadastros.profissionais}
+        procedimentos={cadastros.procedimentos}
         onFeito={(r) => { setNovo(false); depois(r, 'Tratamento aberto.') }} />
       <ModalEspera t={espera} onFechar={() => setEspera(null)} onFeito={(r) => { setEspera(null); depois(r, 'Tratamento em espera: a assistente não marca a próxima sessão.') }} />
       <ModalRetomar t={retomar} onFechar={() => setRetomar(null)} onFeito={(r, avisou) => {
@@ -118,56 +118,43 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
   )
 }
 
-function ModalNovo({ aberto, onFechar, pacienteId, procedimentos, profissionais, onFeito }: {
+function ModalNovo({ aberto, onFechar, pacienteId, procedimentos, onFeito }: {
   aberto: boolean; onFechar: () => void; pacienteId: string
-  procedimentos: { id: string; name: string }[]; profissionais: { id: string; name: string; service_ids: string[] }[]
+  procedimentos: { id: string; name: string }[]
   onFeito: (r: TratamentosPaciente) => void
 }) {
   const { clinica } = useClinica()
   const aviso = useAviso()
-  const [f, setF] = useState({ service_id: '', professional_id: '', sessoes: '', intervalo: '7', orientacao: '' })
-  const profs = profissionais.filter((p) => !f.service_id || p.service_ids.includes(f.service_id))
+  const vazio = { service_id: '', sessoes: '', orientacao: '' }
+  const [f, setF] = useState(vazio)
   const criar = useMutation({
     mutationFn: () => api.post<TratamentosPaciente>(`/clinics/${clinica.id}/patients/${pacienteId}/tratamentos`, {
-      service_id: f.service_id, professional_id: f.professional_id || null,
-      sessoes_previstas: f.sessoes ? Number(f.sessoes) : null, intervalo_dias: f.intervalo ? Number(f.intervalo) : null,
-      orientacao: f.orientacao.trim() || null,
+      service_id: f.service_id, sessoes_previstas: f.sessoes ? Number(f.sessoes) : null, orientacao: f.orientacao.trim() || null,
     }),
-    onSuccess: (r) => { setF({ service_id: '', professional_id: '', sessoes: '', intervalo: '7', orientacao: '' }); onFeito(r) },
+    onSuccess: (r) => { setF(vazio); onFeito(r) },
     onError: aviso.erro,
   })
   const enviar = (e: FormEvent) => { e.preventDefault(); if (f.service_id) criar.mutate() }
   return (
     <Modal titulo="Abrir tratamento" aberto={aberto} onFechar={onFechar}>
-      <form onSubmit={enviar} className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={enviar} className="grid gap-4">
         <Campo rotulo="Procedimento">
-          <Seletor value={f.service_id} onChange={(e) => setF({ ...f, service_id: e.target.value, professional_id: '' })} required>
+          <Seletor value={f.service_id} onChange={(e) => setF({ ...f, service_id: e.target.value })} required>
             <option value="">Escolha…</option>
             {procedimentos.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </Seletor>
         </Campo>
-        <Campo rotulo="Profissional (opcional)">
-          <Seletor value={f.professional_id} onChange={(e) => setF({ ...f, professional_id: e.target.value })}>
-            <option value="">Qualquer um</option>
-            {profs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Seletor>
+        <Campo rotulo="Quantas sessões (opcional)">
+          <Entrada type="number" min={1} max={100} value={f.sessoes} placeholder="Ex.: 4" onChange={(e) => setF({ ...f, sessoes: e.target.value })} />
         </Campo>
-        <Campo rotulo="Sessões previstas (opcional)" ajuda="Ex.: 4">
-          <Entrada type="number" min={1} max={100} value={f.sessoes} onChange={(e) => setF({ ...f, sessoes: e.target.value })} />
+        <Campo rotulo="Recado para a assistente (opcional)" ajuda={`${f.orientacao.length}/300`}>
+          <textarea value={f.orientacao} maxLength={300} rows={2} placeholder="Ex.: não marcar antes de 10 dias da extração"
+            onChange={(e) => setF({ ...f, orientacao: e.target.value })}
+            className="rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-primary" />
         </Campo>
-        <Campo rotulo="Intervalo entre sessões (dias)" ajuda="7 = uma por semana">
-          <Entrada type="number" min={1} max={365} value={f.intervalo} onChange={(e) => setF({ ...f, intervalo: e.target.value })} />
-        </Campo>
-        <div className="sm:col-span-2">
-          <Campo rotulo="Orientação para a assistente (opcional)" ajuda={`${f.orientacao.length}/300 · Ex.: "não marcar antes de 10 dias da extração"`}>
-            <textarea value={f.orientacao} maxLength={300} rows={2} onChange={(e) => setF({ ...f, orientacao: e.target.value })}
-              className="rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-primary" />
-          </Campo>
-        </div>
-        <p className="text-xs text-muted sm:col-span-2">As consultas já marcadas desse procedimento passam a fazer parte do tratamento. Sessões de tratamento não contam no limite de consultas.</p>
-        <div className="flex justify-end gap-2 sm:col-span-2">
+        <div className="flex justify-end gap-2">
           <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
-          <Botao type="submit" disabled={!f.service_id || criar.isPending}>Abrir tratamento</Botao>
+          <Botao type="submit" disabled={!f.service_id || criar.isPending}>Abrir</Botao>
         </div>
       </form>
     </Modal>

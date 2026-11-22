@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, Check, CheckCheck, Hand, MessageSquareOff, Send } from 'lucide-react'
+import { Bot, Check, CheckCheck, Hand, MessageSquareOff, Send, Stethoscope } from 'lucide-react'
 import { PainelTratamentos, Tags } from './Tratamentos'
 import { api, type CardCrm, type MensagemChat, type TratamentosPaciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
@@ -36,6 +36,7 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
     queryFn: () => api.get<TratamentosPaciente>(`/clinics/${clinica.id}/patients/${card!.id}/tratamentos`),
     enabled: !!card,
   })
+  const [verTratamento, setVerTratamento] = useState(false)
   const abertos = (trat.data?.tratamentos ?? []).filter((t) => t.status === 'em_andamento' || t.status === 'aguardando')
   const base = conversa ? `/clinics/${clinica.id}/conversations/${conversa.id}` : ''
 
@@ -68,18 +69,22 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
           {conversa && <Selo>{conversa.channel === 'web' ? 'Chat web' : 'WhatsApp'}</Selo>}
           {conversa && (manual ? <Selo cor="ambar"><Hand className="size-3" />Atendimento manual</Selo> : <Selo><Bot className="size-3" />{ia} respondendo</Selo>)}
         </div>
-        {conversa && (manual
-          ? <Botao variante="secundario" disabled={devolver.isPending} onClick={() => devolver.mutate()}><Bot className="size-4" />Devolver para {ia}</Botao>
-          : <Botao variante="secundario" disabled={assumir.isPending} onClick={() => assumir.mutate()}><Hand className="size-4" />Assumir conversa</Botao>)}
+        <div className="flex flex-wrap gap-2">
+          {/* Etapa 21: tratamento abre numa janela, como o botão de atendimento */}
+          <Botao variante="secundario" onClick={() => setVerTratamento(true)}>
+            <Stethoscope className="size-4" />Tratamento
+            {abertos.length > 0 && <span className="rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-contrast">{abertos.length}</span>}
+          </Botao>
+          {conversa && (manual
+            ? <Botao variante="secundario" disabled={devolver.isPending} onClick={() => devolver.mutate()}><Bot className="size-4" />Devolver para {ia}</Botao>
+            : <Botao variante="secundario" disabled={assumir.isPending} onClick={() => assumir.mutate()}><Hand className="size-4" />Assumir conversa</Botao>)}
+        </div>
       </div>
 
       <Tags tags={trat.data?.tags} className="mb-3 flex" />
-      <details className="mb-3 rounded-2xl border border-line px-4 py-2" open={abertos.length > 0 || undefined}>
-        <summary className="cursor-pointer py-1 text-sm text-muted">
-          Tratamentos{abertos.length ? ` (${abertos.length} aberto${abertos.length > 1 ? 's' : ''})` : ''}
-        </summary>
-        <div className="pb-2 pt-2"><PainelTratamentos pacienteId={card.id} compacto /></div>
-      </details>
+      <Modal titulo={`Tratamento · ${card.name ?? telefone(card.phone)}`} aberto={verTratamento} onFechar={() => setVerTratamento(false)} largura="max-w-xl">
+        <PainelTratamentos pacienteId={card.id} />
+      </Modal>
 
       <div className="h-[46vh] space-y-2 overflow-y-auto rounded-2xl bg-surface-muted p-3">
         {!q.data?.mensagens.length && <Vazio icone={<MessageSquareOff className="size-8" />} texto={q.isLoading ? 'Carregando…' : `Este ${pal.cliente} ainda não conversou.`} />}
