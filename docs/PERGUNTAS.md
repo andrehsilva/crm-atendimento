@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 61 de 74 resolvidas (58 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 64 de 74 resolvidas (61 respondidas · 3 adiadas) — 21/11/2026.
 
 ---
 
@@ -71,15 +71,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## 🟢 Bloqueia a Etapa 15 (Relatórios em Excel)
 
-- [x] **Q65 — Quem pode baixar relatórios?**
-  *Sugestão:* só o administrador da clínica, com cada download registrado. Lista de pacientes é dado pessoal (LGPD).
-  Resposta:
-- [x] **Q66 — Recall: depois de quantos meses sem vir?**
-  *Sugestão:* 6 meses por padrão (intervalo da limpeza), ajustável na tela de 3 a 24.
-  Resposta:
-- [x] **Q67 — A 1ª leva:** os 7 relatórios de uma vez ou começar pelos 4 primeiros?
-  *Sugestão:* começar por recall, atendimentos, produção e faltas. Cadastro, aniversariantes e desempenho da assistente vêm numa parte B.
-  Resposta:
+✅ Nada pendente — Etapa 15 liberada.
 
 ## ⚪ WhatsApp por clínica
 
@@ -119,6 +111,9 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q65 — Quem baixa relatórios:** ok — só o administrador da clínica; cada download registrado. *(21/11 → D73)*
+- [x] **Q66 — Recall:** ok — 6 meses por padrão, ajustável de 3 a 24. *(21/11 → D74)*
+- [x] **Q67 — 1ª leva:** ok — recall, atendimentos, produção e faltas; os outros 3 numa parte B. *(21/11 → D75)*
 - [x] **Q61 — Para quem vai a campanha:** ok — "todos os clientes", "atendidos nos últimos 12 meses" ou "com atendimento marcado"; nunca para quem pediu PARAR. *(21/11 → D69)*
 - [x] **Q62 — Intervalo entre envios:** ok — só aniversário e campanhas, 20 a 45 s aleatórios entre mensagens da mesma clínica; conversa, confirmação, remarcação e lembrete como hoje. *(21/11 → D70)*
 - [x] **Q63 — Modelos prontos:** ok — Natal, Ano novo e férias, editáveis, com {nome} e {clinica}. *(21/11 → D71)*

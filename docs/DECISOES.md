@@ -80,3 +80,6 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D70 | ✅ **Envio espaçado:** só mensagens em massa (aniversário e campanhas) — 20 a 45 s aleatórios entre uma e outra da mesma clínica. Conversa, confirmação, remarcação e lembrete seguem como hoje e passam na frente | Q62, 21/11/2026 |
 | D71 | ✅ **Modelos prontos** de Natal, Ano novo e férias, editáveis; o texto aceita {nome} (primeiro nome) e {clinica} | Q63, 21/11/2026 |
 | D72 | ✅ Só o **administrador da clínica** cria e dispara campanha; antes de confirmar, a tela mostra quantas pessoas recebem e quanto tempo o envio leva | Q64, 21/11/2026 |
+| D73 | ✅ Relatórios em Excel: só o **administrador da clínica** baixa; cada download fica registrado (LGPD) | Q65, 21/11/2026 |
+| D74 | ✅ Recall: paciente sem vir há **6 meses** (ajustável de 3 a 24) e sem nada marcado | Q66, 21/11/2026 |
+| D75 | ✅ 1ª leva de relatórios: recall, atendimentos, produção e faltas (15A); cadastro, aniversariantes e desempenho da assistente na 15B | Q67, 21/11/2026 |
