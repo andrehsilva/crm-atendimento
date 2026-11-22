@@ -101,6 +101,20 @@ def marcar(clinic_id: UUID, body: NovaConsulta, conn: Conn = Depends(get_conn)):
     )
 
 
+class NovaSerie(NovaConsulta):
+    sessoes: int = Field(ge=2, le=20)
+    intervalo_dias: int = Field(7, ge=1, le=60)
+
+
+@router.post("/clinics/{clinic_id}/appointments/serie", status_code=201, summary="Marcar série de sessões (21B, recepção)")
+def marcar_serie(clinic_id: UUID, body: NovaSerie, conn: Conn = Depends(get_conn)):
+    """RN-TR-07: marca o que couber; devolve também as datas que não couberam, com o motivo."""
+    return servico.marcar_serie(
+        conn, clinic_id, telefone=body.telefone, nome=body.nome, professional_id=body.professional_id,
+        service_id=body.service_id, inicio=body.inicio, sessoes=body.sessoes, intervalo_dias=body.intervalo_dias,
+    )
+
+
 class Remarcacao(BaseModel):
     novo_inicio: datetime
     professional_id: UUID | None = None

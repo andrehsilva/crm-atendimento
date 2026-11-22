@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2, Repeat, XCircle } from 'lucide-react'
 import { api, type Consulta, type Slot } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
 import { diaLegivel, hora, partes } from '../../lib/formato'
@@ -8,6 +9,9 @@ import { Botao, Campo, Entrada, Modal, Seletor } from '../ui'
 import { useTermos } from '../../lib/termos'
 
 export type Previa = { telefone?: string; nome?: string; dia?: string; hora?: string; professionalId?: string }
+
+/** 21B (RN-TR-07): resultado da série — o que foi marcado e o que não coube */
+type ResultadoSerie = { marcadas: Consulta[]; falhas: { inicio: string; codigo: string; motivo: string }[]; tratamento_aberto: boolean }
 
 /** Marcar consulta pela recepção. Mostra só horários livres de verdade (o backend valida tudo de novo). */
 export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolean; onFechar: () => void; previa?: Previa }) {
@@ -20,6 +24,11 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
   const [prof, setProf] = useState('')
   const [dia, setDia] = useState('')
   const [escolhido, setEscolhido] = useState<Slot | null>(null)
+  const [repetir, setRepetir] = useState(false)
+  const [sessoes, setSessoes] = useState('4')
+  const [intervalo, setIntervalo] = useState('7')
+  const [resultado, setResultado] = useState<ResultadoSerie | null>(null)
+  const qc = useQueryClient()
 
   useEffect(() => {
     if (!aberto) return
@@ -29,6 +38,8 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
     setProf(previa?.professionalId ?? '')
     setDia(previa?.dia ?? partes(new Date(), clinica.timezone).ymd)
     setEscolhido(null)
+    setRepetir(false)
+    setResultado(null)
   }, [aberto, previa, cadastros, clinica.timezone])
 
   const profsDoServico = useMemo(
@@ -65,6 +76,53 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
     },
     onError: aviso.erro,
   })
+
+  const serie = useMutation({
+    mutationFn: () =>
+      api.post<ResultadoSerie>(`/clinics/${clinica.id}/appointments/serie`, {
+        telefone, nome: nome || null, professional_id: escolhido!.professional_id, service_id: servico, inicio: escolhido!.starts_at,
+        sessoes: Number(sessoes), intervalo_dias: Number(intervalo),
+      }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['tratamentos'] })
+      if (r.falhas.length === 0) {
+        aviso.ok(`${r.marcadas.length} sessões marcadas. O paciente recebe uma confirmação só, com todas as datas.`)
+        onFechar()
+      } else {
+        aviso.ok(`${r.marcadas.length} de ${r.marcadas.length + r.falhas.length} sessões marcadas.`)
+        setResultado(r) // mostra quais datas não couberam
+      }
+    },
+    onError: aviso.erro,
+  })
+  const tz = clinica.timezone
+  const nSessoes = Number(sessoes)
+  const serieValida = nSessoes >= 2 && nSessoes <= 20 && Number(intervalo) >= 1 && Number(intervalo) <= 60
+
+  if (resultado) {
+    return (
+      <Modal titulo="Resultado da série" aberto={aberto} onFechar={onFechar} largura="max-w-lg">
+        <ul className="space-y-2 text-sm">
+          {[...resultado.marcadas.map((c) => ({ quando: c.starts_at, ok: true, motivo: '' })),
+            ...resultado.falhas.map((f) => ({ quando: f.inicio, ok: false, motivo: f.motivo }))]
+            .sort((a, b) => a.quando.localeCompare(b.quando))
+            .map((x) => (
+              <li key={x.quando} className="flex items-start gap-2">
+                {x.ok ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[#1f7a43]" /> : <XCircle className="mt-0.5 size-4 shrink-0 text-red-600" />}
+                <span>
+                  <span className="font-medium">{diaLegivel(partes(x.quando, tz).ymd)} às {hora(x.quando, tz)}</span>
+                  {!x.ok && <span className="block text-xs text-muted">Não coube: {x.motivo}</span>}
+                </span>
+              </li>
+            ))}
+        </ul>
+        <p className="mt-4 rounded-2xl bg-surface-muted px-4 py-3 text-sm text-muted">
+          As datas que não couberam podem ser marcadas uma a uma na agenda. {resultado.tratamento_aberto && 'Um tratamento foi aberto para este paciente.'}
+        </p>
+        <div className="mt-5 flex justify-end"><Botao onClick={onFechar}>Fechar</Botao></div>
+      </Modal>
+    )
+  }
 
   return (
     <Modal titulo="Marcar consulta" aberto={aberto} onFechar={onFechar} largura="max-w-2xl">
@@ -120,11 +178,43 @@ export function ModalNovaConsulta({ aberto, onFechar, previa }: { aberto: boolea
         {slots.data?.some((s) => s.preferido) && <p className="mt-2 text-xs text-muted">★ {pal.profissional} de referência do {pal.cliente}</p>}
       </div>
 
+      <div className="mt-5 rounded-2xl border border-line p-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={repetir} onChange={(e) => setRepetir(e.target.checked)} />
+          <Repeat className="size-4 text-primary" />Repetir (série de sessões)
+        </label>
+        {repetir && (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Campo rotulo="Quantas sessões" ajuda="De 2 a 20, contando esta">
+              <Entrada type="number" min={2} max={20} value={sessoes} onChange={(e) => setSessoes(e.target.value)} />
+            </Campo>
+            <Campo rotulo="A cada quantos dias" ajuda="7 = mesmo dia da semana e horário">
+              <Entrada type="number" min={1} max={60} value={intervalo} onChange={(e) => setIntervalo(e.target.value)} />
+            </Campo>
+            <p className="text-xs text-muted sm:col-span-2">
+              {escolhido && serieValida
+                ? `Datas: ${Array.from({ length: nSessoes }, (_, i) => {
+                    const d = new Date(new Date(escolhido.starts_at).getTime() + i * Number(intervalo) * 86_400_000)
+                    return partes(d.toISOString(), tz).ymd.split('-').reverse().slice(0, 2).join('/')
+                  }).join(', ')}. `
+                : 'Escolha o primeiro horário abaixo. '}
+              Cada data passa pelas regras da agenda; as que não couberem aparecem no fim. As sessões ficam num tratamento e não contam no limite de consultas. O paciente recebe uma confirmação só, com todas as datas.
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="mt-6 flex justify-end gap-2">
         <Botao variante="fantasma" onClick={onFechar}>Cancelar</Botao>
-        <Botao disabled={!escolhido || !telefone || marcar.isPending} onClick={() => marcar.mutate()}>
-          {marcar.isPending ? 'Marcando…' : 'Marcar consulta'}
-        </Botao>
+        {repetir ? (
+          <Botao disabled={!escolhido || !telefone || !serieValida || serie.isPending} onClick={() => serie.mutate()}>
+            {serie.isPending ? 'Marcando…' : `Marcar ${serieValida ? nSessoes : ''} sessões`}
+          </Botao>
+        ) : (
+          <Botao disabled={!escolhido || !telefone || marcar.isPending} onClick={() => marcar.mutate()}>
+            {marcar.isPending ? 'Marcando…' : 'Marcar consulta'}
+          </Botao>
+        )}
       </div>
     </Modal>
   )

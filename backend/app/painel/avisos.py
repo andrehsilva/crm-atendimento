@@ -42,6 +42,29 @@ def palavras(clinica: dict, consulta: dict) -> dict:
             "linha": linha}
 
 
+def enfileirar_serie(conn, clinica: dict, consultas: list[dict], agora: datetime | None = None) -> None:
+    """21B (RN-TR-07): série marcada de uma vez → UMA confirmação com todas as datas (não 4 mensagens seguidas).
+    Cada sessão continua com o seu lembrete no dia anterior."""
+    if not consultas:
+        return
+    from app.mensagens.lembretes import agendar_lembrete  # import aqui para evitar import circular
+
+    tz = clinica["tz"]
+    c0 = consultas[0]
+    t = segmentos.termos(clinica.get("settings") or {})
+    suas = "Suas" if t["genero"] == "f" else "Seus"
+    datas = "\n".join(f"📅 {quando(c['starts_at'], tz)}" for c in consultas)
+    texto = (f"Olá, {primeiro_nome(c0['paciente'])}! {suas} {len(consultas)} {t['atendimentos']} na {clinica['name']} "
+             f"estão marcad{t['o']}s ✅\n\n{datas}\n{palavras(clinica, c0)['linha']}\n📍 {clinica.get('address') or ''}\n\n"
+             "Precisa remarcar ou cancelar alguma? É só me chamar por aqui.")
+    conn.execute(
+        "insert into outbound_messages (clinic_id, patient_id, appointment_id, kind, body) values (%s, %s, %s, 'confirmacao', %s)",
+        (clinica["id"], c0["patient_id"], c0["id"], texto))
+    for c in consultas:
+        agendar_lembrete(conn, clinica, c, agora or datetime.now(UTC))
+    avisar(conn, clinica["id"], "mensagens", c0["id"])
+
+
 def quando(dt: datetime, tz: ZoneInfo) -> str:
     local = dt.astimezone(tz)
     return f"{DIAS[local.weekday()]}, {local:%d/%m} às {local:%H:%M}"

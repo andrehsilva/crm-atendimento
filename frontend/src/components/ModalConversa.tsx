@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, Check, CheckCheck, Hand, MessageSquareOff, Send } from 'lucide-react'
 import { PainelTratamentos, Tags } from './Tratamentos'
 import { api, type CardCrm, type MensagemChat, type TratamentosPaciente } from '../lib/api'
@@ -46,9 +46,12 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
     setTexto('')
   }, [card])
 
-  const assumir = useMutation({ mutationFn: () => api.post(`${base}/takeover`), onSuccess: () => aviso.ok(`Você assumiu a conversa. A assistente ${ia} está pausada.`), onError: aviso.erro })
-  const devolver = useMutation({ mutationFn: () => api.post(`${base}/release`), onSuccess: () => aviso.ok(`Conversa devolvida para a assistente ${ia}.`), onError: aviso.erro })
-  const responder = useMutation({ mutationFn: (t: string) => api.post(`${base}/reply`, { texto: t }), onSuccess: () => { setTexto(''); aviso.ok('Mensagem enviada.') }, onError: aviso.erro })
+  // Atualiza na hora esta janela e o que depende do modo de atendimento (não espera o aviso em tempo real)
+  const qc = useQueryClient()
+  const recarregar = () => ['chat', 'kanban', 'dashboard', 'notificacoes'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }))
+  const assumir = useMutation({ mutationFn: () => api.post(`${base}/takeover`), onSuccess: () => { recarregar(); aviso.ok(`Você assumiu a conversa. A assistente ${ia} está pausada.`) }, onError: aviso.erro })
+  const devolver = useMutation({ mutationFn: () => api.post(`${base}/release`), onSuccess: () => { recarregar(); aviso.ok(`Conversa devolvida para a assistente ${ia}.`) }, onError: aviso.erro })
+  const responder = useMutation({ mutationFn: (t: string) => api.post(`${base}/reply`, { texto: t }), onSuccess: () => { setTexto(''); recarregar(); aviso.ok('Mensagem enviada.') }, onError: aviso.erro })
 
   function enviar(e: FormEvent) {
     e.preventDefault()

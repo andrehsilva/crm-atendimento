@@ -252,6 +252,7 @@ def marcar(
     origem: str = "manual",
     agora: datetime | None = None,
     _remarcando: UUID | None = None,
+    avisar_paciente: bool = True,  # False = quem chama manda o aviso (série: uma confirmação só)
 ) -> dict:
     clinica = carregar_clinica(conn, clinic_id)
     tz = clinica["tz"]
@@ -306,8 +307,46 @@ def marcar(
         detalhe = detalhar(conn, clinic_id, consulta["id"])
         if not _remarcando:  # na remarcação, quem avisa é remarcar()
             crm.registrar(conn, clinic_id, paciente["id"], "consulta_agendada", ator, "agendado")
-            avisos.enfileirar(conn, clinica, detalhe, "confirmacao", agora=agora)
+            if avisar_paciente:
+                avisos.enfileirar(conn, clinica, detalhe, "confirmacao", agora=agora)
     return detalhe
+
+
+SERIE_MAX = 20
+
+
+def marcar_serie(conn, clinic_id: UUID, *, telefone: str, nome: str | None, professional_id: UUID, service_id: UUID,
+                 inicio: datetime, sessoes: int, intervalo_dias: int = 7, agora: datetime | None = None) -> dict:
+    """21B (RN-TR-07, D89): a recepção marca N sessões no mesmo dia da semana/horário. Cada data passa por TODAS as
+    regras de agenda; as que não cabem voltam com o motivo e as outras ficam marcadas. Sem tratamento aberto desse
+    procedimento, a série abre um (assim as sessões não esbarram no limite de consultas, RN-TR-08)."""
+    if not 2 <= sessoes <= SERIE_MAX:
+        raise AgendaError("DADOS_INVALIDOS", f"Uma série tem de 2 a {SERIE_MAX} sessões.")
+    if not 1 <= intervalo_dias <= 60:
+        raise AgendaError("DADOS_INVALIDOS", "O intervalo entre sessões vai de 1 a 60 dias.")
+    clinica = carregar_clinica(conn, clinic_id)
+    tz = clinica["tz"]
+    agora = agora or datetime.now(tz)
+    inicio = _como_aware(inicio, tz)
+    paciente = obter_ou_criar_paciente(conn, clinic_id, telefone, nome, "manual")
+    novo_tratamento = None
+    if not tratamentos.aberto(conn, clinic_id, paciente["id"], service_id):
+        novo_tratamento = tratamentos.criar(conn, clinic_id, paciente["id"], service_id=service_id,
+                                            professional_id=professional_id, sessoes_previstas=sessoes,
+                                            intervalo_dias=intervalo_dias, orientacao=None)
+    marcadas, falhas = [], []
+    for i in range(sessoes):
+        quando_ = inicio + timedelta(days=intervalo_dias * i)
+        try:
+            marcadas.append(marcar(conn, clinic_id, telefone=telefone, nome=nome, professional_id=professional_id,
+                                   service_id=service_id, inicio=quando_, ator="recepcao", agora=agora,
+                                   avisar_paciente=False))
+        except AgendaError as e:  # cada sessão é independente: uma ocupada não derruba as outras
+            falhas.append({"inicio": quando_, "codigo": e.codigo, "motivo": e.mensagem})
+    if novo_tratamento and not marcadas:  # nada coube: não deixa um tratamento vazio para trás
+        conn.execute("delete from treatments where id = %s", (novo_tratamento["id"],))
+    avisos.enfileirar_serie(conn, clinica, marcadas, agora)
+    return {"marcadas": marcadas, "falhas": falhas, "tratamento_aberto": bool(novo_tratamento and marcadas)}
 
 
 def _consulta_do_paciente(conn, clinic_id, appointment_id, telefone: str | None, ator: Ator) -> dict:
