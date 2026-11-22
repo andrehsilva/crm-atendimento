@@ -227,10 +227,14 @@ De manhã (horário ajustável), o profissional recebe no WhatsApp pessoal a gra
 - A Ísis, a série, a agenda e o resumo do dia já respeitam; a Ísis passa a saber os dias de cada profissional.
 - Junto: sino lembra de registrar presença quando passa o horário da consulta (RN-PN-13).
 
+## Etapa 25 — Retorno e pós-consulta automáticos — ⏳ esperando respostas (Q89, Q91, Q92)
+- **Pós-consulta:** depois de "Compareceu", mensagem "como você está?" (D100).
+- **Retorno:** na data de voltar ("volta em" do tratamento concluído ou recall), convite para marcar; a Ísis conduz.
+
 ---
 
 ## Depois da 1ª versão (backlog)
-- Mensagens programadas (ex.: férias coletivas) e automações (retorno, pós-consulta) — D24.
+- Mensagens programadas (ex.: férias coletivas) — D24. (Retorno e pós-consulta: Etapa 25.)
 - Tags de cliente: novo · recorrente · em tratamento → "volta em X tempo" — D20.
 - Forma de captar a data de nascimento — Q21.
 - Mais indicadores no Dashboard — Q19.
