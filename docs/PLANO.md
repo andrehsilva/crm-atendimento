@@ -147,20 +147,20 @@ Pedido do usuário (20/11/2026): muita gente escreve em várias mensagens curtas
 - **13A — Mensagens picadas e mídia:** ✅ feito e testado (20/11/2026; D66, D68). Áudio, por ora, recebe o pedido para escrever.
 - **13B — Áudio transcrito:** ✅ feito e testado (21/11/2026; D67). Precisa de `TRANSCRICAO_API_KEY` no `backend/.env`.
 
-## Etapa 14 — Mensagens de campanha editáveis e envio espaçado — 🔨 em andamento (D69–D72)
+## Etapa 14 — Mensagens de campanha editáveis e envio espaçado ✅ (21/11/2026)
 Pedido do usuário (21/11/2026): além do aniversário (fixo), mensagens que a clínica escreve e agenda: Natal, Ano novo,
 aviso de férias… E nunca mandar muitas de uma vez: mesmo no mesmo dia, um intervalo entre um envio e outro, para não
 bloquear o número.
 - **Campanhas:** texto editável com {nome} e {clinica}, data/hora de envio, para quem (todos os clientes, só os ativos…), prévia e cancelamento.
 - **Envio espaçado:** intervalo aleatório só nas mensagens em massa (aniversário e campanhas); respostas da conversa saem na hora. Valem também os limites de hoje (20/min, 300/dia, RN-DP-07) e a janela de silêncio.
 - **14A — Campanhas e envio espaçado:** ✅ feito e testado (21/11/2026; D69–D72). Configurações › Aniversário e campanhas (junto do aniversário): modelos (Natal, Ano novo, férias), {nome}/{clinica}, público com contagem e tempo estimado, data de início, andamento e cancelar.
-- **14B — Tela Mensagens reorganizada** 🔨 em andamento (pedido de 21/11/2026, "está confusa"):
+- **14B — Tela Mensagens reorganizada** ✅ feito e testado (21/11/2026) (pedido de 21/11/2026, "está confusa"):
   - abas por andamento ("Na fila", "Enviadas", "Não enviadas") com contagem;
   - uma linha por mensagem (tipo, cliente, quando, situação), com o texto inteiro ao clicar;
   - campanhas numa área própria;
   - o "Relógio de teste" recolhido num canto e só em desenvolvimento.
 
-## Etapa 15 — Relatórios em Excel — ⏳ liberada, depois da 14B (D73–D75)
+## Etapa 15 — Relatórios em Excel — 🔨 em andamento (D73–D75)
 Tela "Relatórios" com período, profissional e o botão "Baixar Excel" (.xlsx feito no servidor, com cabeçalho fixo, filtro e R$).
 Relatórios propostos:
 1. **Pacientes para chamar de volta (recall):** sem vir há N meses e sem nada marcado.
