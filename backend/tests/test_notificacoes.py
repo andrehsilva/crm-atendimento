@@ -104,3 +104,22 @@ def test_rota_so_mostra_a_propria_clinica(cliente, conn, clinica, outra_clinica)
     r = rec_a.get(f"/api/clinics/{clinica.id}/notificacoes").json()
     assert r["contador"] == 1
     assert rec_a.post(f"/api/clinics/{clinica.id}/notificacoes/lidas", json={}).json()["contador"] == 0
+
+
+def test_registrar_presenca_depois_do_horario(conn, clinica):
+    """Consulta que já terminou e ninguém marcou Compareceu/Faltou vira lembrete no sino; some quando marcam."""
+    p = S.obter_ou_criar_paciente(conn, clinica.id, TEL, "João Pereira", "manual")
+    a = conn.execute(
+        """insert into appointments (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at, status)
+           values (%s, %s, %s, %s, %s, %s, 'confirmada') returning id""",
+        (clinica.id, p["id"], clinica.prof_a, clinica.servico, as_(19, 14), as_(19, 15))).fetchone()[0]
+    u = uuid4()
+    r = N.listar(conn, clinica.id, u, agora=AGORA)
+    item = next(i for i in r["itens"] if i["tipo"] == "presenca")
+    assert item["titulo"] == "Registrar presença: João Pereira" and item["situacao"] and item["dia"] == "2026-11-19"
+    assert item["consulta_id"] == a and r["contador"] == 1
+    N.marcar_lidas(conn, clinica.id, u, [item["chave"]])
+    assert N.listar(conn, clinica.id, u, agora=AGORA)["contador"] == 1  # não some marcando como lida
+    assert "presenca" not in _tipos(N.listar(conn, clinica.id, u, agora=as_(19, 14, 30)))  # ainda não terminou
+    conn.execute("update appointments set status = 'realizada' where id = %s", (a,))
+    assert "presenca" not in _tipos(N.listar(conn, clinica.id, u, agora=AGORA))  # registrou: sumiu

@@ -21,7 +21,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 
 | Código | Regra | Onde | Status |
 |---|---|---|---|
-| RN-AG-01 | Só se marca dentro do **horário de funcionamento da clínica** (por dia da semana, tela "Horários de Funcionamento") e do expediente do profissional (se tiver exceção), fora de pausas, feriados e bloqueios. Dentistas herdam o horário da clínica, com exceções; pausas por dia. | Código | ✅ |
+| RN-AG-01 | Só se marca dentro do **horário de funcionamento da clínica** (por dia da semana, tela "Horários de Funcionamento") e do expediente do profissional (se tiver exceção), fora de pausas, feriados e bloqueios. Dentistas herdam o horário da clínica ou têm **horário próprio** (Configurações › Profissionais › Horário, D99: dias e até 2 faixas por dia, sempre dentro do horário da clínica); pausas por dia. Mudar o horário vale para marcações novas: as já marcadas fora dele continuam e são listadas antes de salvar. | Código | ✅ |
 | RN-AG-15 | Escolha do dentista: se a clínica tem mais de um dentista que faz o procedimento, a Ísis **sempre pergunta** com quem (ou oferece "tanto faz"). Depois da 1ª consulta realizada, o dentista vira o **dentista de referência** do paciente e é sugerido primeiro (paciente pode trocar). | Código + Prompt | ✅ |
 | RN-AG-14 | Procedimento desligado não é oferecido pela Ísis. Procedimento marcado como "só humano" (ex.: urgência) → Ísis encaminha para a recepção. | Código + Config | 🟡 |
 | RN-AG-02 | Um profissional não pode ter duas consultas sobrepostas (restrição no banco). | Código | 🟡 |
@@ -84,7 +84,8 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-PN-08 | "Parado há Xh" = tempo desde a última mensagem ou mudança de etapa; fica vermelho acima de **24h** (config). | Código + Config | 🟡 |
 | RN-PN-09 | Etapas movem sozinhas: 1ª mensagem → Novo Contato; consulta marcada → Agendados; confirmada → Confirmado; cancelada → Cancelados. Remarcar volta para Agendados. | Código | 🟡 |
 | RN-PN-10 | **Sino de notificações** (D81): conversa aguardando atendimento humano · WhatsApp desconectado · consulta marcada, remarcada ou cancelada **pela Ísis** · paciente confirmou · mensagem automática ou resposta que não saiu · gasto da IA em 80%/100%. Etapa 21: também paciente perguntou do tratamento aguardando · previsão vencida · faltou a uma sessão de tratamento. Acontecimentos dos últimos 7 dias. Nada é gravado como notificação: tudo sai do histórico que o sistema já tem. | Código | ✅ |
-| RN-PN-11 | Situações ("aguardando humano", "WhatsApp desconectado") **somem sozinhas** quando resolvidas e não se marcam como lidas; o resto cada pessoa marca como lida, uma a uma ou todas (D82). Contador = situações abertas + não lidas. | Código | ✅ |
+| RN-PN-13 | **Registrar presença:** consulta que já terminou (até 30 dias) e continua agendada/confirmada vira situação no sino ("Registrar presença: Fulano"); clicar abre a agenda no dia com a consulta; some quando marcam Compareceu/Faltou ou cancelam (pedido do usuário, 22/11/2026). | Código | ✅ |
+| RN-PN-11 | Situações ("aguardando humano", "WhatsApp desconectado", "registrar presença") **somem sozinhas** quando resolvidas e não se marcam como lidas; o resto cada pessoa marca como lida, uma a uma ou todas (D82). Contador = situações abertas + não lidas. | Código | ✅ |
 | RN-PN-12 | Som curto **só quando aumenta** o número de conversas aguardando a equipe (não toca ao abrir o painel); o número aparece no título da aba do navegador (D83). Toda ação que salva algo mostra um aviso de confirmação no canto da tela (D84). | Código | ✅ |
 
 ## Convênios (RN-CV) — Etapa 22

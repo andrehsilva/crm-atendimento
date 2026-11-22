@@ -763,3 +763,115 @@ def testar_resumo(clinic_id: UUID, professional_id: UUID, request: Request, conn
         return enviar_teste(conn, clinica, prof, datetime.now(clinica["tz"]))
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", str(e)) from e
+
+
+# ---------------------------------------------------------------------------
+# Horário de atendimento por profissional (Etapa 24 — RN-AG-01, D99)
+# Sem linhas em professional_hours = segue o horário da clínica. Com linhas = só atende nelas (dentro da clínica).
+# ---------------------------------------------------------------------------
+class FaixaHora(BaseModel):
+    inicio: time
+    fim: time
+
+
+class DiaProf(BaseModel):
+    weekday: int = Field(ge=0, le=6)
+    faixas: list[FaixaHora] = Field(default_factory=list, max_length=2)
+
+
+class HorarioProf(BaseModel):
+    proprio: bool
+    dias: list[DiaProf] = Field(default_factory=list, max_length=7)
+
+
+def _horario_prof(conn, clinic_id: UUID, professional_id: UUID) -> dict:
+    _profissional(conn, clinic_id, professional_id)
+    linhas = _cur(conn).execute(
+        """select weekday, start_time, end_time from professional_hours where clinic_id = %s and professional_id = %s
+           order by weekday, start_time""", (clinic_id, professional_id)).fetchall()
+    clinica = {r["weekday"]: {"inicio": r["start_time"], "fim": r["end_time"]} for r in _cur(conn).execute(
+        "select weekday, start_time, end_time from clinic_hours where clinic_id = %s and enabled", (clinic_id,))}
+    dias: dict[int, list] = {}
+    for r in linhas:
+        dias.setdefault(r["weekday"], []).append({"inicio": r["start_time"], "fim": r["end_time"]})
+    return {"proprio": bool(linhas), "dias": [{"weekday": w, "faixas": f} for w, f in sorted(dias.items())],
+            "clinica": [{"weekday": w, **h} for w, h in sorted(clinica.items())]}
+
+
+def _validar_horario_prof(conn, clinic_id: UUID, body: HorarioProf) -> list:
+    """Faixas válidas → lista de R.Faixa. Recusa o que a agenda não conseguiria usar."""
+    from app.agenda import regras as R
+
+    if not body.proprio:
+        return []
+    clinica = {r[0]: (r[1], r[2]) for r in conn.execute(
+        "select weekday, start_time, end_time from clinic_hours where clinic_id = %s and enabled", (clinic_id,))}
+    faixas = []
+    vistos = set()
+    for d in body.dias:
+        if d.weekday in vistos:
+            raise AgendaError("DADOS_INVALIDOS", "Dia repetido.")
+        vistos.add(d.weekday)
+        ordenadas = sorted(d.faixas, key=lambda f: f.inicio)
+        for i, f in enumerate(ordenadas):
+            nome = DIAS[d.weekday]
+            if f.fim <= f.inicio:
+                raise AgendaError("DADOS_INVALIDOS", f"{nome.capitalize()}: o fim precisa ser depois do início.")
+            if d.weekday not in clinica:
+                raise AgendaError("DADOS_INVALIDOS", f"A clínica não abre {nome}: ajuste primeiro em Horários.")
+            abre, fecha = clinica[d.weekday]
+            if f.inicio < abre or f.fim > fecha:
+                raise AgendaError("DADOS_INVALIDOS",
+                                  f"{nome.capitalize()}: fora do horário da clínica ({abre:%H:%M}–{fecha:%H:%M}).")
+            if i and f.inicio < ordenadas[i - 1].fim:
+                raise AgendaError("DADOS_INVALIDOS", f"{nome.capitalize()}: as duas faixas se sobrepõem.")
+            faixas.append(R.Faixa(d.weekday, f.inicio, f.fim))
+    if not faixas:  # sem nenhuma faixa a agenda entenderia "segue a clínica": para não atender, desative o profissional
+        raise AgendaError("DADOS_INVALIDOS", "Marque ao menos um dia. Para o profissional não atender, desative-o.")
+    return faixas
+
+
+def _afetadas_prof(conn, clinica: dict, professional_id: UUID, faixas: list) -> list[dict]:
+    """Consultas futuras do profissional que ficariam fora do novo horário (D99: continuam marcadas)."""
+    from app.agenda import regras as R
+
+    tz = clinica["tz"]
+    horas, pausas = servico._horario(conn, clinica["id"])
+    saida = []
+    for c in _cur(conn).execute(
+            """select a.id, a.starts_at, a.ends_at, p.name as paciente from appointments a
+               join patients p on p.id = a.patient_id
+               where a.clinic_id = %s and a.professional_id = %s and a.status in ('agendada', 'confirmada')
+                 and a.starts_at > now() order by a.starts_at""", (clinica["id"], professional_id)).fetchall():
+        janelas = R.janelas_do_dia(c["starts_at"].astimezone(tz).date(), tz, horas, [], faixas)
+        if not R.cabe(c["starts_at"], c["ends_at"], janelas):
+            saida.append({"id": c["id"], "quando": c["starts_at"], "paciente": c["paciente"]})
+    return saida
+
+
+@router.get("/profissionais/{professional_id}/horario", summary="Horário do profissional (próprio ou o da clínica)")
+def ver_horario_prof(clinic_id: UUID, professional_id: UUID, conn=Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    return _horario_prof(conn, clinic_id, professional_id)
+
+
+@router.post("/profissionais/{professional_id}/horario/impacto", summary="Consultas marcadas que ficariam fora do novo horário")
+def impacto_horario_prof(clinic_id: UUID, professional_id: UUID, body: HorarioProf, conn=Depends(get_conn)):
+    clinica = servico.carregar_clinica(conn, clinic_id)
+    _profissional(conn, clinic_id, professional_id)
+    return {"afetadas": _afetadas_prof(conn, clinica, professional_id, _validar_horario_prof(conn, clinic_id, body))}
+
+
+@router.put("/profissionais/{professional_id}/horario", summary="Salvar o horário do profissional (vale para as novas)")
+def salvar_horario_prof(clinic_id: UUID, professional_id: UUID, body: HorarioProf, request: Request, conn=Depends(get_conn)):
+    clinica = _admin(request, clinic_id, conn)
+    _profissional(conn, clinic_id, professional_id)
+    faixas = _validar_horario_prof(conn, clinic_id, body)
+    afetadas = _afetadas_prof(conn, clinica, professional_id, faixas)
+    conn.execute("delete from professional_hours where clinic_id = %s and professional_id = %s", (clinic_id, professional_id))
+    for f in faixas:
+        conn.execute("""insert into professional_hours (clinic_id, professional_id, weekday, start_time, end_time)
+                        values (%s, %s, %s, %s, %s)""", (clinic_id, professional_id, f.weekday, f.inicio, f.fim))
+    avisar(conn, clinic_id, "agenda")
+    return {**_horario_prof(conn, clinic_id, professional_id), "afetadas": afetadas}
+

@@ -98,6 +98,7 @@ O paciente **sempre** recebe um aviso fixo de que a equipe vai continuar ali mes
 - **Devolve para a Ísis** quando terminar. Isso não é possível com a Ísis pausada no WhatsApp ou com o teto da IA atingido.
 - **Acompanha o sino:**
   - quem está aguardando atendimento humano (com som);
+  - **consulta que já passou sem registro de presença** ("Registrar presença: Fulano"), que some quando marcam Compareceu ou Faltou;
   - WhatsApp desconectado;
   - o que a Ísis marcou, remarcou ou cancelou;
   - confirmações de pacientes;
@@ -167,6 +168,7 @@ Ele faz tudo o que a secretária faz, e mais:
   - perfil, horários, procedimentos (duração, preço e "só recepção") e profissionais;
   - **convênios atendidos** e se a assistente pergunta o convênio no primeiro contato;
   - **resumo do dia** de cada profissional: ativar (só se ele pediu), WhatsApp pessoal e horário;
+  - **horário de cada profissional**: segue o da clínica ou horário próprio (dias e até 2 faixas, dentro do horário da clínica);
   - assistente: nome, tratamento, preços, áudio, regras da agenda, **faltas para passar à recepção** e o "Jeito da clínica";
   - mensagens e campanhas;
   - site e usuários.

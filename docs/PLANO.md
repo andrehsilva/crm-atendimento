@@ -221,6 +221,12 @@ Com 2 faltas em 45 dias (ajustável), a Ísis não marca e passa para a recepç�
 ## Etapa 23 — Resumo do dia para o profissional ✅ (22/11/2026; D96–D98)
 De manhã (horário ajustável), o profissional recebe no WhatsApp pessoal a grade do dia: horários, pacientes, procedimentos e quem confirmou.
 
+## Etapa 24 — Horário de atendimento por profissional ✅ (22/11/2026; D99)
+- Configurações › Profissionais › "Horário": segue o da clínica ou horário próprio (dias e até 2 faixas por dia, sempre dentro do horário da clínica).
+- Antes de salvar, mostra as consultas marcadas que ficariam fora; elas continuam marcadas (a mudança vale para as novas).
+- A Ísis, a série, a agenda e o resumo do dia já respeitam; a Ísis passa a saber os dias de cada profissional.
+- Junto: sino lembra de registrar presença quando passa o horário da consulta (RN-PN-13).
+
 ---
 
 ## Depois da 1ª versão (backlog)

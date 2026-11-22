@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle, Bell, CalendarCheck, CalendarClock, CalendarPlus, CalendarX, CheckCheck, Gauge, Headset, Hourglass,
-  PauseCircle, UserX, WifiOff,
+  PauseCircle, UserCheck, UserX, WifiOff,
 } from 'lucide-react'
 import { api, type Notificacao, type Notificacoes } from '../lib/api'
 import { useClinica } from '../lib/clinica'
@@ -13,7 +13,7 @@ import { ModalConversa } from './ModalConversa'
 const ICONE: Record<Notificacao['tipo'], ComponentType<{ className?: string }>> = {
   humano: Headset, whatsapp: WifiOff, marcada: CalendarPlus, remarcada: CalendarClock, cancelada: CalendarX,
   confirmada: CalendarCheck, falhou: AlertCircle, resposta_falhou: AlertCircle, ia: Gauge,
-  tratamento_pedido: PauseCircle, tratamento_previsao: Hourglass, faltou_sessao: UserX,
+  tratamento_pedido: PauseCircle, tratamento_previsao: Hourglass, faltou_sessao: UserX, presenca: UserCheck,
 }
 
 /** "agora", "há 5 min", "há 2 h", "há 3 dias" */

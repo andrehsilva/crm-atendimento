@@ -152,6 +152,24 @@ def listar(conn, clinic_id: UUID, user_id: UUID, agora: datetime | None = None) 
             acontecimentos.append({**item, "situacao": False, "lida": r["lida"]})
     situacoes.sort(key=lambda x: x["quando"])  # quem espera há mais tempo primeiro
 
+    # Situação: consulta que já terminou e ninguém registrou se o paciente veio (pedido do usuário, 22/11/2026).
+    # Some sozinha quando marcam Compareceu / Faltou (ou cancelam). Olha os últimos 30 dias.
+    tz = clinica["tz"]
+    for c in conn.cursor(row_factory=dict_row).execute(
+            """select a.id, a.starts_at, a.ends_at, p.id as pid, p.name, p.phone, s.name as procedimento, pr.name as profissional
+               from appointments a join patients p on p.id = a.patient_id and p.clinic_id = a.clinic_id
+               join services s on s.id = a.service_id join professionals pr on pr.id = a.professional_id
+               where a.clinic_id = %s and a.status in ('agendada', 'confirmada')
+                 and a.ends_at <= %s and a.ends_at > %s - interval '30 days'
+               order by a.starts_at limit 50""", (clinic_id, agora, agora)).fetchall():
+        situacoes.append({
+            "chave": f"presenca:{c['id']}", "tipo": "presenca", "situacao": True, "lida": False, "quando": c["ends_at"],
+            "titulo": f"Registrar presença: {c['name'] or 'Paciente sem nome'}",
+            "texto": f"{c['procedimento']} com {c['profissional']} · {quando(c['starts_at'], tz)} — compareceu ou faltou?",
+            "paciente": {"id": c["pid"], "name": c["name"], "phone": c["phone"]},
+            "consulta_id": c["id"], "dia": c["starts_at"].astimezone(tz).date().isoformat(),
+        })
+
     w = conn.execute("select status, updated_at from whatsapp_instances where clinic_id = %s and enabled", (clinic_id,)).fetchone()
     if w and w[0] in WHATSAPP_CAIU:
         situacoes.insert(0, {"chave": "whatsapp", "tipo": "whatsapp", "situacao": True, "lida": False, "paciente": None,
@@ -181,7 +199,7 @@ def marcar_lidas(conn, clinic_id: UUID, user_id: UUID, chaves: list[str] | None)
     """chaves=None → todas as não lidas da lista atual. Situações ("humano:", "whatsapp") não se marcam: somem sozinhas."""
     if chaves is None:
         chaves = [i["chave"] for i in listar(conn, clinic_id, user_id)["itens"] if not i["situacao"] and not i["lida"]]
-    chaves = [c for c in chaves if not c.startswith("humano:") and c != "whatsapp"]
+    chaves = [c for c in chaves if not c.startswith(("humano:", "presenca:")) and c != "whatsapp"]
     if not chaves:
         return
     with conn.cursor() as cur:

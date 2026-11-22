@@ -134,7 +134,7 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
 
     cur = conn.cursor(row_factory=dict_row)
     profs = cur.execute(
-        """select p.name, p.specialty, string_agg(s.name, ', ' order by s.name) as faz
+        """select p.id, p.name, p.specialty, string_agg(s.name, ', ' order by s.name) as faz
            from professionals p join professional_services ps on ps.professional_id = p.id
            join services s on s.id = ps.service_id and s.active
            where p.clinic_id = %s and p.active group by p.id order by p.name""",
@@ -145,7 +145,8 @@ def instrucoes(conn, clinica: dict, paciente: dict, agora: datetime) -> str:
         (clinica["id"],),
     ).fetchall()
     resumo_clinica = "\n".join(
-        [f"- {segmentos.cap(segmentos.termos(cfg)['profissional'])} {p['name']}" + (f" ({p['specialty']})" if p["specialty"] else "") + f": faz {p['faz']}" for p in profs]
+        [f"- {segmentos.cap(segmentos.termos(cfg)['profissional'])} {p['name']}" + (f" ({p['specialty']})" if p["specialty"] else "")
+         + f": faz {p['faz']}" + _dias_do_profissional(conn, p["id"]) for p in profs]
         + [f"- Procedimento {x['name']}: {x['duration_min']} min" + ("" if x["bookable_by_ai"] else " — só a recepção marca (use chamar_humano)")
            for x in servs]
     )
@@ -184,6 +185,23 @@ Se a pessoa acabou de concordar com uma dessas ações, chame `confirmar_acao` c
 (não prepare de novo). Se ele mudou de ideia, ignore o token e prepare a nova ação.
 """
     return persona + "\n" + momento + _avisos_automaticos(conn, clinica) + jeito_da_clinica(cfg)
+
+
+DIAS_CURTOS_PT = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
+
+
+def _dias_do_profissional(conn, professional_id) -> str:
+    """Etapa 24 (D99): horário próprio do profissional, para a assistente não oferecer dia em que ele não atende.
+    Sem horário próprio = segue o da clínica (não acrescenta nada)."""
+    linhas = conn.execute("""select weekday, start_time, end_time from professional_hours where professional_id = %s
+                             order by weekday, start_time""", (professional_id,)).fetchall()
+    if not linhas:
+        return ""
+    por_dia: dict[int, list[str]] = {}
+    for wd, ini, fim in linhas:
+        por_dia.setdefault(wd, []).append(f"{ini:%H:%M}–{fim:%H:%M}")
+    partes = [f"{DIAS_CURTOS_PT[wd]} {' e '.join(f)}" for wd, f in sorted(por_dia.items())]
+    return f" — atende só: {'; '.join(partes)}"
 
 
 def _convenio(conn, clinica: dict, paciente: dict) -> str:

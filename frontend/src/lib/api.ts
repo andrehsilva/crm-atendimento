@@ -370,7 +370,7 @@ export type CanalWhatsapp = {
 export type Notificacao = {
   chave: string
   tipo: 'humano' | 'whatsapp' | 'marcada' | 'remarcada' | 'cancelada' | 'confirmada' | 'falhou' | 'resposta_falhou' | 'ia'
-    | 'tratamento_pedido' | 'tratamento_previsao' | 'faltou_sessao'
+    | 'tratamento_pedido' | 'tratamento_previsao' | 'faltou_sessao' | 'presenca'
   titulo: string
   texto: string
   quando: string
