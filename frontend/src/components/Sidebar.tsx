@@ -9,6 +9,7 @@ import {
   ArrowLeftRight,
   CalendarDays,
   ChevronLeft,
+  FileSpreadsheet,
   KanbanSquare,
   LogOut,
   LayoutDashboard,
@@ -26,6 +27,7 @@ const itens = [
   { to: '/agenda', rotulo: 'Agenda', icone: CalendarDays },
   { to: '/mensagens', rotulo: 'Mensagens', icone: MessageSquare },
   { to: '/clientes', rotulo: 'Leads / Clientes', icone: Users },
+  { to: '/relatorios', rotulo: 'Relatórios', icone: FileSpreadsheet, soAdmin: true },
   { to: '/configuracoes', rotulo: 'Configurações', icone: Settings },
 ]
 
@@ -76,7 +78,7 @@ export function Sidebar() {
       </button>
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {itens.map(({ to, rotulo, icone: Icone }) => (
+        {itens.filter((i) => !('soAdmin' in i) || papel === 'clinic_admin' || papel === 'super_admin').map(({ to, rotulo, icone: Icone }) => (
           <NavLink
             key={to}
             to={to}

@@ -17,6 +17,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Demo } from './pages/Demo'
 import { Configuracoes } from './pages/Configuracoes'
 import { Mensagens } from './pages/Mensagens'
+import { Relatorios } from './pages/Relatorios'
 import { AvisoIaDesligada } from './pages/config/IaClinica'
 import { AvisoTetoIa } from './pages/config/UsoIa'
 import { AguardandoConfiguracao, AvisoPendencias, PrimeirosPassos } from './pages/PrimeirosPassos'
@@ -94,6 +95,7 @@ export default function App() {
                   <Route path="agenda" element={<Agenda />} />
                   <Route path="mensagens" element={<Mensagens />} />
                   <Route path="clientes" element={<Clientes />} />
+                  <Route path="relatorios" element={<Relatorios />} />
                   <Route path="configuracoes" element={<Configuracoes />} />
                 </Route>
               </Route>
