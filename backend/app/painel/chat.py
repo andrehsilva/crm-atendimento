@@ -49,7 +49,11 @@ def iniciar(conn, slug: str, telefone: str, nome: str | None) -> dict:
 
 def historico(conn, conversa_id: UUID, limite: int = 100) -> list[dict]:
     return conn.cursor(row_factory=dict_row).execute(
-        """select id, direction, author, content, created_at from messages
+        # entrega (D85): o que o WhatsApp avisou; resposta já com id do WhatsApp e sem aviso ainda = "enviada"
+        """select id, direction, author, content, created_at,
+                  coalesce(entrega, case when direction = 'out' and external_id is not null
+                                          and external_id not like 'outbound:%%' then 'enviada' end) as entrega
+           from messages
            where conversation_id = %s order by created_at desc limit %s""",
         (conversa_id, limite),
     ).fetchall()[::-1]

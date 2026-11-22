@@ -222,3 +222,47 @@ def enviar_da_equipe(conn, clinic_id: UUID, conversa: dict, texto: str, cliente:
         return (cliente or cliente_da_clinica(conn, clinic_id)).enviar_texto(inst["session"], conversa["external_chat_id"], texto, simular_digitacao=False)
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", f"Não consegui enviar pelo WhatsApp: {e}") from e
+
+
+# ---------------------------------------------------------------------------
+# D85: entregue / lida
+# ---------------------------------------------------------------------------
+ENTREGA = {2: "entregue", 3: "lida", 4: "lida"}  # 1 = chegou ao servidor do WhatsApp (já é "enviada")
+_NIVEL = "case {col} when 'entregue' then 2 when 'lida' then 3 else 1 end"
+
+
+def registrar_entrega(conn, sessao: str, id_externo: str, ack: int) -> bool:
+    """Marca entregue/lida na conversa e na fila de mensagens automáticas. Só avança, nunca volta; e só mexe
+    em mensagens da clínica dona da sessão. Devolve True se mudou algo."""
+    novo = ENTREGA.get(ack)
+    inst = instancia_por_sessao(conn, sessao)
+    if not novo or not inst:
+        return False
+    cid, nivel = inst["clinic_id"], 3 if novo == "lida" else 2
+    conversas = conn.execute(
+        f"""update messages set entrega = %s
+            where clinic_id = %s and external_id = %s and direction = 'out' and {_NIVEL.format(col='entrega')} < %s
+            returning conversation_id""",
+        (novo, cid, id_externo, nivel),
+    ).fetchall()
+    fila = conn.execute(
+        f"""update outbound_messages set status = %s
+            where clinic_id = %s and external_id = %s and status in ('enviada', 'entregue')
+              and {_NIVEL.format(col='status')} < %s returning id""",
+        (novo, cid, id_externo, nivel),
+    ).fetchall()
+    for (conversa_id,) in conversas:
+        avisar(conn, cid, "conversa", conversa_id)
+    if fila:
+        avisar(conn, cid, "mensagens")
+    return bool(conversas or fila)
+
+
+def processar_entrega(sessao: str, id_externo: str, ack: int) -> None:
+    """Chamado em segundo plano pelo webhook. Nunca levanta erro."""
+    try:
+        with pool().connection() as conn:
+            registrar_entrega(conn, sessao, id_externo, ack)
+            conn.commit()
+    except Exception:  # noqa: BLE001
+        log.exception("falha ao registrar entregue/lida da mensagem %s", id_externo)

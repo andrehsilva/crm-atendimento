@@ -84,3 +84,26 @@ def estado(conn, clinic_id: UUID) -> dict:
 def isis_pausada_no_whatsapp(clinica: dict) -> bool:
     """D79: o admin da clínica pausou a Ísis no WhatsApp (Configurações › Canais)."""
     return bool((clinica.get("settings") or {}).get("isis_pausada_whatsapp"))
+
+
+def atualizar_webhooks() -> int:
+    """D86: ao subir, acrescenta os eventos novos (entregue/lida) no webhook das clínicas já ligadas.
+    Roda em segundo plano; falha numa clínica não impede as outras. Devolve quantas mudaram."""
+    import logging
+
+    from app.db import pool
+
+    log = logging.getLogger("isis.whatsapp")
+    if not get_settings().public_base_url:
+        return 0
+    mudaram = 0
+    with pool().connection() as conn:
+        for cid, sessao in conn.execute("select clinic_id, session from whatsapp_instances where enabled").fetchall():
+            try:
+                url, segredo = webhook_da_clinica(conn, cid)
+                if segredo and cliente_da_clinica(conn, cid).atualizar_eventos_do_webhook(sessao, url, segredo):
+                    mudaram += 1
+                    log.info("webhook da sessão %s atualizado (entregue/lida)", sessao)
+            except Exception as e:  # noqa: BLE001 — servidor fora do ar etc.: tenta na próxima subida
+                log.warning("não deu para atualizar o webhook da sessão %s: %s", sessao, e)
+    return mudaram

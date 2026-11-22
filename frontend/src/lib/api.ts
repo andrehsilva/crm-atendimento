@@ -200,7 +200,8 @@ export type Dashboard = {
   aniversariantes: { id: string; name: string; phone: string }[]
 }
 
-export type MensagemChat = { id: string; direction: 'in' | 'out'; author: string; content: string; created_at: string }
+/** entrega (D85): o que o WhatsApp avisou das respostas enviadas; null = sem informação (site, recebida, antiga) */
+export type MensagemChat = { id: string; direction: 'in' | 'out'; author: string; content: string; created_at: string; entrega?: 'enviada' | 'entregue' | 'lida' | null }
 
 export type Relogio = {
   agora: string

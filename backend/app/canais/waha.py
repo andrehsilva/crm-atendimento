@@ -90,6 +90,27 @@ def _procurar_numero(dados, ignorar: str | None) -> str | None:
     return None
 
 
+# D85: "message.ack" = o WhatsApp avisa que a mensagem chegou ao celular (2) ou foi lida (3) / ouvida (4)
+EVENTOS_WEBHOOK = ["message", "session.status", "message.ack"]
+_ACK_NOME = {"SERVER": 1, "DEVICE": 2, "READ": 3, "PLAYED": 4}
+
+
+def interpretar_ack(evento: dict) -> tuple[str, int] | None:
+    """(id da mensagem no WhatsApp, nível do aviso) — só das mensagens que NÓS enviamos."""
+    if evento.get("event") != "message.ack":
+        return None
+    p = evento.get("payload") or {}
+    if p.get("fromMe") is False:
+        return None
+    i = p.get("id")
+    if isinstance(i, dict):
+        i = i.get("_serialized") or i.get("id")
+    ack = p.get("ack")
+    if not isinstance(ack, int):
+        ack = _ACK_NOME.get(str(p.get("ackName") or "").upper())
+    return (str(i), ack) if i and isinstance(ack, int) else None
+
+
 def interpretar(evento: dict) -> MensagemEntrada | None:
     """Só mensagens recebidas de pessoas, em conversa individual. O resto é ignorado (None)."""
     if evento.get("event") != "message":
@@ -216,7 +237,7 @@ class ClienteWaha:
     def _webhook(url: str, chave_hmac: str) -> dict:
         return {
             "url": url,
-            "events": ["message", "session.status"],
+            "events": EVENTOS_WEBHOOK,
             "hmac": {"key": chave_hmac},
             "retries": {"policy": "constant", "delaySeconds": 2, "attempts": 5},
         }
@@ -228,6 +249,23 @@ class ClienteWaha:
         config["webhooks"] = [self._webhook(url, chave_hmac)]
         config.setdefault("ignore", {"status": True, "groups": True, "channels": True, "broadcast": True})
         return self._req("PUT", f"/api/sessions/{sessao}", json={"name": sessao, "config": config}).json()
+
+    def atualizar_eventos_do_webhook(self, sessao: str, url: str, chave_hmac: str) -> bool:
+        """D86: se a sessão já manda para `url` mas falta algum evento (ex.: message.ack), atualiza SÓ esse webhook.
+        Os outros webhooks da sessão ficam como estão; sessão que manda para outro sistema não é tocada.
+        Devolve True se mudou algo."""
+        atual = self.sessao(sessao)
+        config = dict(atual.get("config") or {})
+        ganchos = list(config.get("webhooks") or [])
+        mudou = False
+        for i, g in enumerate(ganchos):
+            if g.get("url") == url and any(e not in (g.get("events") or []) for e in EVENTOS_WEBHOOK):
+                ganchos[i] = self._webhook(url, chave_hmac)
+                mudou = True
+        if mudou:
+            config["webhooks"] = ganchos
+            self._req("PUT", f"/api/sessions/{sessao}", json={"name": sessao, "config": config})
+        return mudou
 
     def listar_sessoes(self) -> list[dict]:
         return self._req("GET", "/api/sessions", params={"all": "true"}).json()

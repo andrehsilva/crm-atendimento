@@ -1,5 +1,6 @@
 """Ponto de entrada do backend. Rode com: uv run uvicorn app.main:app --reload"""
 
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -8,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.agenda.erros import AgendaError
 from app.api import admin, agenda, auth, campanhas, canais, configuracoes, health, notificacoes, observacoes, painel, relatorios, site, webhooks
+from app.canais.conexao import atualizar_webhooks
 from app.config import get_settings
 from app.core.producao import problemas
 from app.db import fechar_pool
@@ -25,6 +27,8 @@ async def lifespan(_: FastAPI):
         distribuidor.iniciar(settings.database_url)  # tempo real: escuta avisos do banco
         if settings.mensagens_automaticas and settings.waha_api_url:
             agendador.iniciar()  # lembretes, avisos e aniversários (Etapa 6)
+        # D86: clínicas já ligadas passam a avisar entregue/lida (sem travar a subida)
+        threading.Thread(target=atualizar_webhooks, name="atualizar-webhooks", daemon=True).start()
     yield
     agendador.parar()
     distribuidor.parar()

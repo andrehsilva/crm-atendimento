@@ -33,6 +33,9 @@ async def webhook_waha(request: Request, tarefas: BackgroundTasks):
     if evento.get("event") == "session.status":
         _atualizar_status(evento)
         return {"ok": True}
+    if ack := waha.interpretar_ack(evento):  # D85: entregue/lida
+        tarefas.add_task(whatsapp.processar_entrega, evento.get("session") or "", *ack)
+        return {"ok": True}
 
     msg = waha.interpretar(evento)
     if msg is None:
@@ -74,6 +77,9 @@ async def webhook_da_clinica(token: str, request: Request, tarefas: BackgroundTa
         return {"ok": True, "ignorada": True}
     if evento.get("event") == "session.status":
         _atualizar_status(evento)
+        return {"ok": True}
+    if ack := waha.interpretar_ack(evento):  # D85: entregue/lida
+        tarefas.add_task(whatsapp.processar_entrega, evento.get("session") or "", *ack)
         return {"ok": True}
     msg = waha.interpretar(evento)
     if msg is None:

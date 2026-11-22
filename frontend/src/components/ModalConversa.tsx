@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Bot, Hand, MessageSquareOff, Send } from 'lucide-react'
+import { Bot, Check, CheckCheck, Hand, MessageSquareOff, Send } from 'lucide-react'
 import { api, type CardCrm, type MensagemChat } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, hora, telefone } from '../lib/formato'
@@ -69,7 +69,10 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
             <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${m.direction === 'in' ? 'bg-surface' : m.author === 'recepcao' ? 'bg-[#fcf1dc] text-[#5c4108]' : 'bg-primary-soft'}`}>
               {autor(m.author) && <p className="mb-0.5 text-[11px] font-semibold opacity-70">{autor(m.author)}</p>}
               <p className="whitespace-pre-line">{m.content}</p>
-              <p className="mt-1 text-right text-[10px] opacity-60">{dataCurta(m.created_at, tz)} {hora(m.created_at, tz)}</p>
+              <p className="mt-1 flex items-center justify-end gap-1 text-[10px]">
+                <span className="opacity-60">{dataCurta(m.created_at, tz)} {hora(m.created_at, tz)}</span>
+                {m.entrega && <Entrega e={m.entrega} />}
+              </p>
             </div>
           </div>
         ))}
@@ -84,5 +87,15 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
         </form>
       )}
     </Modal>
+  )
+}
+
+/** D85: ✓ enviada · ✓✓ entregue · ✓✓ azul lida — como no WhatsApp. */
+function Entrega({ e }: { e: 'enviada' | 'entregue' | 'lida' }) {
+  const rotulo = { enviada: 'Enviada', entregue: 'Entregue', lida: 'Lida' }[e]
+  return (
+    <span title={rotulo} aria-label={rotulo} className={e === 'lida' ? 'text-[#2f8be6] dark:text-[#6cb4f5]' : 'opacity-60'}>
+      {e === 'enviada' ? <Check className="size-3.5" /> : <CheckCheck className="size-3.5" />}
+    </span>
   )
 }

@@ -92,3 +92,5 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D82 | ✅ Notificações de **situação** ("aguardando humano", "WhatsApp desconectado") somem sozinhas quando resolvidas; as de **acontecimento** são marcadas como lidas por pessoa (uma a uma ou todas) | Q73, 22/11/2026 |
 | D83 | ✅ Chamar atenção: contador no sino, **som curto só para "aguardando humano"** e o número no título da aba do navegador | Q74, 22/11/2026 |
 | D84 | ✅ Toda ação que salva ou muda algo no painel mostra um aviso de confirmação no canto da tela (os erros já apareciam) | pedido do usuário, 22/11/2026 |
+| D85 | ✅ **Entregue/lida:** o WhatsApp avisa (evento `message.ack`) e o sistema guarda; aparece na tela Mensagens (selo enviada/entregue/lida) e na conversa (✓ enviada · ✓✓ entregue · ✓✓ azul lida) nas respostas da Ísis e da equipe. Nunca volta atrás (lida não vira entregue). Se o paciente desligou a confirmação de leitura, fica em "entregue" | Q75, 22/11/2026 |
+| D86 | ✅ Ao subir, o backend acrescenta sozinho o evento novo no webhook das clínicas já ligadas — só quando o webhook da sessão já aponta para este sistema (nunca toma a sessão de outro sistema) | Q76, 22/11/2026 |

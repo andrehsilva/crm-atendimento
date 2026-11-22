@@ -25,7 +25,7 @@ ajusta para fora da janela de silêncio (RN-MS-09)
 - Travas no código: silêncio 21h–08h (RN-MS-09), 20/min e 300/dia por clínica (RN-DP-07), PARAR/SAIR só afeta aniversário (RN-DP-04).
 - A mensagem enviada também entra na conversa do paciente: aparece no painel e a Ísis vê no histórico (RN-DP-09).
 - **Modo de teste (ENV=dev):** só envia para os telefones de `ENVIO_SOMENTE_PARA`; os demais ficam `cancelada` com o motivo. Os dados de exemplo têm telefones inventados que podem ser de pessoas reais.
-- Status `entregue`/`lida` pelo WhatsApp: ainda não (depois).
+- Status `entregue`/`lida` pelo WhatsApp: Etapa 20 (D85).
 
 ## Resposta ao lembrete (sem IA)
 - "1" (ou "confirmo") → consulta `confirmada` e card em *Confirmado*, com resposta fixa. Só vale se o lembrete for a **última mensagem enviada** na conversa e tiver no máximo 72 h.

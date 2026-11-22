@@ -19,7 +19,8 @@ const GRUPOS = {
 type Grupo = keyof typeof GRUPOS
 
 const SITUACAO: Record<Mensagem['status'], [string, 'azul' | 'verde' | 'vermelho' | 'cinza']> = {
-  agendada: ['na fila', 'azul'], enviada: ['enviada', 'verde'], entregue: ['entregue', 'verde'], lida: ['lida', 'verde'],
+  // D85: entregue/lida vêm do WhatsApp; se o paciente desligou a confirmação de leitura, fica em "entregue"
+  agendada: ['na fila', 'azul'], enviada: ['✓ enviada', 'cinza'], entregue: ['✓✓ entregue', 'verde'], lida: ['✓✓ lida', 'azul'],
   falhou: ['falhou', 'vermelho'], cancelada: ['cancelada', 'cinza'],
 }
 

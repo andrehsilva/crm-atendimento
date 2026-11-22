@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 72 de 81 resolvidas (69 respondidas · 3 adiadas) — 22/11/2026.
+**Progresso:** 74 de 83 resolvidas (71 respondidas · 3 adiadas) — 22/11/2026.
 
 ---
 
@@ -116,6 +116,8 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q75 — Onde mostrar entregue/lida:** na tela Mensagens (selo) e na conversa (✓ / ✓✓ / ✓✓ azul nas respostas da Ísis e da equipe). *(22/11 → D85)*
+- [x] **Q76 — Clínicas já ligadas:** o backend atualiza sozinho o webhook de todas, ao subir. *(22/11 → D86)*
 - [x] **Q72 — O que entra no sino:** ok — aguardando atendimento humano · consulta marcada/remarcada/cancelada pela Ísis · paciente confirmou pelo lembrete · mensagem não enviada · WhatsApp desconectado · gasto da IA em 80%/100%. *(22/11 → D81)*
 - [x] **Q73 — Quando some:** ok — "aguardando humano" e "WhatsApp desconectado" somem sozinhos quando resolvidos; as demais cada pessoa marca como lida (ou todas). *(22/11 → D82)*
 - [x] **Q74 — Como chamar atenção:** ok — contador no sino, som curto só para "aguardando humano" e o número no título da aba. *(22/11 → D83)*

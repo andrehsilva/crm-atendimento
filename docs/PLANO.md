@@ -196,6 +196,11 @@ Configurações › Canais: status e número do WhatsApp (toda a equipe vê); o 
 - **Sino com contador** no topo do painel: "Maria aguardando atendimento humano", e outros avisos que pedem ação da equipe.
 - **Toast de confirmação** (aviso rápido no canto da tela) em **toda** ação feita: hoje só cerca de metade das ações mostra "feito"; os erros já aparecem.
 
+## Etapa 20 — "Entregue/lida" nas mensagens ✅ (22/11/2026; D85, D86)
+- O WhatsApp avisa quando a mensagem chegou ao celular e quando foi lida; o sistema guarda e nunca volta atrás.
+- Tela Mensagens: selo enviada/entregue/lida. Conversa: ✓ / ✓✓ / ✓✓ azul nas respostas da Ísis e da equipe.
+- Clínicas já ligadas passam a mandar o aviso sozinhas (o backend atualiza o webhook ao subir).
+
 ---
 
 ## Depois da 1ª versão (backlog)
