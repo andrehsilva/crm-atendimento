@@ -9,4 +9,6 @@ export const TIPO_MENSAGEM: Record<Mensagem['kind'], [string, CorSelo]> = {
   aniversario: ['Aniversário', 'roxo'],
   campanha: ['Campanha', 'cinza'],
   tratamento: ['Tratamento', 'rosa'],
+  pos_consulta: ['Pós-consulta', 'verde'],
+  retorno: ['Retorno', 'azul'],
 }

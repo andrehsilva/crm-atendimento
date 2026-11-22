@@ -48,7 +48,8 @@ def _finalizar(conn, oid, status: str, erro: str | None = None) -> None:
     conn.execute("update outbound_messages set status = %s, error = %s where id = %s", (status, erro, oid))
 
 
-MASSA = ("aniversario", "campanha")
+MASSA = ("aniversario", "campanha", "retorno")  # espaçadas entre si (D70); retorno: D102
+RESPEITA_PARAR = (*MASSA, "pos_consulta")  # RN-DP-04 / RN-AU-05: quem pediu PARAR não recebe
 
 
 def intervalo_massa(mensagem_id) -> int:
@@ -129,7 +130,7 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
                 conn.rollback()
                 continue
 
-        if o["kind"] in MASSA and o["optout_disparos"]:
+        if o["kind"] in RESPEITA_PARAR and o["optout_disparos"]:
             _finalizar(conn, o["id"], "cancelada", "paciente pediu para não receber disparos")
         elif permitidos is not None and o["phone"] not in permitidos:
             _finalizar(conn, o["id"], "cancelada", "modo de teste: telefone fora de ENVIO_SOMENTE_PARA")

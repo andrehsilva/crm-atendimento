@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 87 de 99 resolvidas (85 respondidas · 2 adiadas) — 22/11/2026.
+**Progresso:** 90 de 99 resolvidas (88 respondidas · 2 adiadas) — 22/11/2026.
 
 ---
 
@@ -100,12 +100,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ## 🔁 Bloqueia a Etapa 25 (Retorno e pós-consulta automáticos)
 
-- [ ] **Q89 — Pós-consulta, quando e para quem:** sugestão — no **dia seguinte às 10:00** (ajustável), para todo paciente marcado como "Compareceu"; cada procedimento pode ser desligado (ex.: "Retorno").
-  Resposta:
-- [ ] **Q91 — Retorno, como sai o convite:** sugestão — **automático na data** ("volta em" do tratamento concluído ou recall de X meses sem vir), às 10:00, com o espaçamento das mensagens em massa e respeitando o PARAR; quando o paciente responde, a Ísis marca. Alternativa: a recepção aprova a lista do dia.
-  Resposta:
-- [ ] **Q92 — Retorno sem resposta:** sugestão — **mais 1 convite 15 dias depois**; sem resposta de novo, para e o paciente fica no relatório de recall para a recepção ligar.
-  Resposta:
+✅ Nada pendente — Etapa 25 liberada.
 
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
@@ -137,6 +132,9 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q89 — Pós-consulta, quando:** ok — dia seguinte às 10:00 (ajustável), para quem compareceu; cada procedimento pode ser desligado. *(22/11 → D101)*
+- [x] **Q91 — Retorno:** ok — automático na data, espaçado como as mensagens em massa e respeitando o PARAR; a Ísis marca quando a pessoa responde. *(22/11 → D102)*
+- [x] **Q92 — Retorno sem resposta:** ok — mais 1 convite 15 dias depois; sem resposta, para e fica no recall. *(22/11 → D103)*
 - [x] **Q90 — Pós-consulta, o que pede:** só "como você está?" (texto editável). Se o paciente responder com dúvida ou queixa, a Ísis responde e, se for sinal de problema, passa para a equipe. *(22/11 → D100)*
 - [x] **Q86 — O que vai no resumo:** ok — grade do dia com horário, primeiro nome, procedimento, sessão do tratamento e se confirmou; pausas e horários livres; nada de observação clínica. *(22/11 → D96)*
 - [x] **Q87 — Privacidade:** ok — só recebe quem pediu (ativado no cadastro do profissional), no número que o administrador cadastrar. *(22/11 → D97)*

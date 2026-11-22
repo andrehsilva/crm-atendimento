@@ -94,6 +94,7 @@ O paciente **sempre** recebe um aviso fixo de que a equipe vai continuar ali mes
 
 ### 3.1 Conversas
 - **Assume a conversa** a qualquer momento ("Assumir conversa"). A Ísis para de responder ali.
+- **Inicia a conversa** com quem nunca escreveu: a primeira mensagem sai pelo WhatsApp da clínica, e a conversa começa em atendimento manual. No modo de teste, só para os números liberados. Na mesma janela há "Marcar consulta".
 - **Responde pelo painel.** A resposta sai pelo WhatsApp do paciente, com os tracinhos de enviada, entregue e lida.
 - **Devolve para a Ísis** quando terminar. Isso não é possível com a Ísis pausada no WhatsApp ou com o teto da IA atingido.
 - **Acompanha o sino:**
@@ -146,6 +147,8 @@ O paciente **sempre** recebe um aviso fixo de que a equipe vai continuar ali mes
 - **Aniversário** às 09:00 (se ligado), uma vez por ano.
 - **Resumo do dia do profissional:** no horário dele (padrão 07:00), pelo WhatsApp pessoal, a agenda do dia com o primeiro nome dos pacientes, o procedimento e quem confirmou. Só para quem pediu, só em dia com consulta e uma vez por dia.
 - **Mensagem de retomada** do tratamento, quando a recepção clica em "Retomar".
+- **Pós-consulta** (se ligado): no dia seguinte às 10:00, "como você está?" para quem compareceu.
+- **Retorno** (se ligado): na data de voltar ("volta em" ou X meses sem vir), convite para marcar; sem resposta, mais um convite 15 dias depois. Quando a pessoa responde, a Ísis marca.
 - **Silêncio:** nada sai entre 21h e 08h. Também há limite de envios por minuto e por dia, e intervalo entre mensagens em massa.
 - **Bloqueios no código:**
   - horário ocupado;
@@ -170,7 +173,7 @@ Ele faz tudo o que a secretária faz, e mais:
   - **resumo do dia** de cada profissional: ativar (só se ele pediu), WhatsApp pessoal e horário;
   - **horário de cada profissional**: segue o da clínica ou horário próprio (dias e até 2 faixas, dentro do horário da clínica);
   - assistente: nome, tratamento, preços, áudio, regras da agenda, **faltas para passar à recepção** e o "Jeito da clínica";
-  - mensagens e campanhas;
+  - mensagens e campanhas, **pós-consulta e retorno automáticos** (ligar, horário, textos);
   - site e usuários.
 - **Canais:** ver o status, mostrar o QR, reiniciar e **pausar ou retomar a Ísis no WhatsApp**.
 - **Uso da IA:** acompanhar o gasto e ajustar o teto do mês.

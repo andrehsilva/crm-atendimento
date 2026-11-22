@@ -406,6 +406,26 @@ def responder_paciente(clinic_id: UUID, conversa_id: UUID, body: RespostaEquipe,
     return m
 
 
+@router.post("/clinics/{clinic_id}/patients/{patient_id}/conversation/start",
+             summary="Equipe inicia a conversa pelo WhatsApp (paciente que ainda não escreveu)")
+def iniciar_conversa(clinic_id: UUID, patient_id: UUID, body: RespostaEquipe, conn: Conn = Depends(get_conn)):
+    """A Ísis só responde; puxar conversa é da equipe. A conversa já começa em atendimento manual
+    (a equipe devolve para a Ísis quando quiser)."""
+    from app.mensagens.envio import lista_de_teste
+
+    servico.carregar_clinica(conn, clinic_id)
+    p = conn.execute("select phone from patients where clinic_id = %s and id = %s", (clinic_id, patient_id)).fetchone()
+    if not p:
+        raise AgendaError("DADOS_INVALIDOS", "Paciente não encontrado.")
+    permitidos = lista_de_teste(get_settings())
+    if permitidos is not None and p[0] not in permitidos:  # mesmo cuidado das mensagens automáticas
+        raise AgendaError("DADOS_INVALIDOS", "Modo de teste: este telefone não está em ENVIO_SOMENTE_PARA.")
+    cv = chat._conversa(conn, clinic_id, patient_id, "whatsapp")
+    if not cv.get("external_chat_id"):
+        conn.execute("update conversations set external_chat_id = %s where id = %s", (f"{p[0].lstrip('+')}@c.us", cv["id"]))
+    return responder_paciente(clinic_id, cv["id"], body, conn)
+
+
 def _chat_teste() -> None:
     """D15: o chat web é só para TESTE (qualquer um digita qualquer telefone). Em produção fica desligado."""
     if not get_settings().chat_teste_liberado:
@@ -548,6 +568,45 @@ def ver_aniversario(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         "previa": lembretes.montar_aniversario(texto, _exemplo_nome(conn, clinic_id), c["name"]),
         "limite": lembretes.LIMITE_TEXTO_ANIVERSARIO,
     }
+
+
+class ConfigAutomacoes(BaseModel):
+    """Etapa 25 (RN-AU): pós-consulta e retorno. Textos com {nome}, {clinica} e (pós-consulta) {procedimento}."""
+    pos_consulta_ativo: bool
+    pos_consulta_hora: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    pos_consulta_texto: str = Field(min_length=1, max_length=1000)
+    pos_consulta_excluir: list[UUID] = Field(default_factory=list, max_length=100)
+    retorno_ativo: bool
+    retorno_hora: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    retorno_meses: int = Field(ge=1, le=36)
+    retorno_texto: str = Field(min_length=1, max_length=1000)
+    retorno_texto2: str = Field(min_length=1, max_length=1000)
+
+
+@router.get("/clinics/{clinic_id}/mensagens/automacoes", summary="Pós-consulta e retorno automáticos")
+def ver_automacoes(clinic_id: UUID, conn: Conn = Depends(get_conn)):
+    from app.mensagens import automacoes
+
+    c = servico.carregar_clinica(conn, clinic_id)
+    cfg = automacoes.config(c["settings"])
+    nome = _exemplo_nome(conn, clinic_id)
+    return {**cfg, "previa": {
+        "pos_consulta": automacoes.montar(cfg["pos_consulta_texto"], nome, c["name"], "Limpeza"),
+        "retorno": automacoes.montar(cfg["retorno_texto"], nome, c["name"]),
+        "retorno2": automacoes.montar(cfg["retorno_texto2"], nome, c["name"]),
+    }}
+
+
+@router.put("/clinics/{clinic_id}/mensagens/automacoes", summary="Salvar pós-consulta e retorno (só o administrador)")
+def salvar_automacoes(clinic_id: UUID, body: ConfigAutomacoes, request: Request, conn: Conn = Depends(get_conn)):
+    exigir_admin_clinica(request, clinic_id)
+    servico.carregar_clinica(conn, clinic_id)
+    dados = body.model_dump()
+    dados["pos_consulta_excluir"] = [str(x) for x in body.pos_consulta_excluir]
+    for k in ("pos_consulta_texto", "retorno_texto", "retorno_texto2"):
+        dados[k] = dados[k].strip()
+    conn.execute("update clinics set settings = coalesce(settings, '{}'::jsonb) || %s where id = %s", (Jsonb(dados), clinic_id))
+    return ver_automacoes(clinic_id, conn)
 
 
 @router.post("/clinics/{clinic_id}/mensagens/aniversario/previa", summary="Prévia com dados reais (sem salvar)")

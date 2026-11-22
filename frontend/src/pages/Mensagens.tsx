@@ -48,7 +48,7 @@ function Quando({ m, tz }: { m: Mensagem; tz: string }) {
   const urgente = naFila && dias <= 0
   return (
     <span className="flex w-44 items-center gap-2.5">
-      <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${urgente ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-muted'}`}>
+      <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${urgente ? 'bg-primary-soft text-primary' : 'bg-surface text-muted ring-1 ring-line'}`}>
         <Icone className="size-4" aria-hidden />
       </span>
       <span className="leading-tight">
@@ -114,8 +114,9 @@ export function Mensagens() {
                 const [sRot, sCor] = SITUACAO[m.status]
                 return (
                   <li key={m.id}>
-                    <details className="group">
-                      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl px-3 py-3 hover:bg-surface-muted">
+                    {/* aberta = um cartão só (linha + mensagem); fechada = só um leve destaque ao passar o mouse */}
+                    <details className="group my-1 rounded-2xl transition-colors open:bg-surface-muted/70 open:ring-1 open:ring-line">
+                      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl px-3 py-3 transition-colors hover:bg-surface-muted/50 group-open:hover:bg-transparent">
                         <ChevronRight className="size-4 shrink-0 text-muted transition group-open:rotate-90" aria-hidden />
                         <span className="w-28 shrink-0"><Selo cor={tCor}>{tRot}</Selo></span>
                         <span className="min-w-40 flex-1">
@@ -125,7 +126,7 @@ export function Mensagens() {
                         <Quando m={m} tz={tz} />
                         <span className="w-24 text-right"><Selo cor={sCor}>{sRot}</Selo></span>
                       </summary>
-                      <div className="mb-3 ml-11 mr-3 rounded-2xl bg-surface-muted px-4 py-3 text-sm">
+                      <div className="mx-3 mb-3 ml-11 border-t border-line pt-3 text-sm">
                         <p className="whitespace-pre-line">{m.body}</p>
                         {m.error && <p className="mt-2 text-xs text-muted">Motivo: {m.error}</p>}
                       </div>

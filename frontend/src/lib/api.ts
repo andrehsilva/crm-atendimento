@@ -148,7 +148,7 @@ export type CardCrm = {
 
 export type Mensagem = {
   id: string
-  kind: 'confirmacao' | 'remarcacao' | 'cancelamento' | 'lembrete' | 'aniversario' | 'campanha' | 'tratamento'
+  kind: 'confirmacao' | 'remarcacao' | 'cancelamento' | 'lembrete' | 'aniversario' | 'campanha' | 'tratamento' | 'pos_consulta' | 'retorno'
   channel: string
   body: string
   status: 'agendada' | 'enviada' | 'entregue' | 'lida' | 'falhou' | 'cancelada'

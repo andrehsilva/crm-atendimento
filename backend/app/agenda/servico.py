@@ -465,6 +465,9 @@ def mudar_status(conn, clinic_id: UUID, *, appointment_id: UUID, novo: str, ator
             "update patients set preferred_professional_id = %s where id = %s and preferred_professional_id is null",
             (c["professional_id"], c["patient_id"]),
         )
+        from app.mensagens.automacoes import agendar_pos_consulta  # Etapa 25 (RN-AU-02)
+
+        agendar_pos_consulta(conn, carregar_clinica(conn, clinic_id), novo_c)
     _registrar(conn, clinic_id, appointment_id, ator, novo, _foto(c), _foto(novo_c))
     etapa = {"confirmada": "confirmado"}.get(novo)
     crm.registrar(conn, clinic_id, c["patient_id"], f"consulta_{novo}", ator, etapa)

@@ -19,7 +19,7 @@ from app.painel.avisos import quando
 DIAS_ACONTECIMENTOS = 7
 LIMITE = 100
 WHATSAPP_CAIU = ("SCAN_QR_CODE", "STOPPED", "FAILED")
-NOME_MENSAGEM = {"tratamento": "Convite para seguir o tratamento", "confirmacao": "Confirmação", "remarcacao": "Aviso de remarcação", "cancelamento": "Aviso de cancelamento",
+NOME_MENSAGEM = {"tratamento": "Convite para seguir o tratamento", "pos_consulta": "Pós-consulta", "retorno": "Convite de retorno", "confirmacao": "Confirmação", "remarcacao": "Aviso de remarcação", "cancelamento": "Aviso de cancelamento",
                  "lembrete": "Lembrete", "aniversario": "Mensagem de aniversário", "campanha": "Campanha"}
 
 _SQL = """

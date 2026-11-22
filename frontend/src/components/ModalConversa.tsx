@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, Check, CheckCheck, Hand, MessageSquareOff, Send, Stethoscope } from 'lucide-react'
+import { Bot, CalendarPlus, Check, CheckCheck, Hand, MessageSquareOff, Send, Stethoscope } from 'lucide-react'
 import { PainelTratamentos, Tags } from './Tratamentos'
+import { ModalNovaConsulta } from './agenda/ModalNovaConsulta'
 import { api, type CardCrm, type MensagemChat, type TratamentosPaciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, hora, telefone } from '../lib/formato'
@@ -37,6 +38,15 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
     enabled: !!card,
   })
   const [verTratamento, setVerTratamento] = useState(false)
+  const [marcando, setMarcando] = useState(false)
+  // objeto estável: a janela de marcar reinicia o formulário quando a prévia muda
+  const previaMarcar = useMemo(() => (card ? { telefone: card.phone, nome: card.name ?? undefined } : undefined), [card])
+  // Paciente que nunca escreveu: a Ísis não puxa conversa; quem inicia é a equipe (fica em atendimento manual)
+  const iniciar = useMutation({
+    mutationFn: (t: string) => api.post(`/clinics/${clinica.id}/patients/${card!.id}/conversation/start`, { texto: t }),
+    onSuccess: () => { setTexto(''); recarregar(); aviso.ok('Conversa iniciada pelo WhatsApp. Ela fica em atendimento manual.') },
+    onError: aviso.erro,
+  })
   const abertos = (trat.data?.tratamentos ?? []).filter((t) => t.status === 'em_andamento' || t.status === 'aguardando')
   const base = conversa ? `/clinics/${clinica.id}/conversations/${conversa.id}` : ''
 
@@ -102,6 +112,19 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
         ))}
         <div ref={fimRef} />
       </div>
+
+      {!conversa && !q.isLoading && (
+        <div className="mt-3 space-y-3">
+          <p className="text-xs text-muted">A assistente só responde quando o paciente escreve. Para puxar a conversa, use uma das ações abaixo.</p>
+          <form onSubmit={(e) => { e.preventDefault(); if (texto.trim()) iniciar.mutate(texto.trim()) }} className="flex gap-2">
+            <Entrada className="flex-1" value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={2000}
+              placeholder="Escreva a primeira mensagem (sai pelo WhatsApp da clínica)" />
+            <Botao type="submit" aria-label="Iniciar conversa" disabled={!texto.trim() || iniciar.isPending}><Send className="size-4" /></Botao>
+          </form>
+          <Botao variante="secundario" onClick={() => setMarcando(true)}><CalendarPlus className="size-4" />Marcar consulta</Botao>
+        </div>
+      )}
+      <ModalNovaConsulta aberto={marcando} onFechar={() => setMarcando(false)} previa={previaMarcar} />
 
       {conversa && (
         <form onSubmit={enviar} className="mt-3 flex gap-2">

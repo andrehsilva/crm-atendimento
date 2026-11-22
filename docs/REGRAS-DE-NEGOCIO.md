@@ -124,6 +124,16 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-RS-03 | **Conteúdo (D96):** consultas do dia (agendadas e confirmadas) com horário, **primeiro nome**, procedimento, "sessão X de N" quando é tratamento e ✅ confirmou / ⏳ a confirmar; pausas e horários livres. Nunca observação clínica, telefone ou convênio. | Código | ✅ |
 | RN-RS-04 | Modo de teste (ENVIO_SOMENTE_PARA) vale também aqui; falha do WhatsApp tenta de novo até 3 vezes no mesmo dia. | Código | ✅ |
 
+## Automações de relacionamento (RN-AU) — Etapa 25
+
+| Código | Regra | Onde | Status |
+|---|---|---|---|
+| RN-AU-01 | **Ligar/desligar:** pós-consulta e retorno começam **desligados**; o administrador liga em Configurações › Aniversário e campanhas (textos editáveis com {nome}, {clinica}, {procedimento}). | Config | ✅ |
+| RN-AU-02 | **Pós-consulta (D100, D101):** ao marcar "Compareceu", entra na fila "como você está?" para o dia seguinte às 10:00 (ajustável); uma por atendimento; procedimentos podem ficar de fora. A resposta vai para a Ísis. | Código | ✅ |
+| RN-AU-03 | **Retorno (D102):** quando chega a data de voltar — "volta em" do último tratamento concluído ou X meses (padrão 6) desde o último atendimento — e a pessoa não tem nada marcado nem tratamento aberto, sai um convite às 10:00. Só para datas que venceram **nos últimos 30 dias** (ligar a automação não dispara para todo o histórico antigo; esses ficam no relatório de recall). | Código | ✅ |
+| RN-AU-04 | **Sem resposta (D103):** se a pessoa não respondeu nem marcou, 15 dias depois sai um 2º convite; depois disso, para. | Código | ✅ |
+| RN-AU-05 | Pós-consulta e retorno respeitam o **PARAR**, o silêncio noturno e os limites de envio; o retorno também usa o espaçamento das mensagens em massa (D70). | Código | ✅ |
+
 ## Disparos (RN-DP)
 
 | Código | Regra | Onde | Status |
