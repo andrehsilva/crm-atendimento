@@ -82,11 +82,16 @@ def lista_segmentos():
 # Dashboard (Q19, 1ª versão)
 # ---------------------------------------------------------------------------
 @router.get("/clinics/{clinic_id}/dashboard", summary="Resumo do dia")
-def dashboard(clinic_id: UUID, conn: Conn = Depends(get_conn)):
+def dashboard(clinic_id: UUID, profissional: UUID | None = None, conn: Conn = Depends(get_conn)):
+    """`profissional`: só a agenda daquela pessoa (consultas de hoje, confirmadas, pendentes).
+    Conversas com a equipe, leads parados, fila de mensagens e aniversariantes continuam da clínica toda."""
     c = servico.carregar_clinica(conn, clinic_id)
+    if profissional and not conn.execute("select 1 from professionals where clinic_id = %s and id = %s",
+                                         (clinic_id, profissional)).fetchone():
+        raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
     hoje = datetime.now(c["tz"]).date()
     ini = datetime.combine(hoje, datetime.min.time(), tzinfo=c["tz"])
-    consultas = servico.listar(conn, clinic_id, ini, ini + timedelta(days=1))
+    consultas = servico.listar(conn, clinic_id, ini, ini + timedelta(days=1), professional_id=profissional)
     parado_horas = 24
     r = conn.execute(
         """select

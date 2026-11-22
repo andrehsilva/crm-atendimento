@@ -65,3 +65,17 @@ def test_so_admin_baixa_e_fica_registrado(cliente, conn, clinica, outra_clinica)
     assert conn.execute("select tipo from report_exports where clinic_id = %s", (clinica.id,)).fetchone()[0] == "atendimentos"
     outra = _como(cliente, _usuario(conn, clinic_id=outra_clinica.id, papel="clinic_admin"))
     assert outra.get(url).status_code == 403  # admin de outra clínica não baixa
+
+
+def test_dashboard_filtra_a_agenda_por_profissional(cliente, conn, clinica, outra_clinica):  # noqa: F811
+    from datetime import datetime, time
+    from zoneinfo import ZoneInfo
+
+    hoje = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    _consulta(conn, clinica, datetime.combine(hoje, time(23, 0), ZoneInfo("America/Sao_Paulo")).isoformat(), "agendada")
+    c = _como(cliente, _usuario(conn, clinic_id=clinica.id))
+    base = f"/api/clinics/{clinica.id}/dashboard"
+    assert len(c.get(base).json()["consultas_hoje"]) == 1
+    assert len(c.get(f"{base}?profissional={clinica.prof_a}").json()["consultas_hoje"]) == 1
+    assert len(c.get(f"{base}?profissional={clinica.prof_b}").json()["consultas_hoje"]) == 0
+    assert c.get(f"{base}?profissional={outra_clinica.prof_a}").status_code == 404

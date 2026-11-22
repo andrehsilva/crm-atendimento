@@ -173,7 +173,8 @@ Relatórios propostos:
 
 Cada download fica registrado (LGPD); nenhum relatório traz conversas nem observações clínicas.
 - **15A — Recall, atendimentos, produção e faltas:** ✅ feito e testado (21/11/2026; D73–D75). Menu "Relatórios" (só admin), período, profissional, meses do recall e "Baixar Excel".
-- **15B — Cadastro, aniversariantes e desempenho da assistente:** ⏳ depois da 15A.
+- **Filtro por profissional no Dashboard:** ✅ feito e testado (22/11/2026) (pedido de 21/11/2026). A agenda do dia muda; conversas, leads, fila e aniversariantes seguem "clínica toda".
+- **15B — Cadastro, aniversariantes e desempenho da assistente:** 🔨 em andamento.
 
 ---
 
