@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { AlertCircle, CheckCheck, ChevronRight, Clock, Inbox } from 'lucide-react'
+import { AlertCircle, CalendarClock, CheckCheck, ChevronRight, Clock, Inbox, Send } from 'lucide-react'
 import { PageHeader } from '../components/PageHeader'
 import { RelogioTeste } from '../components/RelogioTeste'
 import { TIPO_MENSAGEM } from '../components/tipoMensagem'
@@ -21,6 +21,43 @@ type Grupo = keyof typeof GRUPOS
 const SITUACAO: Record<Mensagem['status'], [string, 'azul' | 'verde' | 'vermelho' | 'cinza']> = {
   agendada: ['na fila', 'azul'], enviada: ['enviada', 'verde'], entregue: ['entregue', 'verde'], lida: ['lida', 'verde'],
   falhou: ['falhou', 'vermelho'], cancelada: ['cancelada', 'cinza'],
+}
+
+/** "hoje", "amanhã", "em 3 dias", "ontem", "há 5 dias" — conta dias de calendário no fuso da clínica. */
+function diasAte(iso: string, tz: string): number {
+  const dia = (d: Date) => new Date(`${new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(d)}T12:00:00Z`).getTime()
+  return Math.round((dia(new Date(iso)) - dia(new Date())) / 86_400_000)
+}
+
+function relativo(dias: number): string {
+  if (dias === 0) return 'hoje'
+  if (dias === 1) return 'amanhã'
+  if (dias === -1) return 'ontem'
+  return dias > 0 ? `em ${dias} dias` : `há ${-dias} dias`
+}
+
+function Quando({ m, tz }: { m: Mensagem; tz: string }) {
+  const naFila = m.status === 'agendada'
+  const iso = naFila ? m.scheduled_for : (m.sent_at ?? m.created_at)
+  const dias = diasAte(iso, tz)
+  const [semana, resto] = dataHora(iso, tz).split(', ')
+  const horaTxt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(new Date(iso))
+  const Icone = naFila ? CalendarClock : m.status === 'falhou' || m.status === 'cancelada' ? AlertCircle : Send
+  const legenda = naFila ? `sai ${relativo(dias)}` : m.sent_at ? `enviada ${relativo(dias)}` : `criada ${relativo(dias)}`
+  const urgente = naFila && dias <= 0
+  return (
+    <span className="flex w-44 items-center gap-2.5">
+      <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${urgente ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-muted'}`}>
+        <Icone className="size-4" aria-hidden />
+      </span>
+      <span className="leading-tight">
+        <span className="block text-sm font-medium tabular-nums">
+          {semana.replace('.', '')} {resto?.slice(0, 5)} <span className="text-muted">· {horaTxt}</span>
+        </span>
+        <span className={`block text-xs ${urgente ? 'font-medium text-primary' : 'text-muted'}`}>{legenda}</span>
+      </span>
+    </span>
+  )
 }
 
 export function Mensagens() {
@@ -74,7 +111,6 @@ export function Mensagens() {
               {lista.map((m) => {
                 const [tRot, tCor] = TIPO_MENSAGEM[m.kind] ?? [m.kind, 'cinza']
                 const [sRot, sCor] = SITUACAO[m.status]
-                const quando = m.status === 'agendada' ? `sai ${dataHora(m.scheduled_for, tz)}` : dataHora(m.sent_at ?? m.created_at, tz)
                 return (
                   <li key={m.id}>
                     <details className="group">
@@ -85,7 +121,7 @@ export function Mensagens() {
                           <span className="font-medium">{m.paciente ?? 'Sem nome'}</span>
                           <span className="ml-2 text-sm text-muted">{telefone(m.telefone)}</span>
                         </span>
-                        <span className="text-sm tabular-nums text-muted">{quando}</span>
+                        <Quando m={m} tz={tz} />
                         <span className="w-24 text-right"><Selo cor={sCor}>{sRot}</Selo></span>
                       </summary>
                       <div className="mb-3 ml-11 mr-3 rounded-2xl bg-surface-muted px-4 py-3 text-sm">

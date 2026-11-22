@@ -30,7 +30,7 @@ export function Usuarios() {
   })
 
   return (
-    <div className="grid max-w-5xl gap-6 lg:grid-cols-[1fr_20rem]">
+    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
       <Secao titulo="Equipe">
         <ul className="flex flex-col divide-y divide-line">
           {(q.data ?? []).map((u) => {

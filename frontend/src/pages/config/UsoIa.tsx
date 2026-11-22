@@ -44,7 +44,7 @@ export function UsoIa({ podeEditar }: { podeEditar: boolean }) {
   }
 
   return (
-    <div className="grid max-w-5xl gap-6">
+    <div className="grid gap-6">
       <Secao titulo="Este mês" icone={<Gauge className="size-5" />}>
         <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
           <div>

@@ -79,8 +79,11 @@ def _enviados_desde(conn, clinic_id, desde: datetime) -> int:
 
 
 def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, maximo: int = 20,
-                     s: Settings | None = None) -> int:
-    """Envia até `maximo` mensagens vencidas. Devolve quantas foram enviadas."""
+                     s: Settings | None = None, so_clinica=None) -> int:
+    """Envia até `maximo` mensagens vencidas. Devolve quantas foram enviadas.
+
+    `so_clinica` restringe a fila a uma clínica (usado nos testes, para não mexer nas outras).
+    """
     s = s or get_settings()
     permitidos = lista_de_teste(s)
     pular: list = []  # clínicas em silêncio ou no limite nesta rodada
@@ -93,9 +96,10 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
                where o.status = 'agendada' and o.channel = 'whatsapp' and o.scheduled_for <= %s
                  and not (o.clinic_id = any(%s))
                  and not (o.kind = any(%s) and o.clinic_id = any(%s))
+                 and (%s::uuid is null or o.clinic_id = %s::uuid)
                order by (o.kind = any(%s)), o.scheduled_for limit 1
                for update of o skip locked""",
-            (agora, pular, list(MASSA), pular_massa, list(MASSA)),
+            (agora, pular, list(MASSA), pular_massa, so_clinica, so_clinica, list(MASSA)),
         ).fetchone()
         if o is None:
             break

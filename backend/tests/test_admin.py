@@ -6,6 +6,7 @@ import pytest
 
 from app.admin.servico import slug_de
 from app.api import admin as rotas_admin
+from app.canais import conexao
 from app.auth import supabase as sb
 from tests.test_acesso import _como, _usuario, cliente  # noqa: F401 — fixture reaproveitada
 
@@ -96,8 +97,14 @@ class WahaFalso:
         return [self.sessao("livre"), self.sessao("ocupada")]
 
 
-def test_whatsapp_uma_sessao_por_clinica(admin, conn, clinica, outra_clinica, monkeypatch):
+def _waha_falso(monkeypatch):
+    # o painel cria o cliente em dois lugares: direto (servidor da plataforma) e via conexao (servidor da clínica)
     monkeypatch.setattr(rotas_admin, "ClienteWaha", WahaFalso)
+    monkeypatch.setattr(conexao, "ClienteWaha", WahaFalso)
+
+
+def test_whatsapp_uma_sessao_por_clinica(admin, conn, clinica, outra_clinica, monkeypatch):
+    _waha_falso(monkeypatch)
     assert admin.put(f"/api/admin/clinicas/{clinica.id}/whatsapp", json={"sessao": "ocupada"}).status_code == 200
     r = admin.put(f"/api/admin/clinicas/{outra_clinica.id}/whatsapp", json={"sessao": "ocupada"})
     assert r.status_code == 422 and "outra clínica" in r.json()["mensagem"]
@@ -106,7 +113,7 @@ def test_whatsapp_uma_sessao_por_clinica(admin, conn, clinica, outra_clinica, mo
 
 
 def test_nome_de_sessao_invalido(admin, clinica, monkeypatch):
-    monkeypatch.setattr(rotas_admin, "ClienteWaha", WahaFalso)
+    _waha_falso(monkeypatch)
     assert admin.put(f"/api/admin/clinicas/{clinica.id}/whatsapp", json={"sessao": "com espaço"}).status_code == 422
 
 

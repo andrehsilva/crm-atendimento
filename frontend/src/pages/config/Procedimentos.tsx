@@ -45,7 +45,7 @@ export function Procedimentos({ podeEditar }: { podeEditar: boolean }) {
   const nomeProf = Object.fromEntries((profs.data?.profissionais ?? []).map((p) => [p.id, p.nome]))
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-muted">{q.data.length} procedimentos cadastrados</p>
         {podeEditar && <Botao onClick={() => setEditando({ id: null, f: vazio })}><Plus className="size-4" /> Novo Procedimento</Botao>}

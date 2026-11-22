@@ -52,7 +52,7 @@ export function Mensagens({ podeEditar }: { podeEditar: boolean }) {
   const limite = q.data.limite
 
   return (
-    <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 lg:grid-cols-2">
       <Secao titulo="Mensagem de aniversário" icone={<Cake className="size-5" />}>
         <div className="flex flex-col gap-4">
           <label className="flex items-center gap-3 text-sm">

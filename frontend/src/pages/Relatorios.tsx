@@ -39,9 +39,9 @@ export function Relatorios() {
     { tipo: 'recall', titulo: `${pal.Clientes} para chamar de volta`, icone: UserRoundSearch,
       texto: `Quem não vem há ${meses} meses ou mais e não tem nada marcado. Boa lista para uma campanha de retorno.` },
     { tipo: 'atendimentos', titulo: `${pal.Atendimentos} do período`, icone: FileSpreadsheet,
-      texto: 'Um por linha: data, paciente, procedimento, profissional, situação, quem marcou e valor de tabela.' },
+      texto: 'Um por linha: data, paciente, procedimento, profissional, situação, quem marcou e valor (quando o procedimento tiver preço cadastrado).' },
     { tipo: 'producao', titulo: 'Produção', icone: TrendingUp,
-      texto: 'Por profissional, por procedimento e por mês: realizados, faltas, comparecimento e valor estimado.' },
+      texto: 'Por profissional, por procedimento e por mês: realizados, faltas, comparecimento e valor estimado, se houver preço cadastrado.' },
     { tipo: 'faltas', titulo: 'Faltas e cancelamentos', icone: CalendarX,
       texto: 'A lista, a taxa por dia da semana e por horário, e quem falta com frequência.' },
     { tipo: 'pacientes', titulo: `Cadastro de ${pal.clientes}`, icone: Contact,
@@ -54,7 +54,7 @@ export function Relatorios() {
 
   return (
     <>
-      <PageHeader titulo="Relatórios" subtitulo="Baixe em Excel. Valores estimados pela tabela de preços dos procedimentos." />
+      <PageHeader titulo="Relatórios" subtitulo="Escolha o período e baixe a planilha em Excel." />
       <Secao className="mb-6">
         <div className="grid gap-4 md:grid-cols-4">
           <Campo rotulo="Período">

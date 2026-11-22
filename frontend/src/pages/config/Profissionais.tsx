@@ -45,7 +45,7 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
   const paraForm = (p: ProfissionalCfg): Form => ({ nome: p.nome, especialidade: p.especialidade ?? '', bio: p.bio ?? '', cor: p.cor ?? CORES[0], ativo: p.ativo, procedimentos: p.procedimentos })
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-muted">{q.data.profissionais.filter((p) => p.ativo).length} profissionais ativos</p>
         {podeEditar && <Botao onClick={() => setEditando({ id: null, f: { nome: '', especialidade: '', bio: '', cor: CORES[1], ativo: true, procedimentos: [] } })}><Plus className="size-4" /> Novo profissional</Botao>}

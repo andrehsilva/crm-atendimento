@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { api, type Consulta } from '../../lib/api'
+import { api, type Consulta, type StatusConsulta } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
 import { hojeYmd, hora, partes, segundaDaSemana, somarDias } from '../../lib/formato'
 import { useTermos } from '../../lib/termos'
@@ -319,11 +319,15 @@ export function AgendaSemana({
                           borderLeftColor: cor, background: `color-mix(in srgb, ${cor} 16%, var(--surface))`,
                         }}
                       >
-                        <div className="truncate font-semibold">
-                          {largo && <span className="mr-1 font-normal tabular-nums text-muted">{hora(c.starts_at, tz)}</span>}
-                          {c.paciente}
+                        <div className="flex items-start gap-1">
+                          <div className="min-w-0 flex-1 truncate font-semibold">
+                            {largo && <span className="mr-1 font-normal tabular-nums text-muted">{hora(c.starts_at, tz)}</span>}
+                            {c.paciente}
+                          </div>
+                          {!compacta && altura < 54 && <Etiqueta status={c.status} />}
                         </div>
                         {!compacta && <div className="truncate text-muted">{c.procedimento}</div>}
+                        {!compacta && altura >= 54 && <div className="mt-1"><Etiqueta status={c.status} /></div>}
                       </button>
                     )
                   })}
@@ -343,6 +347,20 @@ export function AgendaSemana({
       )}
     </div>
   )
+}
+
+/** Etiqueta da situação no cartão da consulta — além da borda, para ler de relance. */
+const ETIQUETA: Record<StatusConsulta, [string, string]> = {
+  agendada: ['A confirmar', 'bg-[#fcf1dc] text-[#9a6a0c] dark:bg-[#43341a] dark:text-[#f0c86e]'],
+  confirmada: ['Confirmada', 'bg-[#e1f4e8] text-[#1f7a43] dark:bg-[#1d3a29] dark:text-[#86d6a5]'],
+  realizada: ['Realizada', 'bg-[#e3effa] text-[#1f6aa8] dark:bg-[#1e3446] dark:text-[#8cc3f0]'],
+  faltou: ['Faltou', 'bg-[#fce8e6] text-[#c0362e] dark:bg-[#4a2220] dark:text-[#f3a29b]'],
+  cancelada: ['Cancelada', 'bg-surface-muted text-muted'],
+}
+
+function Etiqueta({ status }: { status: StatusConsulta }) {
+  const [rotulo, cls] = ETIQUETA[status]
+  return <span className={`inline-block shrink-0 rounded-md px-1.5 py-px text-[10px] font-semibold no-underline ${cls}`}>{rotulo}</span>
 }
 
 function Pilula({ ativa, onClick, children, cor }: { ativa: boolean; onClick: () => void; children: ReactNode; cor?: string }) {

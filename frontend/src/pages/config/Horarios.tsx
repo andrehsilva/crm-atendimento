@@ -17,7 +17,7 @@ export function Horarios({ podeEditar }: { podeEditar: boolean }) {
   const q = useQuery({ queryKey: ['config', 'horarios', clinica.id], queryFn: () => api.get<THorarios>(`/clinics/${clinica.id}/config/horarios`) })
   if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
   return (
-    <div className="max-w-4xl">
+    <div>
       <section className="flex flex-col divide-y divide-line rounded-3xl bg-surface px-6">
         {q.data.dias.map((d) => <LinhaDia key={d.weekday} dia={d} podeEditar={podeEditar} />)}
       </section>

@@ -61,7 +61,7 @@ export function Site({ podeEditar }: { podeEditar: boolean }) {
   const previa = `/api${base}/previa?layout=${layout}${corAtual && corOk ? `&cor=${encodeURIComponent(corAtual)}` : ''}`
 
   return (
-    <div className="grid max-w-6xl gap-6">
+    <div className="grid gap-6">
       <Secao titulo="Site da clínica" icone={<Globe className="size-5" />}
         acao={e.publicado ? <Selo cor="verde">publicado</Selo> : <Selo cor="ambar">não publicado</Selo>}>
         <p className="max-w-3xl text-sm text-muted">

@@ -27,7 +27,7 @@ export function Assistente({ podeEditar, comIa = true }: { podeEditar: boolean; 
   const num = (k: keyof AssistenteCfg) => (e: { target: { value: string } }) => setF({ ...f, [k]: Number(e.target.value) })
 
   return (
-    <div className="grid max-w-5xl gap-6">
+    <div className="grid gap-6">
       {comIa && <IaClinica podeEditar={podeEditar} />}
       <form onSubmit={(e) => { e.preventDefault(); salvar.mutate() }} className="grid gap-6 lg:grid-cols-2">
         <Secao titulo="Como ela se apresenta" icone={<Bot className="size-5" />}>

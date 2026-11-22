@@ -127,6 +127,12 @@ class SemCommit:
         return getattr(self._c, nome)
 
 
+def _enviar(conn, agora, cliente, s):
+    """Roda a fila só desta clínica: o banco de desenvolvimento tem mensagens reais de outras."""
+    cid = conn.execute("select id from clinics where slug = 'teste-a'").fetchone()[0]
+    return envio.enviar_pendentes(conn, agora, cliente, s=s, so_clinica=cid)
+
+
 def _cfg(lista=TEL, env="dev"):
     return Settings(_env_file=None, env=env, envio_somente_para=lista, waha_api_url="http://waha", waha_api_key="x")
 
@@ -151,8 +157,8 @@ def test_lembrete_so_sai_na_hora_certa(conn, ligada):
     _marcar(conn, ligada, as_(24, 9))
     _so_lembrete(conn, ligada)
     w = WahaFalso()
-    assert envio.enviar_pendentes(SemCommit(conn), as_(23, 8, 59), w, s=_cfg()) == 0
-    assert envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), w, s=_cfg()) == 1
+    assert _enviar(SemCommit(conn), as_(23, 8, 59), w, s=_cfg()) == 0
+    assert _enviar(SemCommit(conn), as_(23, 9, 1), w, s=_cfg()) == 1
     chat_id, texto = w.enviadas[0]
     assert chat_id == "5511977771234@c.us" and "1 - Confirmar" in texto
     assert _status(conn, ligada)[0] == "enviada"
@@ -163,7 +169,7 @@ def test_lembrete_so_sai_na_hora_certa(conn, ligada):
 def test_silencio_noturno_segura_o_envio(conn, ligada):
     _marcar(conn, ligada, as_(24, 9))
     _so_lembrete(conn, ligada)
-    assert envio.enviar_pendentes(SemCommit(conn), as_(23, 22), WahaFalso(), s=_cfg()) == 0
+    assert _enviar(SemCommit(conn), as_(23, 22), WahaFalso(), s=_cfg()) == 0
     assert _status(conn, ligada)[0] == "agendada"
 
 
@@ -171,23 +177,22 @@ def test_modo_de_teste_nao_envia_para_numero_fora_da_lista(conn, ligada):
     _marcar(conn, ligada, as_(24, 9))
     _so_lembrete(conn, ligada)
     w = WahaFalso()
-    envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), w, s=_cfg(lista="+5511900009999"))
+    _enviar(SemCommit(conn), as_(23, 9, 1), w, s=_cfg(lista="+5511900009999"))
     assert w.enviadas == [] and _status(conn, ligada)[0] == "cancelada"
 
 
 def test_producao_envia_sem_lista(conn, ligada):
     _marcar(conn, ligada, as_(24, 9))
     _so_lembrete(conn, ligada)
-    # o banco de desenvolvimento pode ter lembretes de outras clínicas na fila: confere só os desta
     w = WahaFalso()
-    assert envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), w, s=_cfg(lista="", env="prod")) >= 1
+    assert _enviar(SemCommit(conn), as_(23, 9, 1), w, s=_cfg(lista="", env="prod")) == 1
     assert _status(conn, ligada)[0] == "enviada"
 
 
 def test_clinica_sem_whatsapp_marca_falha(conn, clinica):
     _marcar(conn, clinica, as_(24, 9))
     _so_lembrete(conn, clinica)
-    envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), WahaFalso(), s=_cfg())
+    _enviar(SemCommit(conn), as_(23, 9, 1), WahaFalso(), s=_cfg())
     assert _status(conn, clinica)[:2] == ("falhou", "clínica sem WhatsApp conectado")
 
 
@@ -196,7 +201,7 @@ def test_falha_do_waha_tenta_de_novo_ate_3_vezes(conn, ligada):
     _so_lembrete(conn, ligada)
     w, t = WahaFalso(falhar=True), as_(23, 9, 1)
     for _ in range(3):
-        envio.enviar_pendentes(SemCommit(conn), t, w, s=_cfg())
+        _enviar(SemCommit(conn), t, w, s=_cfg())
         t += timedelta(minutes=10)
     assert _status(conn, ligada)[0] == "falhou" and _status(conn, ligada)[2] == 3
 
@@ -207,7 +212,7 @@ def test_limite_por_minuto(conn, ligada):
     _marcar(conn, ligada, as_(24, 14), tel="+5511977775555")
     _so_lembrete(conn, ligada)
     lista = f"{TEL},+5511977775555"
-    assert envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), WahaFalso(), s=_cfg(lista)) == 1
+    assert _enviar(SemCommit(conn), as_(23, 9, 1), WahaFalso(), s=_cfg(lista)) == 1
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +221,7 @@ def test_limite_por_minuto(conn, ligada):
 def _lembrete_enviado(conn, clinica):
     c = _marcar(conn, clinica, as_(24, 9))
     _so_lembrete(conn, clinica)
-    envio.enviar_pendentes(SemCommit(conn), as_(23, 9, 1), WahaFalso(), s=_cfg())
+    _enviar(SemCommit(conn), as_(23, 9, 1), WahaFalso(), s=_cfg())
     cl = S.carregar_clinica(conn, clinica.id)
     p = S.buscar_paciente(conn, clinica.id, TEL)
     cv = chat._conversa(conn, clinica.id, p["id"], "whatsapp")

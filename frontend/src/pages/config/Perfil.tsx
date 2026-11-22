@@ -38,10 +38,10 @@ export function Perfil({ podeEditar, modo = 'tudo' }: { podeEditar: boolean; mod
     onError: aviso.erro,
   })
   if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
-  if (modo === 'aparencia') return <div className="grid max-w-5xl gap-6"><AparenciaClinica podeEditar={podeEditar} /></div>
+  if (modo === 'aparencia') return <div className="grid gap-6"><AparenciaClinica podeEditar={podeEditar} /></div>
 
   return (
-    <div className={modo === 'tudo' ? 'grid max-w-5xl gap-6 lg:grid-cols-[1fr_22rem]' : 'flex max-w-5xl flex-col gap-6'}>
+    <div className={modo === 'tudo' ? 'grid gap-6 lg:grid-cols-[1fr_24rem]' : 'flex flex-col gap-6'}>
       <Secao titulo="Dados da clínica" icone={<Building className="size-5" />}>
         <form onSubmit={(e) => { e.preventDefault(); salvar.mutate() }} className="grid gap-4 sm:grid-cols-2">
           <Campo rotulo="Nome da clínica" ajuda="Aparece no topo da barra lateral e nas mensagens.">
