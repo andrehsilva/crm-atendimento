@@ -1,3 +1,4 @@
+import { Campanhas } from '../../components/Campanhas'
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Cake } from 'lucide-react'
@@ -83,6 +84,7 @@ export function Mensagens({ podeEditar }: { podeEditar: boolean }) {
         </div>
         <p className="mt-3 text-xs text-muted">Exemplo com o nome de um {pal.cliente} da clínica.</p>
       </Secao>
+      <div className="lg:col-span-2"><Campanhas /></div>
     </div>
   )
 }

@@ -18,6 +18,10 @@ const ETAPA: Record<Etapa, [string, CorSelo]> = {
   cancelado: ['Cancelado', 'vermelho'],
 }
 
+/** Botão de ação da linha: área de toque de 36 px, contorno suave, destaque ao passar o mouse e foco visível. */
+const ACAO = 'inline-grid size-9 place-items-center rounded-xl border border-line bg-surface text-muted shadow-sm transition '
+  + 'hover:border-primary hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-primary'
+
 export function Clientes() {
   const { clinica } = useClinica()
   const pal = useTermos()
@@ -79,26 +83,27 @@ export function Clientes() {
                       <td className="py-2.5 pr-4">{p.proxima_consulta ? dataCurta(p.proxima_consulta, tz) : '—'}</td>
                       <td className="py-2.5 pr-4">{p.dentista_referencia ?? '—'}</td>
                       <td className="py-2.5 pr-4 capitalize">{p.origin}</td>
-                      <td className="whitespace-nowrap py-2.5 text-right">
-                        {p.drive_url && (
-                          <a href={p.drive_url} target="_blank" rel="noopener noreferrer" title="Abrir pasta no Google Drive"
-                            aria-label={`Abrir pasta no Drive de ${p.name ?? ''}`}
-                            className="inline-grid rounded-lg p-1.5 text-muted hover:bg-surface-muted hover:text-text">
-                            <FolderOpen className="size-4" />
-                          </a>
-                        )}
-                        <button type="button" title="Observações" aria-label={`Observações de ${p.name ?? ''}`} onClick={() => setNotas(p)}
-                          className="relative rounded-lg p-1.5 text-muted hover:bg-surface-muted hover:text-text">
-                          <NotebookPen className="size-4" />
-                          {p.notas > 0 && (
-                            <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-medium leading-4 text-primary-contrast">
-                              {p.notas}
-                            </span>
+                      <td className="whitespace-nowrap py-2.5 pl-4 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          {p.drive_url && (
+                            <a href={p.drive_url} target="_blank" rel="noopener noreferrer" title="Abrir pasta no Google Drive"
+                              aria-label={`Abrir pasta no Drive de ${p.name ?? ''}`} className={ACAO}>
+                              <FolderOpen className="size-[18px]" strokeWidth={1.75} />
+                            </a>
                           )}
-                        </button>
-                        <button type="button" aria-label={`Editar ${p.name ?? ''}`} onClick={() => setEditando(p)} className="rounded-lg p-1.5 text-muted hover:bg-surface-muted hover:text-text">
-                          <Pencil className="size-4" />
-                        </button>
+                          <button type="button" title={p.notas ? `Observações (${p.notas})` : 'Observações'} aria-label={`Observações de ${p.name ?? ''}`}
+                            onClick={() => setNotas(p)} className={`relative ${ACAO}`}>
+                            <NotebookPen className="size-[18px]" strokeWidth={1.75} />
+                            {p.notas > 0 && (
+                              <span className="absolute -right-1.5 -top-1.5 grid min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-semibold leading-5 text-primary-contrast ring-2 ring-surface">
+                                {p.notas}
+                              </span>
+                            )}
+                          </button>
+                          <button type="button" title="Editar cadastro" aria-label={`Editar ${p.name ?? ''}`} onClick={() => setEditando(p)} className={ACAO}>
+                            <Pencil className="size-[18px]" strokeWidth={1.75} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )

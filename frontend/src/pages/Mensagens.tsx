@@ -11,6 +11,7 @@ const FILTROS = [
   ['cancelamento', 'Cancelamentos'],
   ['lembrete', 'Lembretes'],
   ['aniversario', 'Aniversários'],
+  ['campanha', 'Campanhas'],
 ] as const
 
 export function Mensagens() {
@@ -18,7 +19,7 @@ export function Mensagens() {
   const [tipo, setTipo] = useState('')
   return (
     <>
-      <PageHeader titulo="Mensagens" subtitulo={`Confirmações, lembretes e felicitações enviadas aos ${pal.clientes}`} />
+      <PageHeader titulo="Mensagens" subtitulo={`Tudo o que foi enviado aos ${pal.clientes}. Aniversário e campanhas se configuram em Configurações › Aniversário e campanhas`} />
       <RelogioTeste />
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTROS.map(([valor, rotulo]) => (

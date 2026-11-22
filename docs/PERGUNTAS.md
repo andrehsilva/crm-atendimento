@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 61 de 71 resolvidas (58 respondidas · 3 adiadas) — 20/11/2026.
+**Progresso:** 61 de 74 resolvidas (58 respondidas · 3 adiadas) — 20/11/2026.
 
 ---
 
@@ -68,6 +68,18 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 ## 🟢 Bloqueia a Etapa 14 (Mensagens de campanha e envio espaçado)
 
 ✅ Nada pendente — Etapa 14 liberada.
+
+## 🟢 Bloqueia a Etapa 15 (Relatórios em Excel)
+
+- [x] **Q65 — Quem pode baixar relatórios?**
+  *Sugestão:* só o administrador da clínica, com cada download registrado. Lista de pacientes é dado pessoal (LGPD).
+  Resposta:
+- [x] **Q66 — Recall: depois de quantos meses sem vir?**
+  *Sugestão:* 6 meses por padrão (intervalo da limpeza), ajustável na tela de 3 a 24.
+  Resposta:
+- [x] **Q67 — A 1ª leva:** os 7 relatórios de uma vez ou começar pelos 4 primeiros?
+  *Sugestão:* começar por recall, atendimentos, produção e faltas. Cadastro, aniversariantes e desempenho da assistente vêm numa parte B.
+  Resposta:
 
 ## ⚪ WhatsApp por clínica
 

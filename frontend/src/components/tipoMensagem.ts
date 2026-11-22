@@ -7,4 +7,5 @@ export const TIPO_MENSAGEM: Record<Mensagem['kind'], [string, CorSelo]> = {
   cancelamento: ['Cancelamento', 'vermelho'],
   lembrete: ['Lembrete', 'ambar'],
   aniversario: ['Aniversário', 'roxo'],
+  campanha: ['Campanha', 'cinza'],
 }

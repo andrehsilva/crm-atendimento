@@ -4,7 +4,9 @@ Cada rodada pega as mensagens vencidas, uma por vez (FOR UPDATE SKIP LOCKED), e 
 Travas que ficam no código (não na IA):
 - RN-MS-09: nada de mensagem automática na janela de silêncio (padrão 21h–08h).
 - RN-DP-07: no máximo 20/min e 300/dia por clínica.
-- RN-DP-04: quem pediu PARAR não recebe aniversário.
+- RN-DP-04: quem pediu PARAR não recebe aniversário nem campanha.
+- D70: mensagens em massa (aniversário e campanha) saem espaçadas, 20 a 45 s entre uma e outra da mesma clínica;
+  as ligadas a uma consulta (confirmação, remarcação, cancelamento, lembrete) passam na frente.
 - Modo de teste (ENV=dev): só envia para os telefones de ENVIO_SOMENTE_PARA. Os dados de exemplo
   têm telefones inventados, que podem ser de pessoas reais.
 """
@@ -46,6 +48,20 @@ def _finalizar(conn, oid, status: str, erro: str | None = None) -> None:
     conn.execute("update outbound_messages set status = %s, error = %s where id = %s", (status, erro, oid))
 
 
+MASSA = ("aniversario", "campanha")
+
+
+def intervalo_massa(mensagem_id) -> int:
+    """20 a 45 s, "sorteado" pela própria mensagem (o mesmo valor em todas as rodadas)."""
+    return 20 + int(str(mensagem_id).replace("-", "")[-4:], 16) % 26
+
+
+def _ultima_massa(conn, clinic_id) -> datetime | None:
+    return conn.execute(
+        """select max(sent_at) from outbound_messages where clinic_id = %s and kind = any(%s)
+           and status in ('enviada', 'entregue', 'lida')""", (clinic_id, list(MASSA))).fetchone()[0]
+
+
 def _enviados_desde(conn, clinic_id, desde: datetime) -> int:
     return conn.execute(
         """select count(*) from outbound_messages where clinic_id = %s
@@ -60,6 +76,7 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
     s = s or get_settings()
     permitidos = lista_de_teste(s)
     pular: list = []  # clínicas em silêncio ou no limite nesta rodada
+    pular_massa: list = []  # clínicas que mandaram mensagem em massa há pouco (D70)
     enviados = 0
     while enviados < maximo:
         o = conn.cursor(row_factory=dict_row).execute(
@@ -67,9 +84,10 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
                from outbound_messages o join patients p on p.id = o.patient_id
                where o.status = 'agendada' and o.channel = 'whatsapp' and o.scheduled_for <= %s
                  and not (o.clinic_id = any(%s))
-               order by o.scheduled_for limit 1
+                 and not (o.kind = any(%s) and o.clinic_id = any(%s))
+               order by (o.kind = any(%s)), o.scheduled_for limit 1
                for update of o skip locked""",
-            (agora, pular),
+            (agora, pular, list(MASSA), pular_massa, list(MASSA)),
         ).fetchone()
         if o is None:
             break
@@ -92,7 +110,14 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
             conn.rollback()
             continue
 
-        if o["kind"] == "aniversario" and o["optout_disparos"]:
+        if o["kind"] in MASSA:  # D70: espera o intervalo desde a última mensagem em massa desta clínica
+            ultima = _ultima_massa(conn, cid)
+            if ultima and (agora - ultima).total_seconds() < intervalo_massa(o["id"]):
+                pular_massa.append(cid)
+                conn.rollback()
+                continue
+
+        if o["kind"] in MASSA and o["optout_disparos"]:
             _finalizar(conn, o["id"], "cancelada", "paciente pediu para não receber disparos")
         elif permitidos is not None and o["phone"] not in permitidos:
             _finalizar(conn, o["id"], "cancelada", "modo de teste: telefone fora de ENVIO_SOMENTE_PARA")
