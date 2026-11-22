@@ -184,7 +184,7 @@ No Admin geral › clínica › WhatsApp:
 
 Envio, recebimento, QR e áudio passam a usar o servidor de cada clínica.
 
-## Etapa 17 — "Jeito da clínica" — 🔨 em andamento (D77, D78); texto por segmento fica para depois
+## Etapa 17 — "Jeito da clínica" ✅ (22/11/2026; D77, D78); texto por segmento fica para depois
 O núcleo do prompt (segurança, ferramentas, confirmação em dois passos) **continua no código**, versionado e testado pela bateria de cenários. Em cima dele:
 - **por segmento:** texto editável pelo admin geral, com histórico e "Voltar ao padrão";
 - **por clínica:** campo "Jeito da clínica" (até 1.500 caracteres), que entra numa seção própria e não pode contrariar o núcleo.

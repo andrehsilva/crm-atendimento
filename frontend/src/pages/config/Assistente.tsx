@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CalendarClock } from 'lucide-react'
+import { Bot, CalendarClock, Sparkles } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
 import { Botao, Campo, Entrada, Secao, Seletor } from '../../components/ui'
 import { api, type AssistenteCfg } from '../../lib/api'
@@ -66,6 +66,19 @@ export function Assistente({ podeEditar, comIa = true }: { podeEditar: boolean; 
             <Campo rotulo="Horário do lembrete" ajuda={`No dia útil anterior ${pal.o === 'a' ? 'à' : 'ao'} ${pal.atendimento}.`}>
               <Entrada type="time" value={f.lembrete_hora} onChange={(e) => setF({ ...f, lembrete_hora: e.target.value })} />
             </Campo>
+          </fieldset>
+        </Secao>
+        <Secao titulo="Jeito da clínica" icone={<Sparkles className="size-5" />} className="lg:col-span-2">
+          <p className="mb-3 max-w-3xl text-sm text-muted">
+            Diga com suas palavras como a assistente deve atender aqui: o tom, o que oferecer primeiro, o que evitar.
+            Ela segue isso sempre que não contrariar as regras de segurança (por exemplo, ela sempre confirma antes de marcar).
+          </p>
+          <fieldset disabled={!podeEditar}>
+            <textarea rows={5} maxLength={1500} value={f.jeito_clinica} onChange={(e) => setF({ ...f, jeito_clinica: e.target.value })}
+              aria-label="Jeito da clínica"
+              placeholder={'Exemplos:\n- Somos uma clínica infantil: fale de forma leve e acolhedora.\n- Sempre ofereça primeiro a avaliação gratuita.\n- Não marque extração sem uma avaliação antes.'}
+              className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-60" />
+            <p className="mt-1 text-right text-xs text-muted">{f.jeito_clinica.length}/1500</p>
           </fieldset>
         </Secao>
         {podeEditar && (

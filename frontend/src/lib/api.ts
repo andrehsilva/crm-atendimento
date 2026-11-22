@@ -342,6 +342,7 @@ export type AssistenteCfg = {
   tratamento: 'você' | 'senhor(a)'
   mostrar_precos: boolean
   aceitar_audio: boolean
+  jeito_clinica: string
   antecedencia_min_horas: number
   horizonte_dias: number
   aviso_cancelamento_horas: number
