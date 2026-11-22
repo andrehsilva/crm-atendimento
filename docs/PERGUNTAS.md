@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 67 de 76 resolvidas (64 respondidas · 3 adiadas) — 21/11/2026.
+**Progresso:** 69 de 81 resolvidas (66 respondidas · 3 adiadas) — 22/11/2026.
 
 ---
 
@@ -81,6 +81,15 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente.
 
+## 🔔 Bloqueia a Etapa 19 (Notificações e confirmação de ação)
+
+- [ ] **Q72 — O que entra no sino?** Sugestão: conversa aguardando atendimento humano · consulta marcada, remarcada ou cancelada pela Ísis · paciente confirmou pelo lembrete · mensagem que não foi enviada · WhatsApp desconectado · gasto da IA em 80%/100%.
+  Resposta:
+- [ ] **Q73 — Quando a notificação some?** Sugestão: "aguardando humano" e "WhatsApp desconectado" somem sozinhos quando o problema é resolvido (alguém assumiu a conversa, reconectou); as demais cada pessoa marca como lida (ou "marcar todas como lidas").
+  Resposta:
+- [ ] **Q74 — Chamar atenção como?** Sugestão: contador no sino + som curto só para "aguardando humano"; o título da aba do navegador mostra o número, ex.: "(2) Ísis".
+  Resposta:
+
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
 ✅ Nada pendente — Etapa 12 liberada (depois da 11).
@@ -112,6 +121,8 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q70 — Aba Canais, o que o admin da clínica faz:** ver status e número, mostrar o QR / reiniciar para reconectar e pausar a Ísis no WhatsApp. Servidor WAHA e webhook continuam só com o admin geral. *(22/11 → D79)*
+- [x] **Q71 — Quem vê a aba Canais:** toda a equipe vê o status; só o administrador da clínica mexe. *(22/11 → D80)*
 - [x] **Q68 — Camadas:** ok — começar só pelo "Jeito da clínica"; o editor por segmento fica para depois. *(22/11 → D77)*
 - [x] **Q69 — Quem edita o "Jeito da clínica":** ok — o administrador da clínica (e o admin geral). *(22/11 → D78)*
 - [x] **Q60 — Servidor WAHA por clínica:** cada clínica pode ter servidor WAHA próprio, número e webhook exclusivo, cadastrados no Admin geral; sem servidor próprio, usa o da plataforma. *(22/11 → D76)*

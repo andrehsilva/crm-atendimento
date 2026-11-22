@@ -3,6 +3,7 @@ import { PageHeader } from '../components/PageHeader'
 import { useAuth } from '../lib/auth'
 import { useClinica } from '../lib/clinica'
 import { Assistente } from './config/Assistente'
+import { Canais } from './config/Canais'
 import { Horarios } from './config/Horarios'
 import { Mensagens } from './config/Mensagens'
 import { Perfil } from './config/Perfil'
@@ -12,7 +13,7 @@ import { Usuarios } from './config/Usuarios'
 import { UsoIa } from './config/UsoIa'
 import { Site } from './config/Site'
 
-const ABAS = ['Perfil', 'Horários', 'Procedimentos', 'Profissionais', 'Assistente', 'Uso da IA', 'Aniversário e campanhas', 'Site', 'Usuários'] as const
+const ABAS = ['Perfil', 'Horários', 'Procedimentos', 'Profissionais', 'Assistente', 'Canais', 'Uso da IA', 'Aniversário e campanhas', 'Site', 'Usuários'] as const
 type Aba = (typeof ABAS)[number]
 
 /** Spec 07-A: configurações da clínica em abas. Ver: toda a equipe. Mudar: só o administrador da clínica. */
@@ -43,6 +44,7 @@ export function Configuracoes() {
       {aba === 'Procedimentos' && <Procedimentos podeEditar={podeEditar} />}
       {aba === 'Profissionais' && <Profissionais podeEditar={podeEditar} />}
       {aba === 'Assistente' && <Assistente podeEditar={podeEditar} />}
+      {aba === 'Canais' && <Canais podeEditar={podeEditar} />}
       {aba === 'Uso da IA' && <UsoIa podeEditar={podeEditar} />}
       {aba === 'Aniversário e campanhas' && <Mensagens podeEditar={podeEditar} />}
       {aba === 'Site' && <Site podeEditar={podeEditar} />}

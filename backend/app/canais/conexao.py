@@ -79,3 +79,8 @@ def estado(conn, clinic_id: UUID) -> dict:
     url, segredo = webhook_da_clinica(conn, clinic_id)
     return {"numero_cadastrado": r[6], "servidor_proprio": bool(r[1]), "servidor_url": r[1], "chave_final": r[3],
             "webhook_url": url, "webhook_exclusivo": bool(r[4] and r[5]), "webhook_pronto": bool(segredo)}
+
+
+def isis_pausada_no_whatsapp(clinica: dict) -> bool:
+    """D79: o admin da clínica pausou a Ísis no WhatsApp (Configurações › Canais)."""
+    return bool((clinica.get("settings") or {}).get("isis_pausada_whatsapp"))

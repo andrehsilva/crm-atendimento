@@ -55,6 +55,7 @@ export type Clinica = {
   logo_versao: number | null
   /** Etapa 10A (D46): false = assistente desligada (clínica sem chave de IA) */
   ia_ativa: boolean
+  pausada_whatsapp: boolean
   /** nome que a assistente usa com os clientes (Configurações › Assistente) */
   nome_assistente: string
   /** 10C (D51–D54): false = painel mostra só os "Primeiros passos" */
@@ -348,4 +349,12 @@ export type AssistenteCfg = {
   aviso_cancelamento_horas: number
   limite_consultas_futuras: number
   lembrete_hora: string
+}
+
+/** Configurações › Canais (D79): o WhatsApp visto pela clínica, sem dados técnicos */
+export type CanalWhatsapp = {
+  ligado: boolean
+  situacao: 'conectado' | 'qr' | 'iniciando' | 'parado' | 'falhou' | 'sem_resposta' | 'sem_whatsapp' | 'desconhecido'
+  numero: string | null
+  isis_pausada: boolean
 }

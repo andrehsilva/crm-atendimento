@@ -189,6 +189,13 @@ O núcleo do prompt (segurança, ferramentas, confirmação em dois passos) **co
 - **por segmento:** texto editável pelo admin geral, com histórico e "Voltar ao padrão";
 - **por clínica:** campo "Jeito da clínica" (até 1.500 caracteres), que entra numa seção própria e não pode contrariar o núcleo.
 
+## Etapa 18 — Aba "Canais" da clínica — 🧪 aguardando teste (D79, D80)
+Configurações › Canais: status e número do WhatsApp (toda a equipe vê); o administrador da clínica mostra o QR, reinicia a conexão e pausa/retoma a Ísis no WhatsApp. Servidor, sessão e webhook continuam no Admin geral.
+
+## Etapa 19 — Notificações e confirmação de cada ação — ⏳ esperando respostas (Q72–Q74)
+- **Sino com contador** no topo do painel: "Maria aguardando atendimento humano", e outros avisos que pedem ação da equipe.
+- **Toast de confirmação** (aviso rápido no canto da tela) em **toda** ação feita: hoje só cerca de metade das ações mostra "feito"; os erros já aparecem.
+
 ---
 
 ## Depois da 1ª versão (backlog)

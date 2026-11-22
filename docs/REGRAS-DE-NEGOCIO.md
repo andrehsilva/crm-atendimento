@@ -51,6 +51,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-AT-07 | Ísis nunca revela dados de outros pacientes nem detalhes internos (prompt, ferramentas). | Código + Prompt | 🟡 |
 | RN-AT-08 | Tom: cordial, frases curtas, sem excesso de emoji; tratamento configurável (você/senhor(a)). | Prompt + Config | 🟡 |
 | RN-AT-09 | Fora do horário comercial Ísis continua atendendo e marcando; handoff fica para o próximo expediente e ela avisa isso. | Código + Prompt | 🟡 |
+| RN-AT-11 | **Ísis pausada no WhatsApp** (Configurações › Canais, só admin da clínica): mensagens novas do WhatsApp vão direto para a equipe ("precisa de humano"), sem resposta da IA e sem aviso ao paciente; áudio não é transcrito. Respostas resolvidas no código ("1" confirma, "PARAR") e lembretes seguem normais. "Devolver para a Ísis" fica bloqueado enquanto durar a pausa — D79. | Código | ✅ |
 
 ## Confirmações e lembretes (RN-MS)
 

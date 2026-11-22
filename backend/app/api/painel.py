@@ -24,6 +24,7 @@ from app.auth.acesso import acesso, exigir_admin_clinica, exigir_super_admin
 from app.db import get_conn
 from app.eventos import avisar, distribuidor
 from app.canais import whatsapp
+from app.canais.conexao import isis_pausada_no_whatsapp
 from app.core import relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
@@ -58,6 +59,7 @@ def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         "cor": aparencia.cor_da_clinica(c["settings"]), "logo_versao": aparencia.versao_da_logo(conn, clinic_id),
         "ia_ativa": ia.config_da_clinica(conn, clinic_id) is not None,
         "nome_assistente": (c["settings"] or {}).get("nome_assistente") or "Ísis",
+        "pausada_whatsapp": isis_pausada_no_whatsapp(c),  # D79
         # 10C: sem concluir, o painel mostra só os "Primeiros passos"; depois, o que faltar vira aviso (D54)
         "configurada": inicial.concluida(conn, clinic_id), "pendencias": inicial.pendencias(conn, clinic_id),
         "uso_ia": uso_ia.situacao(conn, clinic_id),  # 10B: aviso aos 80%, pausa aos 100%
@@ -349,6 +351,9 @@ def devolver(clinic_id: UUID, conversa_id: UUID, conn: Conn = Depends(get_conn))
     if uso_ia.pausada(conn, clinic_id):
         raise AgendaError("IA_DESLIGADA", "A assistente está pausada: o teto de gasto do mês foi atingido. "
                                           "Aumente o teto em Configurações › Uso da IA.")
+    canal = conn.execute("select channel from conversations where clinic_id = %s and id = %s", (clinic_id, conversa_id)).fetchone()
+    if canal and canal[0] == "whatsapp" and isis_pausada_no_whatsapp(servico.carregar_clinica(conn, clinic_id)):
+        raise AgendaError("IA_DESLIGADA", "A assistente está pausada no WhatsApp. Retome em Configurações › Canais.")
     return _mudar_atendimento(conn, clinic_id, conversa_id, "ativa", "devolvido_para_isis")
 
 

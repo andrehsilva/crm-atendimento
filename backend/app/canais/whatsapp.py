@@ -20,7 +20,7 @@ from psycopg.rows import dict_row
 from app.agenda.erros import AgendaError
 from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
 from app.canais.waha import ROTULO_MIDIA, ClienteWaha, MensagemEntrada, WahaErro
-from app.canais.conexao import cliente_da_clinica
+from app.canais.conexao import cliente_da_clinica, isis_pausada_no_whatsapp
 from app.config import get_settings
 from app import ia, transcricao, uso_ia
 from app.db import pool
@@ -137,6 +137,8 @@ def _ouvir(conn, clinica: dict, conversa: dict, msg: MensagemEntrada, cliente: C
     if conversa["status"] == "humano" or not transcricao.configurada() or not msg.midia_url:
         return None
     if (clinica.get("settings") or {}).get("aceitar_audio") is False:  # a clínica escolheu não receber áudio
+        return None
+    if isis_pausada_no_whatsapp(clinica):  # D79: ninguém vai ler a transcrição pela IA; não gasta
         return None
     if ia.config_da_clinica(conn, clinica["id"]) is None or uso_ia.pausada(conn, clinica["id"]):
         return None

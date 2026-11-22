@@ -32,7 +32,7 @@ Lista de usuários da clínica (nome, e-mail, papel admin/secretária), convidar
 ### Abas a acrescentar (proposta)
 - **Profissionais:** nome, especialidade, cor na agenda, procedimentos, exceções de horário, férias.
 - **Assistente (Ísis):** nome, tom, regras (antecedência, cancelamento, limite de consultas), "sobre a clínica".
-- **Canais:** link da página web, conexão WhatsApp (QR do WAHA ou dados da API oficial), status.
+- **Canais** (D79, D80): status e número do WhatsApp (toda a equipe vê); o administrador da clínica mostra o QR, reinicia a sessão e pausa/retoma a Ísis no WhatsApp. Servidor, sessão e webhook ficam no Admin geral.
 
 ## B. Admin da plataforma (super-admin)
 Mesmo visual, menu próprio: **Clínicas** · **Uso** · **Configurações da plataforma**.

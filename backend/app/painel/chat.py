@@ -13,6 +13,7 @@ from app.agent import isis
 from app.core import relogio
 from app.eventos import avisar
 from app import uso_ia
+from app.canais.conexao import isis_pausada_no_whatsapp
 from app.ia import config_da_clinica
 from app.mensagens import lembretes
 from app.painel import crm
@@ -120,14 +121,15 @@ def _responder(conn, clinica: dict, paciente: dict, conversa: dict, texto: str, 
     novas: list[dict] = []
     ia = config_da_clinica(conn, clinica["id"])
     teto_atingido = ia is not None and uso_ia.pausada(conn, clinica["id"])
-    if ia is None or teto_atingido:
+    pausada_wpp = conversa.get("channel") == "whatsapp" and isis_pausada_no_whatsapp(clinica)  # D79
+    if ia is None or teto_atingido or pausada_wpp:
         # D46: sem IA = assistente desligada. D45: teto do mês atingido = assistente pausa e o paciente é avisado.
-        # Nos dois casos a conversa vai direto para a equipe.
+        # D79: Ísis pausada no WhatsApp pela clínica. Em todos os casos a conversa vai direto para a equipe.
         if conversa["status"] != "humano":
             conn.execute("update conversations set status = 'humano' where id = %s", (conversa["id"],))
             conversa["status"] = "humano"
             crm.registrar(conn, clinica["id"], paciente["id"], "aguardando_humano", "sistema")
-            if teto_atingido:
+            if teto_atingido and not pausada_wpp:
                 novas.append(_gravar(conn, clinica["id"], conversa["id"], "out", "isis", isis.AVISO_EQUIPE))
         avisar(conn, clinica["id"], "conversa", conversa["id"])
         return novas

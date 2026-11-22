@@ -19,13 +19,13 @@ export function Topbar() {
 
   // Linguagem da equipe da clínica, sem termos técnicos (backend, banco…)
   const bancoOk = saude?.banco.status === 'ok'
-  const assistenteLigada = clinica ? clinica.ia_ativa && clinica.uso_ia.nivel !== 'pausada' : saude?.ia.status === 'configurada'
+  const assistenteLigada = clinica ? clinica.ia_ativa && clinica.uso_ia.nivel !== 'pausada' && !clinica.pausada_whatsapp : saude?.ia.status === 'configurada'
   const cor = erro || (saude && !bancoOk) ? 'bg-red-500' : saude ? (assistenteLigada ? 'bg-green-500' : 'bg-amber-400') : 'bg-amber-400'
   const texto = erro || (saude && !bancoOk)
     ? 'Sem conexão com o sistema. Atualize a página.'
     : saude
       ? clinica
-        ? `Tudo funcionando · ${!clinica.ia_ativa ? 'Assistente desligada' : clinica.uso_ia.nivel === 'pausada' ? 'Assistente pausada' : `${clinica.nome_assistente} atendendo`}`
+        ? `Tudo funcionando · ${!clinica.ia_ativa ? 'Assistente desligada' : clinica.uso_ia.nivel === 'pausada' ? 'Assistente pausada' : clinica.pausada_whatsapp ? `${clinica.nome_assistente} pausada no WhatsApp` : `${clinica.nome_assistente} atendendo`}`
         : `Tudo funcionando · IA da plataforma ${assistenteLigada ? 'configurada' : 'não configurada'}`
       : 'Conectando…'
 
