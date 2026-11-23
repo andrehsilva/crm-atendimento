@@ -114,4 +114,6 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D104 | ✅ **Nichos de saúde mental separados:** Psicologia, Psicanálise e Psiquiatria são tipos de clínica distintos, com termos, procedimentos iniciais e orientações próprias; clínicas existentes com `segmento=psicologia` continuam como Psicologia | pedido do usuário, 22/11/2026 |
 | D105 | ✅ **Horário fixo ao abrir tratamento:** a equipe já marca as sessões (toda semana ou a cada 2 semanas, mesmo dia/horário). "Sem data para terminar" mantém sempre as próximas 8 sessões e acrescenta uma por semana enquanto o tratamento está em andamento (aguardando pausa; sessão cancelada não volta sozinha); encerrar cancela as futuras sem mensagem. Ou um número fixo (2 a 20) | Q93, 23/11/2026 |
 | D106 | ✅ **Lembrete por tratamento:** desligado → as sessões não geram confirmação nem lembrete; remarcação e cancelamento continuam avisados | Q94, 23/11/2026 |
+| D108 | ✅ **Arrastar sessão na agenda:** ao soltar, pergunta "Mover de … para …?" antes de gravar; passa pelas mesmas regras do Remarcar | Q96, 23/11/2026 |
+| D109 | ✅ **Arrastar e avisar:** a confirmação traz "avisar o paciente" marcado (dá para desmarcar) | Q97, 23/11/2026 |
 | D107 | ✅ **Padrão do lembrete:** pelo tipo de clínica — Psicanálise desligado, demais ligados; muda em cada tratamento, inclusive depois | Q95, 23/11/2026 |

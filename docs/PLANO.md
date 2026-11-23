@@ -245,6 +245,10 @@ continua selecionado e que os termos e procedimentos iniciais correspondem ao ni
 - Caixa **"A assistente manda confirmação e lembrete"** (padrão pelo tipo de clínica; Psicanálise desligado).
   No cartão do tratamento: selos "Horário fixo" / "Sem lembrete" e botões para ligar/desligar lembrete e parar o horário fixo.
 
+## Etapa 27 — Arrastar sessão na agenda ✅ (23/11/2026; D108, D109)
+Na agenda (dia e semana), arrastar uma sessão para outro horário/dia: confirmação "Mover de … para …?" com a caixa
+"avisar o paciente" marcada; grava pelo mesmo caminho do Remarcar (todas as regras); se não couber, volta ao lugar com o motivo.
+
 ---
 
 ## Depois da 1ª versão (backlog)

@@ -18,6 +18,16 @@ TZ = ZoneInfo("America/Sao_Paulo")
 AGORA = datetime(2026, 11, 20, 10, 0, tzinfo=TZ)
 
 
+@pytest.fixture(autouse=True)
+def _relogio_no_agora():
+    """O relógio do sistema fica parado em AGORA durante cada teste (as consultas de "futuras" usam ele)."""
+    from app.core import relogio
+
+    relogio.fixar(AGORA)
+    yield
+    relogio.zerar()
+
+
 @pytest.fixture
 def conn():
     url = get_settings().database_url

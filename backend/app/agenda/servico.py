@@ -414,8 +414,10 @@ def cancelar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | Non
 
 
 def remarcar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | None, ator: Ator,
-             novo_inicio: datetime, professional_id: UUID | None = None, agora: datetime | None = None) -> dict:
-    """RN-AG-09: cancela a antiga e cria a nova numa transação; se a nova falhar, a antiga continua."""
+             novo_inicio: datetime, professional_id: UUID | None = None, agora: datetime | None = None,
+             avisar_paciente: bool = True) -> dict:
+    """RN-AG-09: cancela a antiga e cria a nova numa transação; se a nova falhar, a antiga continua.
+    avisar_paciente=False (D109, só recepção): sem mensagem de remarcação; o lembrete da nova data continua."""
     clinica = carregar_clinica(conn, clinic_id)
     agora = agora or datetime.now(clinica["tz"])
     antiga = _consulta_do_paciente(conn, clinic_id, appointment_id, telefone, ator)
@@ -435,7 +437,15 @@ def remarcar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | Non
         )
         _registrar(conn, clinic_id, appointment_id, ator, "remarcada", _foto(antiga), {"nova_consulta": str(nova["id"])})
         crm.registrar(conn, clinic_id, antiga["patient_id"], "consulta_remarcada", ator, "agendado")
-        avisos.enfileirar(conn, clinica, nova, "remarcacao", anterior=antiga, agora=agora)
+        if avisar_paciente or ator != "recepcao":
+            avisos.enfileirar(conn, clinica, nova, "remarcacao", anterior=antiga, agora=agora)
+        else:
+            from app.mensagens.lembretes import agendar_lembrete  # import aqui para evitar import circular
+
+            conn.execute(  # o lembrete da data antiga não pode sair (RN-MS-07)
+                """update outbound_messages set status = 'cancelada'
+                   where clinic_id = %s and appointment_id = %s and status = 'agendada'""", (clinic_id, appointment_id))
+            agendar_lembrete(conn, clinica, nova, agora)
     return {"consulta": nova, "anterior_id": appointment_id, "aviso_politica": _aviso_politica(clinica, antiga["starts_at"], agora)}
 
 

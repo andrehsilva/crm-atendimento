@@ -10,6 +10,7 @@ from uuid import UUID
 from psycopg.rows import dict_row
 
 from app.agenda.erros import AgendaError
+from app.core import relogio
 
 ABERTOS = ("em_andamento", "aguardando")
 ATIVOS_CONSULTA = ("agendada", "confirmada")
@@ -34,13 +35,13 @@ _SELECT = """
 select t.*, s.name as procedimento, pr.name as profissional,
        (select count(*) from appointments a where a.treatment_id = t.id and a.status = 'realizada') as realizadas,
        (select count(*) from appointments a where a.treatment_id = t.id and a.status = any(%(ativos)s)
-          and a.starts_at > now()) as marcadas,
+          and a.starts_at > %(agora)s) as marcadas,
        (select max(a.starts_at) from appointments a where a.treatment_id = t.id and a.status = 'realizada') as ultima_sessao,
        (select p2.name from appointments a join professionals p2 on p2.id = a.professional_id
          where a.treatment_id = t.id and a.status in ('realizada', 'agendada', 'confirmada')
          order by a.starts_at desc limit 1) as profissional_das_sessoes,
        (select min(a.starts_at) from appointments a where a.treatment_id = t.id and a.status = any(%(ativos)s)
-          and a.starts_at > now()) as proxima_sessao,
+          and a.starts_at > %(agora)s) as proxima_sessao,
        (select a.starts_at from appointments a where a.treatment_id = t.id and a.status = 'faltou'
           order by a.starts_at desc limit 1) as ultima_falta
   from treatments t join services s on s.id = t.service_id
@@ -53,13 +54,15 @@ def do_paciente(conn, clinic_id: UUID, patient_id: UUID, so_abertos: bool = Fals
     sql = _SELECT + " and t.patient_id = %(p)s" + (" and t.status = any(%(abertos)s)" if so_abertos else "")
     return _cur(conn).execute(
         sql + " order by (t.status = any(%(abertos)s)) desc, t.created_at desc",
-        {"c": clinic_id, "p": patient_id, "ativos": list(ATIVOS_CONSULTA), "abertos": list(ABERTOS)},
+        {"c": clinic_id, "p": patient_id, "ativos": list(ATIVOS_CONSULTA), "abertos": list(ABERTOS),
+         "agora": relogio.agora()},
     ).fetchall()
 
 
 def obter(conn, clinic_id: UUID, tratamento_id: UUID) -> dict:
     t = _cur(conn).execute(_SELECT + " and t.id = %(t)s",
-                           {"c": clinic_id, "t": tratamento_id, "ativos": list(ATIVOS_CONSULTA)}).fetchone()
+                           {"c": clinic_id, "t": tratamento_id, "ativos": list(ATIVOS_CONSULTA),
+                            "agora": relogio.agora()}).fetchone()
     if not t:
         raise AgendaError("DADOS_INVALIDOS", "Tratamento não encontrado.")
     return t
@@ -174,8 +177,8 @@ def criar(conn, clinic_id: UUID, patient_id: UUID, *, service_id: UUID, professi
     # consultas futuras desse procedimento passam a ser sessões do tratamento
     conn.execute(
         """update appointments set treatment_id = %s where clinic_id = %s and patient_id = %s and service_id = %s
-           and status = any(%s) and starts_at > now() and treatment_id is null""",
-        (tid, clinic_id, patient_id, service_id, list(ATIVOS_CONSULTA)))
+           and status = any(%s) and starts_at > %s and treatment_id is null""",
+        (tid, clinic_id, patient_id, service_id, list(ATIVOS_CONSULTA), relogio.agora()))
     return obter(conn, clinic_id, tid)
 
 

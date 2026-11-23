@@ -118,13 +118,14 @@ def marcar_serie(clinic_id: UUID, body: NovaSerie, conn: Conn = Depends(get_conn
 class Remarcacao(BaseModel):
     novo_inicio: datetime
     professional_id: UUID | None = None
+    avisar_paciente: bool = True  # D109: arrastar na agenda pode remarcar sem mandar mensagem
 
 
 @router.post("/clinics/{clinic_id}/appointments/{appointment_id}/reschedule", summary="Remarcar (recepção)")
 def remarcar(clinic_id: UUID, appointment_id: UUID, body: Remarcacao, conn: Conn = Depends(get_conn)):
     return servico.remarcar(
         conn, clinic_id, appointment_id=appointment_id, telefone=None, ator="recepcao",
-        novo_inicio=body.novo_inicio, professional_id=body.professional_id,
+        novo_inicio=body.novo_inicio, professional_id=body.professional_id, avisar_paciente=body.avisar_paciente,
     )
 
 

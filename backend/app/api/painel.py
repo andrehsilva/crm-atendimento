@@ -162,13 +162,13 @@ def kanban(clinic_id: UUID, conn: Conn = Depends(get_conn)):
            left join conversations cv on cv.patient_id = p.id
            left join lateral (
              select a.id, a.starts_at, s.name as procedimento from appointments a join services s on s.id = a.service_id
-             where a.patient_id = p.id and a.status in ('agendada', 'confirmada') and a.starts_at > now()
+             where a.patient_id = p.id and a.status in ('agendada', 'confirmada') and a.starts_at > %s
              order by a.starts_at limit 1
            ) prox on true
            where p.clinic_id = %s
            group by p.id, prox.id, prox.starts_at, prox.procedimento
            order by p.last_activity_at desc""",
-        (clinic_id,),
+        (relogio.agora(), clinic_id),
     ).fetchall()
     _com_tags(conn, clinic_id, cards)
     return {"colunas": list(crm.ETAPAS), "cards": cards}
@@ -208,11 +208,11 @@ def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(ge
                     pr.name as dentista_referencia,
                     (select max(starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada') as ultima_consulta,
                     (select min(starts_at) from appointments a where a.patient_id = p.id
-                       and a.status in ('agendada','confirmada') and a.starts_at > now()) as proxima_consulta,
+                       and a.status in ('agendada','confirmada') and a.starts_at > %s) as proxima_consulta,
                     (select (extract(epoch from f.updated_at) * 1000)::bigint from patient_photos f where f.patient_id = p.id) as foto_versao
              from patients p left join professionals pr on pr.id = p.preferred_professional_id
              where p.clinic_id = %s"""
-    params: list = [clinic_id]
+    params: list = [relogio.agora(), clinic_id]
     if busca:
         sql += " and (p.name ilike %s or p.phone like %s)"
         params += [f"%{busca}%", f"%{''.join(ch for ch in busca if ch.isdigit()) or busca}%"]

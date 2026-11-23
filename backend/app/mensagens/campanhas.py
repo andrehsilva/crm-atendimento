@@ -11,6 +11,7 @@ from uuid import UUID
 from psycopg.rows import dict_row
 
 from app.agenda.erros import AgendaError
+from app.core import relogio
 from app.eventos import avisar
 
 PUBLICOS = {
@@ -32,9 +33,9 @@ MODELOS = [  # D71: prontos para a clínica só ajustar
 _PUBLICO_SQL = {
     "todos": "true",
     "ativos12m": """exists(select 1 from appointments a where a.patient_id = p.id and a.status = 'realizada'
-                           and a.starts_at >= now() - interval '12 months')""",
+                           and a.starts_at >= %(agora)s - interval '12 months')""",
     "com_consulta": """exists(select 1 from appointments a where a.patient_id = p.id
-                              and a.status in ('agendada', 'confirmada') and a.starts_at >= now())""",
+                              and a.status in ('agendada', 'confirmada') and a.starts_at >= %(agora)s)""",
 }
 
 
@@ -43,8 +44,9 @@ def _destinatarios(conn, clinic_id: UUID, publico: str) -> list[dict]:
         raise AgendaError("DADOS_INVALIDOS", "Público inválido.")
     return conn.cursor(row_factory=dict_row).execute(
         f"""select p.id, p.name from patients p
-            where p.clinic_id = %s and p.phone is not null and not p.optout_disparos and {_PUBLICO_SQL[publico]}
-            order by p.created_at""", (clinic_id,)).fetchall()  # noqa: S608 — trecho vem do dicionário fixo acima
+            where p.clinic_id = %(c)s and p.phone is not null and not p.optout_disparos and {_PUBLICO_SQL[publico]}
+            order by p.created_at""",  # noqa: S608 — trecho vem do dicionário fixo acima
+        {"c": clinic_id, "agora": relogio.agora()}).fetchall()
 
 
 def previa(conn, clinic_id: UUID, publico: str) -> dict:

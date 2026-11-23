@@ -138,8 +138,9 @@ def test_sino_previsao_vencida_e_falta(conn, clinica, canal):
     t = _tratamento(conn, clinica, canal)
     a = conn.execute(
         """insert into appointments (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at, treatment_id)
-           values (%s, %s, %s, %s, now() - interval '2 days', now() - interval '2 days' + interval '1 hour', %s) returning id""",
-        (clinica.id, t["patient_id"], clinica.prof_a, canal, t["id"])).fetchone()[0]
+           values (%s, %s, %s, %s, %s, %s, %s) returning id""",
+        (clinica.id, t["patient_id"], clinica.prof_a, canal, AGORA - timedelta(days=2),
+         AGORA - timedelta(days=2, hours=-1), t["id"])).fetchone()[0]
     S.mudar_status(conn, clinica.id, appointment_id=a, novo="faltou", ator="recepcao")
     T.aguardar(conn, clinica.id, t["id"], motivo_espera="exame", motivo_texto=None, previsao=date.today() - timedelta(days=1))
     itens = {i["tipo"]: i for i in N.listar(conn, clinica.id, uuid4())["itens"]}

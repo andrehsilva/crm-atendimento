@@ -33,9 +33,9 @@ def _visita(conn, clinica, quando, tel=TEL, nome="Lia Souza"):
 def test_pos_consulta_no_dia_seguinte(conn, clinica):
     c = conn.execute(
         """insert into appointments (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at)
-           values (%s, %s, %s, %s, now() - interval '2 hours', now() - interval '1 hour') returning id""",
+           values (%s, %s, %s, %s, %s, %s) returning id""",
         (clinica.id, S.obter_ou_criar_paciente(conn, clinica.id, TEL, "Lia Souza", "manual")["id"],
-         clinica.prof_a, clinica.servico)).fetchone()[0]
+         clinica.prof_a, clinica.servico, AGORA - timedelta(hours=2), AGORA - timedelta(hours=1))).fetchone()[0]
     S.mudar_status(conn, clinica.id, appointment_id=c, novo="realizada", ator="recepcao")
     assert _fila(conn, clinica, "pos_consulta") == []  # começa desligado (RN-AU-01)
     conn.execute("update appointments set status = 'agendada' where id = %s", (c,))

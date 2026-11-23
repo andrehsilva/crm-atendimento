@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Move } from 'lucide-react'
 import { api, type Consulta, type StatusConsulta } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
-import { hojeYmd, hora, partes, segundaDaSemana, somarDias } from '../../lib/formato'
+import { dataCurta, hojeYmd, hora, partes, segundaDaSemana, somarDias } from '../../lib/formato'
 import { useTermos } from '../../lib/termos'
+import { useAviso } from '../Aviso'
+import { Botao, Modal } from '../ui'
+
+/** Etapa 27 (D108/D109): onde a sessão arrastada foi solta. */
+type Destino = { ymd: string; min: number; prof: string }
+const PASSO_MIN = 15 // ao soltar, o horário "encaixa" de 15 em 15 minutos
 
 const DIAS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 const DIAS_LONGOS = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo']
@@ -138,6 +144,37 @@ export function AgendaSemana({
     if (!onVazio) return
     const y = e.clientY - e.currentTarget.getBoundingClientRect().top
     onVazio(ymd, hhmm(inicioMin + Math.floor(y / alturaSlot) * 30), prof)
+  }
+
+  // --- Arrastar para remarcar (Etapa 27) ---------------------------------------------------------------
+  const podeArrastar = !compacta
+  const arrastando = useRef<{ c: Consulta; offsetMin: number } | null>(null)
+  const [alvo, setAlvo] = useState<(Destino & { duracao: number }) | null>(null)
+  const [mover, setMover] = useState<{ c: Consulta; destino: Destino } | null>(null)
+  const movivel = (c: Consulta) => (c.status === 'agendada' || c.status === 'confirmada') && new Date(c.starts_at) > new Date()
+
+  function destinoDoPonteiro(e: DragEvent<HTMLDivElement>, ymd: string, prof?: string): (Destino & { duracao: number }) | null {
+    const a = arrastando.current
+    if (!a) return null
+    const y = e.clientY - e.currentTarget.getBoundingClientRect().top
+    const bruto = inicioMin + (y / alturaSlot) * 30 - a.offsetMin
+    const min = Math.max(inicioMin, Math.round(bruto / PASSO_MIN) * PASSO_MIN)
+    const ini = partes(a.c.starts_at, tz)
+    const fim = partes(a.c.ends_at, tz)
+    const duracao = fim.h * 60 + fim.min - (ini.h * 60 + ini.min)
+    return { ymd, min: Math.min(min, fimMin - duracao), prof: prof ?? a.c.professional_id, duracao }
+  }
+
+  function soltar(e: DragEvent<HTMLDivElement>, ymd: string, prof?: string) {
+    e.preventDefault()
+    const d = destinoDoPonteiro(e, ymd, prof)
+    const a = arrastando.current
+    arrastando.current = null
+    setAlvo(null)
+    if (!a || !d) return
+    const ini = partes(a.c.starts_at, tz)
+    if (ini.ymd === d.ymd && ini.h * 60 + ini.min === d.min && a.c.professional_id === d.prof) return // não mexeu
+    setMover({ c: a.c, destino: { ymd: d.ymd, min: d.min, prof: d.prof } })
   }
 
   function escolherData() {
@@ -302,6 +339,14 @@ export function AgendaSemana({
                     backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${alturaSlot * 2}px), repeating-linear-gradient(to bottom, transparent 0 ${alturaSlot}px, color-mix(in srgb, var(--border) 45%, transparent) ${alturaSlot}px ${alturaSlot + 1}px, transparent ${alturaSlot + 1}px ${alturaSlot * 2}px)`,
                   }}
                   onClick={(e) => cliqueVazio(e, col.ymd, col.prof)}
+                  onDragOver={podeArrastar ? (e) => {
+                    if (!arrastando.current) return
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    const d = destinoDoPonteiro(e, col.ymd, col.prof)
+                    if (d && (d.ymd !== alvo?.ymd || d.min !== alvo?.min || d.prof !== alvo?.prof)) setAlvo(d)
+                  } : undefined}
+                  onDrop={podeArrastar ? (e) => soltar(e, col.ymd, col.prof) : undefined}
                 >
                   {fechadoAntes > 0 && <div className="absolute inset-x-0 top-0 bg-surface-muted" style={{ height: fechadoAntes }} />}
                   {fechadoDepois > 0 && <div className="absolute inset-x-0 bottom-0 bg-surface-muted" style={{ height: fechadoDepois }} />}
@@ -323,13 +368,22 @@ export function AgendaSemana({
                     const largura = 100 / lanes.length
                     const cor = c.cor ?? 'var(--primary)'
                     const largo = modo === 'dia' || lanes.length === 1
+                    const arrastavel = podeArrastar && movivel(c)
                     return (
                       <button
                         key={c.id}
                         type="button"
+                        draggable={arrastavel}
+                        onDragStart={arrastavel ? (e) => {
+                          const y = e.clientY - e.currentTarget.getBoundingClientRect().top
+                          arrastando.current = { c, offsetMin: (y / alturaSlot) * 30 }
+                          e.dataTransfer.effectAllowed = 'move'
+                          e.dataTransfer.setData('text/plain', c.id)
+                        } : undefined}
+                        onDragEnd={() => { arrastando.current = null; setAlvo(null) }}
                         onClick={(e) => { e.stopPropagation(); onConsulta?.(c) }}
-                        title={`${hora(c.starts_at, tz)} ${c.paciente} — ${c.procedimento} (${c.profissional})`}
-                        className={`absolute z-10 overflow-hidden rounded-lg px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm transition hover:brightness-95 ${
+                        title={`${hora(c.starts_at, tz)} ${c.paciente} — ${c.procedimento} (${c.profissional})${arrastavel ? ' · arraste para mudar o horário' : ''}`}
+                        className={`absolute z-10 overflow-hidden rounded-lg px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm transition hover:brightness-95 ${arrastavel ? 'cursor-grab active:cursor-grabbing' : ''} ${
                           c.status === 'agendada' ? 'border-l-[3px] border-dashed' : 'border-l-[3px]'
                         } ${c.status === 'realizada' || c.status === 'faltou' || c.status === 'cancelada' ? 'opacity-60' : ''} ${c.status === 'cancelada' ? 'line-through' : ''}`}
                         style={{
@@ -350,6 +404,12 @@ export function AgendaSemana({
                     )
                   })}
 
+                  {alvo && alvo.ymd === col.ymd && (!col.prof || alvo.prof === col.prof) && (
+                    <div className="pointer-events-none absolute inset-x-0.5 z-20 rounded-lg border-2 border-dashed border-primary bg-primary-soft/50 px-1.5 py-0.5 text-[11px] font-semibold text-primary"
+                      style={{ top: ((alvo.min - inicioMin) / 30) * alturaSlot + 1, height: Math.max((alvo.duracao / 30) * alturaSlot - 2, 18) }}>
+                      {hhmm(alvo.min)}
+                    </div>
+                  )}
                   {ehHoje && linhaAgora !== null && (
                     <div className="pointer-events-none absolute inset-x-0 z-10" style={{ top: linhaAgora }} aria-hidden>
                       <div className="relative h-0.5 bg-primary">
@@ -363,7 +423,61 @@ export function AgendaSemana({
           </div>
         </div>
       )}
+      {podeArrastar && <ModalMover pedido={mover} onFechar={() => setMover(null)} />}
     </div>
+  )
+}
+
+/** Etapa 27 (D108/D109): confirma antes de gravar; "avisar o paciente" já vem marcado. */
+function ModalMover({ pedido, onFechar }: { pedido: { c: Consulta; destino: Destino } | null; onFechar: () => void }) {
+  const { clinica, cadastros } = useClinica()
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const tz = clinica.timezone
+  const [avisar, setAvisar] = useState(true)
+  const salvar = useMutation({
+    mutationFn: () => {
+      const { c, destino } = pedido!
+      return api.post(`/clinics/${clinica.id}/appointments/${c.id}/reschedule`, {
+        novo_inicio: `${destino.ymd}T${hhmm(destino.min)}:00`,
+        professional_id: destino.prof !== c.professional_id ? destino.prof : null,
+        avisar_paciente: avisar,
+      })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['agenda'] })
+      qc.invalidateQueries({ queryKey: ['mensagens'] })
+      aviso.ok(avisar ? 'Horário mudado. O paciente vai receber a mensagem de remarcação.' : 'Horário mudado, sem mensagem ao paciente.')
+      setAvisar(true)
+      onFechar()
+    },
+    onError: (e) => { aviso.erro(e); onFechar() }, // não coube: a sessão continua onde estava
+  })
+  if (!pedido) return <Modal titulo="Mudar horário" aberto={false} onFechar={onFechar}>{null}</Modal>
+  const { c, destino } = pedido
+  const novoProf = destino.prof !== c.professional_id ? cadastros.profissionais.find((p) => p.id === destino.prof)?.name : null
+  const diaNovo = dataCurta(`${destino.ymd}T12:00:00Z`, 'UTC')
+  return (
+    <Modal titulo="Mudar horário" aberto onFechar={() => { setAvisar(true); onFechar() }}>
+      <div className="grid gap-4">
+        <p className="flex items-center gap-2 text-sm"><Move className="size-4 text-primary" /><b>{c.paciente}</b> · {c.procedimento}</p>
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface-muted px-4 py-3 text-sm">
+          <span>{dataCurta(c.starts_at, tz)} {hora(c.starts_at, tz)}<span className="text-muted"> · {c.profissional}</span></span>
+          <ArrowRight className="size-4 text-muted" />
+          <b>{diaNovo} {hhmm(destino.min)}{novoProf ? ` · ${novoProf}` : ''}</b>
+        </div>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-0.5" checked={avisar} onChange={(e) => setAvisar(e.target.checked)} />
+          <span>Avisar o paciente pelo WhatsApp
+            <span className="block text-xs text-muted">Manda a mensagem de remarcação com a nova data. O lembrete do dia anterior continua valendo.</span>
+          </span>
+        </label>
+        <div className="flex justify-end gap-2">
+          <Botao variante="fantasma" onClick={() => { setAvisar(true); onFechar() }}>Voltar</Botao>
+          <Botao onClick={() => salvar.mutate()} disabled={salvar.isPending}>{salvar.isPending ? 'Mudando…' : 'Confirmar'}</Botao>
+        </div>
+      </div>
+    </Modal>
   )
 }
 

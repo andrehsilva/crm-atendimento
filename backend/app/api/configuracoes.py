@@ -19,6 +19,7 @@ from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.auth.acesso import acesso, exigir_admin_clinica, usuario_da_requisicao
 from app.auth.usuarios import criar_ou_ligar
+from app.core import relogio
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.db import get_conn
 from app.eventos import avisar
@@ -203,8 +204,8 @@ def _afetadas(conn, clinica: dict, weekday: int, dia: Dia) -> list[dict]:
     for c in _cur(conn).execute(
         """select a.id, a.starts_at, a.ends_at, p.name as paciente, pr.name as profissional
            from appointments a join patients p on p.id = a.patient_id join professionals pr on pr.id = a.professional_id
-           where a.clinic_id = %s and a.status in ('agendada', 'confirmada') and a.starts_at > now()
-           order by a.starts_at""", (clinica["id"],)):
+           where a.clinic_id = %s and a.status in ('agendada', 'confirmada') and a.starts_at > %s
+           order by a.starts_at""", (clinica["id"], relogio.agora())):
         ini, fim = c["starts_at"].astimezone(tz), c["ends_at"].astimezone(tz)
         if ini.weekday() != weekday:
             continue
@@ -270,9 +271,9 @@ def ver_procedimentos(clinic_id: UUID, conn=Depends(get_conn)):
                   s.price_cents as preco_centavos, s.active as ativo, s.bookable_by_ai as ia_pode_marcar,
                   coalesce(array_agg(ps.professional_id) filter (where ps.professional_id is not null), '{}') as profissionais,
                   (select count(*) from appointments a where a.service_id = s.id and a.status in ('agendada', 'confirmada')
-                     and a.starts_at > now()) as consultas_futuras
+                     and a.starts_at > %s) as consultas_futuras
            from services s left join professional_services ps on ps.service_id = s.id
-           where s.clinic_id = %s group by s.id order by s.active desc, s.name""", (clinic_id,),
+           where s.clinic_id = %s group by s.id order by s.active desc, s.name""", (relogio.agora(), clinic_id),
     ).fetchall()
 
 
@@ -842,7 +843,7 @@ def _afetadas_prof(conn, clinica: dict, professional_id: UUID, faixas: list) -> 
             """select a.id, a.starts_at, a.ends_at, p.name as paciente from appointments a
                join patients p on p.id = a.patient_id
                where a.clinic_id = %s and a.professional_id = %s and a.status in ('agendada', 'confirmada')
-                 and a.starts_at > now() order by a.starts_at""", (clinica["id"], professional_id)).fetchall():
+                 and a.starts_at > %s order by a.starts_at""", (clinica["id"], professional_id, relogio.agora())).fetchall():
         janelas = R.janelas_do_dia(c["starts_at"].astimezone(tz).date(), tz, horas, [], faixas)
         if not R.cabe(c["starts_at"], c["ends_at"], janelas):
             saida.append({"id": c["id"], "quando": c["starts_at"], "paciente": c["paciente"]})

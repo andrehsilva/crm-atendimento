@@ -13,6 +13,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from app.core import relogio
+
 TIPOS = {
     "recall": "Pacientes para chamar de volta",
     "atendimentos": "Atendimentos do período",
@@ -99,11 +101,11 @@ def gerar(conn, clinic_id: UUID, tipo: str, *, de: date, ate: date, prof: UUID |
                where p.clinic_id = %s
                  and (case when v.volta_em is not null then v.volta_em <= %s else u.starts_at < %s end)
                  and not exists (select 1 from appointments f where f.patient_id = p.id
-                                 and f.status in ('agendada', 'confirmada') and f.starts_at >= now())
+                                 and f.status in ('agendada', 'confirmada') and f.starts_at >= %s)
                  -- tratamento aberto (em andamento ou aguardando) nunca entra no recall
                  and not exists (select 1 from treatments t where t.patient_id = p.id and t.clinic_id = p.clinic_id
                                  and t.status in ('em_andamento', 'aguardando'))
-               order by u.starts_at""", (clinic_id, datetime.now(tz).date(), limite)).fetchall()
+               order by u.starts_at""", (clinic_id, datetime.now(tz).date(), limite, relogio.agora())).fetchall()
         agora = datetime.now(tz)
         _aba(wb, "Chamar de volta", ["Paciente", "Telefone", "Última consulta", "Último procedimento", "Profissional", "Meses sem vir"],
              [[n, f, local(u).date(), s, pr, round((agora - u).days / 30.44, 1)] for n, f, u, s, pr in linhas], {3: "DD/MM/YYYY"})
@@ -174,11 +176,11 @@ def gerar(conn, clinic_id: UUID, tipo: str, *, de: date, ate: date, prof: UUID |
                       (select min(a.starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada'),
                       (select max(a.starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada'),
                       (select min(a.starts_at) from appointments a where a.patient_id = p.id
-                         and a.status in ('agendada', 'confirmada') and a.starts_at >= now()),
+                         and a.status in ('agendada', 'confirmada') and a.starts_at >= %s),
                       (select count(*) from appointments a where a.patient_id = p.id and a.status = 'realizada'),
                       pr.name, p.optout_disparos
                from patients p left join professionals pr on pr.id = p.preferred_professional_id
-               where p.clinic_id = %s order by p.name nulls last""", (clinic_id,)).fetchall()
+               where p.clinic_id = %s order by p.name nulls last""", (relogio.agora(), clinic_id)).fetchall()
         d = lambda v: local(v).date() if v else None  # noqa: E731
         _aba(wb, "Pacientes", ["Nome", "Telefone", "Nascimento", "Origem", "Cadastrado em", "Primeira consulta", "Última consulta",
                                "Próxima consulta", "Consultas realizadas", "Profissional de referência", "Não recebe mensagens"],
