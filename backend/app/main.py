@@ -1,7 +1,9 @@
 """Ponto de entrada do backend. Rode com: uv run uvicorn app.main:app --reload"""
 
+import os
 import threading
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +17,7 @@ from app.core.producao import problemas
 from app.db import fechar_pool
 from app.eventos import distribuidor
 from app.mensagens.agendador import agendador
+from app.painel_web import servir_painel
 
 settings = get_settings()
 
@@ -74,3 +77,7 @@ app.include_router(canais.router)
 app.include_router(notificacoes.router)
 app.include_router(tratamentos.router)
 app.include_router(pergunte.router)
+
+# Um serviço só (Easypanel): se o painel compilado estiver junto, o backend também entrega as telas.
+# Fica por último para não engolir as rotas da API.
+servir_painel(app, Path(os.environ.get("PAINEL_DIST", "/app/frontend/dist")))

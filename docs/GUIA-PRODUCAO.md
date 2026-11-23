@@ -197,36 +197,32 @@ Teste a restauração uma vez num projeto Supabase vazio (`pg_restore`), para te
 - **Chat de teste e rotas de desenvolvimento** (`/api/web/...`, `/api/dev/...`) ficam desligados em produção.
 - **Segredos** só no `backend/.env` do servidor. Se algum vazar, troque na origem (Supabase, WAHA, IA) e no `.env`.
 
-## 12. Publicar com Easypanel (no lugar dos passos 3 e 4)
+## 12. Publicar com Easypanel (no lugar dos passos 2, 3 e 4) — um serviço só
 
-No Easypanel quem cuida do domínio e do HTTPS é o próprio Easypanel; o Caddy do container `web` só serve o painel
-na porta 80 e repassa `/api`, `/webhooks`, `/health` e `/site` ao backend.
+No Easypanel a Ísis roda num **único serviço App**: o `Dockerfile` da raiz compila o painel e o backend entrega
+as telas e a API no mesmo endereço. Domínio e HTTPS ficam com o Easypanel. (O `docker-compose.yml`, com Caddy,
+continua valendo para quem não usa Easypanel.)
 
-1. **DNS:** registro **A** do subdomínio (ex.: `isis.seudominio.com.br`) → IP da VPS.
-2. **Supabase › Authentication › URL Configuration:** *Site URL* = `https://<subdomínio>`; em *Redirect URLs* inclua
-   `https://<subdomínio>/redefinir-senha` (mantenha as do localhost se ainda desenvolve).
-3. **Easypanel › Create Project** (ex.: `isis`). Dentro dele, dois serviços **App**, ambos com
-   *Source* = GitHub `andrehsilva/crm-atendimento`, branch `main`, *Build Path* `/`, *Build* = **Dockerfile**:
-
-   | Serviço | Dockerfile | Environment | Domínio |
-   |---|---|---|---|
-   | `backend` | `backend/Dockerfile` | as variáveis do `backend/.env.producao.example` (ver abaixo) | nenhum |
-   | `web` | `deploy/web.Dockerfile` | `ENDERECO_SITE=:80` e `BACKEND_ENDERECO=isis_backend:8000` | o subdomínio, porta **80**, HTTPS ligado |
-
-   (`isis_backend` = `<projeto>_<serviço>`, o nome interno que o Easypanel dá ao backend.)
-4. **Variáveis do `backend`** (aba *Environment*; nunca no git):
-   - `ENV=prod`; `FRONTEND_ORIGIN` e `PUBLIC_BASE_URL` = `https://<subdomínio>`; `SITE_BASE_URL=https://<subdomínio>/site`.
+1. **DNS:** registro **A** do subdomínio (ex.: `isis.seudominio.com.br`) → IP da VPS
+   (ou use o endereço temporário que o Easypanel gera).
+2. **Supabase › Authentication › URL Configuration:** em *Redirect URLs* inclua `https://<endereço>/redefinir-senha`.
+3. **Easypanel › projeto › + Serviço › Aplicativo** (ex.: `crm-atendimento`):
+   - *Fonte* › **Git**: `https://github.com/andrehsilva/crm-atendimento.git`, ramo `main`, caminho de build `/`.
+   - *Construção* › **Dockerfile**, arquivo `Dockerfile`.
+   - *Domínios*: o subdomínio, **porta 8000**, HTTPS ligado.
+   - **Uma réplica só** (lembretes e tempo real rodam dentro do processo).
+4. **Ambiente** (nunca no git):
+   - `ENV=prod`; `FRONTEND_ORIGIN` e `PUBLIC_BASE_URL` = `https://<endereço>`; `SITE_BASE_URL=https://<endereço>/site`.
    - `DATABASE_URL` do **Session pooler** (porta 5432): a VPS costuma ter só IPv4 e o endereço direto `db.….supabase.co` só tem IPv6.
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `LLM_*`.
-   - `IA_CHAVE_MESTRA`: se o banco já tem clínicas com chave de IA, use **a mesma** chave de antes (outra deixa as chaves ilegíveis).
-   - WAHA no mesmo Easypanel: `WAHA_API_URL=http://<projeto-do-waha>_<serviço-do-waha>:3000` (rede interna) e `WAHA_API_KEY`.
-   - `WAHA_WEBHOOK_HMAC_KEY` (32+ caracteres) e `MENSAGENS_AUTOMATICAS`. Nunca `CHAT_TESTE=true`.
-   - **Uma réplica só** do `backend` (lembretes e tempo real rodam dentro dele).
-5. **Deploy** do `backend` e depois do `web`. Se o backend não subir, a aba *Logs* lista o que falta.
-6. **Tabelas:** no *Console* do `backend`: `python scripts/migrar.py` (aplica só o que for novo).
+   - `IA_CHAVE_MESTRA`: se o banco já tem clínicas com chave de IA, use **a mesma** de antes (outra deixa as chaves ilegíveis).
+   - `WAHA_API_URL` (no mesmo Easypanel pode ser `http://<projeto>_<serviço-do-waha>:3000`), `WAHA_API_KEY`,
+     `WAHA_WEBHOOK_HMAC_KEY` (32+ caracteres) e `MENSAGENS_AUTOMATICAS`. Nunca `CHAT_TESTE=true`.
+5. **Implantar.** Se não subir, a aba *Logs* lista o que falta.
+6. **Tabelas:** no *Console* do serviço: `python scripts/migrar.py` (aplica só o que for novo).
    Super admin (se for banco novo): `python scripts/usuarios.py super-admin voce@seudominio.com.br "Seu Nome"`.
-7. **WhatsApp:** Admin geral › clínica › WhatsApp › **Apontar webhook** (passa a ser `https://<subdomínio>/webhooks/waha`).
-8. **Atualizar versão:** `git push` na `main` + botão **Deploy** (ou ligue o *Auto Deploy* do Easypanel). Depois, `migrar.py` no Console.
+7. **WhatsApp:** Admin geral › clínica › WhatsApp › **Apontar webhook** (passa a ser `https://<endereço>/webhooks/waha`).
+8. **Atualizar versão:** `git push` na `main` + **Implantar** (ou o deploy automático). Depois, `migrar.py` no Console.
 
 > ⚠️ **Mesmo banco do desenvolvimento:** dois backends ligados no mesmo banco mandam lembretes **em dobro**.
 > Com a VPS no ar, rode o backend local com `MENSAGENS_AUTOMATICAS=false` (ou deixe-o desligado). E o banco de
