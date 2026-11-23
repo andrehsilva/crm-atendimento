@@ -111,3 +111,4 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D101 | ✅ **Pós-consulta:** no dia seguinte às 10:00 (ajustável), para quem foi marcado como "Compareceu"; cada procedimento pode ficar de fora. Uma por atendimento | Q89, 22/11/2026 |
 | D102 | ✅ **Retorno automático:** na data de voltar ("volta em" do tratamento concluído ou X meses sem vir, padrão 6), às 10:00, espaçado como as mensagens em massa e respeitando o PARAR; a Ísis marca quando a pessoa responde | Q91, 22/11/2026 |
 | D103 | ✅ **Retorno sem resposta:** mais 1 convite 15 dias depois; sem resposta, para (fica no relatório de recall) | Q92, 22/11/2026 |
+| D104 | ✅ **Nichos de saúde mental separados:** Psicologia, Psicanálise e Psiquiatria são tipos de clínica distintos, com termos, procedimentos iniciais e orientações próprias; clínicas existentes com `segmento=psicologia` continuam como Psicologia | pedido do usuário, 22/11/2026 |

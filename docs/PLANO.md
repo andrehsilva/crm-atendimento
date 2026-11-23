@@ -231,6 +231,13 @@ De manhã (horário ajustável), o profissional recebe no WhatsApp pessoal a gra
 - **Pós-consulta:** depois de "Compareceu", mensagem "como você está?" (D100).
 - **Retorno:** na data de voltar ("volta em" do tratamento concluído ou recall), convite para marcar; a Ísis conduz.
 
+## Ajuste pós-25 — Tipos de clínica de saúde mental ✅ (22/11/2026; D104)
+No cadastro e em Configurações › Perfil, Psicologia, Psicanálise e Psiquiatria são opções separadas, cada uma com termos,
+procedimentos iniciais e orientações próprias. Clínicas existentes continuam classificadas como Psicologia.
+
+**O que testar:** criar uma clínica de cada tipo no Admin geral e conferir, em Configurações › Perfil, que o tipo salvo
+continua selecionado e que os termos e procedimentos iniciais correspondem ao nicho.
+
 ---
 
 ## Depois da 1ª versão (backlog)

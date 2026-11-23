@@ -52,6 +52,42 @@ def test_texto_da_assistente_monta_para_todo_segmento(codigo):
         assert "dentista" not in texto.lower() and "odontol" not in texto.lower()
 
 
+@pytest.mark.parametrize(
+    ("codigo", "nome", "profissional", "atendimento", "servico"),
+    [
+        ("psicologia", "Psicologia", "psicólogo(a)", "sessão", "Sessão de psicoterapia"),
+        ("psicanalise", "Psicanálise", "psicanalista", "sessão", "Sessão de psicanálise"),
+        ("psiquiatria", "Psiquiatria", "psiquiatra", "consulta", "Consulta psiquiátrica"),
+    ],
+)
+def test_nichos_de_saude_mental_sao_separados(codigo, nome, profissional, atendimento, servico):
+    segmento = next(s for s in segmentos.publico() if s["codigo"] == codigo)
+    t = segmentos.termos({"segmento": codigo})
+    assert segmento["nome"] == nome
+    assert (t["profissional"], t["atendimento"]) == (profissional, atendimento)
+    assert servico in segmento["procedimentos"]
+
+
+def test_psiquiatria_nao_herda_sessao_de_psicoterapia():
+    procedimentos = {p[0] for p in segmentos.SEGMENTOS["psiquiatria"].procedimentos}
+    assert "Sessão de psicoterapia" not in procedimentos
+    assert "Retorno psiquiátrico" in procedimentos
+
+
+def test_psicanalise_cita_cvv_e_nao_pede_o_motivo():
+    texto = PROMPT.read_text(encoding="utf-8").format(
+        nome_assistente="Ísis", clinica="X", tratamento="você", aviso_horario="",
+        **vocabulario({"settings": {"segmento": "psicanalise"}, "phone": "+5511999998888"}))
+    assert "CVV (188)" in texto and "sessão" in texto and "não peça detalhes do motivo" in texto
+
+
+def test_psiquiatria_usa_consulta_e_nao_orienta_medicacao():
+    texto = PROMPT.read_text(encoding="utf-8").format(
+        nome_assistente="Ísis", clinica="X", tratamento="você", aviso_horario="",
+        **vocabulario({"settings": {"segmento": "psiquiatria"}, "phone": "+5511999998888"}))
+    assert "psiquiatra" in texto and "consulta" in texto and "não indica ou ajusta remédio" in texto
+
+
 def test_psicologia_cita_cvv_e_nao_pede_o_motivo():
     texto = PROMPT.read_text(encoding="utf-8").format(
         nome_assistente="Ísis", clinica="X", tratamento="você", aviso_horario="",
@@ -94,15 +130,30 @@ def test_lembrete_discreto_pode_ser_desligado(conn, clinica):
 # ---------------------------------------------------------------------------
 # Admin geral e Perfil
 # ---------------------------------------------------------------------------
-def test_criar_clinica_de_psicologia_traz_os_procedimentos_do_segmento(admin, conn, supabase_falso):  # noqa: F811
-    r = admin.post("/api/admin/clinicas", json={**NOVA, "telefone": "(11) 3333-5555", "segmento": "psicologia"})
+@pytest.mark.parametrize(
+    ("codigo", "telefone", "servico"),
+    [
+        ("psicologia", "(11) 3333-5555", "Sessão de psicoterapia"),
+        ("psicanalise", "(11) 3333-6666", "Sessão de psicanálise"),
+        ("psiquiatria", "(11) 3333-7777", "Consulta psiquiátrica"),
+    ],
+)
+def test_criar_clinica_de_nicho_de_saude_mental(admin, conn, supabase_falso, codigo, telefone, servico):  # noqa: F811
+    r = admin.post("/api/admin/clinicas", json={**NOVA, "telefone": telefone, "segmento": codigo})
     assert r.status_code == 201, r.text
     cid = r.json()["id"]
     settings = conn.execute("select settings from clinics where id = %s", (cid,)).fetchone()[0]
     nomes = {x[0] for x in conn.execute("select name from services where clinic_id = %s", (cid,)).fetchall()}
-    assert settings["segmento"] == "psicologia" and "Sessão de psicoterapia" in nomes and "Limpeza (profilaxia)" not in nomes
-    assert admin.post("/api/admin/clinicas", json={**NOVA, "telefone": "(11) 3333-6666", "segmento": "padaria"}).status_code == 422
+    assert settings["segmento"] == codigo and servico in nomes and "Limpeza (profilaxia)" not in nomes
+    opcoes = {s["codigo"]: s["nome"] for s in admin.get("/api/segmentos").json()}
+    assert {opcoes[c] for c in ("psicologia", "psicanalise", "psiquiatria")} == {"Psicologia", "Psicanálise", "Psiquiatria"}
 
+
+def test_admin_recusa_segmento_desconhecido(admin, supabase_falso):  # noqa: F811
+    assert admin.post(
+        "/api/admin/clinicas",
+        json={**NOVA, "telefone": "(11) 3333-9999", "segmento": "padaria"},
+    ).status_code == 422
 
 def test_perfil_guarda_so_as_palavras_diferentes_do_padrao(admin, conn, clinica):  # noqa: F811
     url = f"/api/clinics/{clinica.id}/config/perfil"

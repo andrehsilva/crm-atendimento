@@ -83,10 +83,10 @@ SEGMENTOS: dict[str, Segmento] = {
             ],
         ),
         Segmento(
-            "psicologia", "Psicologia / Psiquiatria", "um consultório de psicologia e psiquiatria",
-            {"profissional": "profissional", "profissionais": "profissionais", **_PACIENTE, **_SESSAO},
+            "psicologia", "Psicologia", "um consultório de psicologia",
+            {"profissional": "psicólogo(a)", "profissionais": "psicólogos", **_PACIENTE, **_SESSAO},
             area="saúde mental apenas de forma geral e acolhedora",
-            nao_e=("Você não é psicóloga nem psiquiatra: não faz terapia pelo chat, não diagnostica e não indica remédio. "
+            nao_e=("Você não é psicóloga: não faz terapia pelo chat, não diagnostica e não indica remédio. "
                    "Trate tudo com sigilo e acolhimento; não peça detalhes do motivo do atendimento."),
             urgencias=("pensamentos de se machucar ou de tirar a própria vida, risco para outra pessoa, "
                        "ou crise intensa de pânico ou agitação"),
@@ -96,8 +96,41 @@ SEGMENTOS: dict[str, Segmento] = {
             procedimentos=[
                 ("Primeira sessão", "Acolhimento e entendimento da demanda.", 60, True),
                 ("Sessão de psicoterapia", "Sessão de acompanhamento.", 60, True),
-                ("Consulta psiquiátrica", "Avaliação com o psiquiatra.", 60, True),
-                ("Retorno psiquiátrico", "Acompanhamento com o psiquiatra.", 30, True),
+                ("Retorno", "Acompanhamento após uma sessão.", 30, True),
+            ],
+        ),
+        Segmento(
+            "psicanalise", "Psicanálise", "um consultório de psicanálise",
+            {"profissional": "psicanalista", "profissionais": "psicanalistas", **_PACIENTE, **_SESSAO},
+            area="saúde mental apenas de forma geral e acolhedora",
+            nao_e=("Você não é psicanalista: não faz análise pelo chat, não diagnostica e não indica remédio. "
+                   "Trate tudo com sigilo e acolhimento; não peça detalhes do motivo do atendimento."),
+            urgencias=("pensamentos de se machucar ou de tirar a própria vida, risco para outra pessoa, "
+                       "ou crise intensa de pânico ou agitação"),
+            extra_urgencia="lembre também do **CVV (188)**, que atende 24 horas por telefone",
+            emoji="🗓️",
+            lembrete_discreto=True,
+            procedimentos=[
+                ("Primeira sessão", "Acolhimento e entendimento da demanda.", 60, True),
+                ("Sessão de psicanálise", "Sessão de acompanhamento.", 60, True),
+                ("Retorno", "Acompanhamento após uma sessão.", 30, True),
+            ],
+        ),
+        Segmento(
+            "psiquiatria", "Psiquiatria", "um consultório de psiquiatria",
+            {"profissional": "psiquiatra", "profissionais": "psiquiatras", **_PACIENTE, **_CONSULTA},
+            area="saúde mental apenas de forma geral e acolhedora",
+            nao_e=("Você não é psiquiatra: não avalia sintomas, não diagnostica e não indica ou ajusta remédio. "
+                   "Trate tudo com sigilo e acolhimento; não peça detalhes do motivo do atendimento."),
+            urgencias=("pensamentos de se machucar ou de tirar a própria vida, risco para outra pessoa, "
+                       "ou crise intensa de pânico ou agitação"),
+            extra_urgencia="lembre também do **CVV (188)**, que atende 24 horas por telefone",
+            emoji="🗓️",
+            lembrete_discreto=True,
+            procedimentos=[
+                ("Primeira consulta psiquiátrica", "Avaliação inicial com o psiquiatra.", 60, True),
+                ("Consulta psiquiátrica", "Consulta de acompanhamento.", 30, True),
+                ("Retorno psiquiátrico", "Acompanhamento após uma consulta.", 30, True),
             ],
         ),
         Segmento(
