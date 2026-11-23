@@ -253,6 +253,11 @@ Na agenda (dia e semana), arrastar uma sessão para outro horário/dia: confirma
 No "Editar profissional", botão **Excluir profissional**: sem histórico apaga de vez; com histórico arquiva (some da lista,
 "mostrar arquivados" traz de volta; reativar desarquiva). Com consultas marcadas, excluir ou desativar é recusado e mostra a lista.
 
+## Etapa 29 — Arquivar ou excluir contato ✅ (23/11/2026; D112–D115)
+No cartão do CRM, em Clientes e na conversa: **Arquivar** (toda a equipe; some das listas, dados ficam, filtro "arquivados"
+para ver/desarquivar) e **Excluir de vez** (só admin, só para quem nunca teve consulta; apaga conversa e mensagens).
+Arquivado que escreve de novo volta sozinho como "Novo Contato". Sem arquivamento automático.
+
 ---
 
 ## Depois da 1ª versão (backlog)

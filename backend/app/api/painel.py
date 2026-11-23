@@ -100,7 +100,7 @@ def dashboard(clinic_id: UUID, profissional: UUID | None = None, conn: Conn = De
         """select
              (select count(*) from conversations where clinic_id = %(c)s and status = 'humano'),
              (select count(*) from patients where clinic_id = %(c)s and crm_stage = 'novo_contato'
-                and last_activity_at < now() - make_interval(hours => %(h)s)),
+                and archived_at is null and last_activity_at < now() - make_interval(hours => %(h)s)),
              (select count(*) from outbound_messages where clinic_id = %(c)s and status = 'agendada')""",
         {"c": clinic_id, "h": parado_horas},
     ).fetchone()
@@ -115,7 +115,7 @@ def dashboard(clinic_id: UUID, profissional: UUID | None = None, conn: Conn = De
     ).fetchall()
     parados = _cur(conn).execute(
         """select id, name, phone, last_event, last_activity_at from patients
-           where clinic_id = %s and crm_stage = 'novo_contato'
+           where clinic_id = %s and crm_stage = 'novo_contato' and archived_at is null
              and last_activity_at < now() - make_interval(hours => %s)
            order by last_activity_at limit 50""",
         (clinic_id, parado_horas),
@@ -165,7 +165,7 @@ def kanban(clinic_id: UUID, conn: Conn = Depends(get_conn)):
              where a.patient_id = p.id and a.status in ('agendada', 'confirmada') and a.starts_at > %s
              order by a.starts_at limit 1
            ) prox on true
-           where p.clinic_id = %s
+           where p.clinic_id = %s and p.archived_at is null
            group by p.id, prox.id, prox.starts_at, prox.procedimento
            order by p.last_activity_at desc""",
         (relogio.agora(), clinic_id),
@@ -200,10 +200,11 @@ def mover_card(clinic_id: UUID, patient_id: UUID, body: MudancaEtapa, conn: Conn
 # Leads / Clientes
 # ---------------------------------------------------------------------------
 @router.get("/clinics/{clinic_id}/patients", summary="Pacientes e contatos")
-def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(get_conn)):
+def pacientes(clinic_id: UUID, busca: str | None = None, arquivados: bool = False, conn: Conn = Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
     sql = """select p.id, p.name, p.phone, p.birth_date, p.origin, p.crm_stage, p.created_at, p.drive_url,
-                    p.convenio, p.insurance_id,
+                    p.convenio, p.insurance_id, p.archived_at as arquivado_em,
+                    exists(select 1 from appointments a where a.patient_id = p.id) as tem_consultas,
                     (select count(*) from patient_notes n where n.patient_id = p.id) as notas,
                     pr.name as dentista_referencia,
                     (select max(starts_at) from appointments a where a.patient_id = p.id and a.status = 'realizada') as ultima_consulta,
@@ -213,6 +214,8 @@ def pacientes(clinic_id: UUID, busca: str | None = None, conn: Conn = Depends(ge
              from patients p left join professionals pr on pr.id = p.preferred_professional_id
              where p.clinic_id = %s"""
     params: list = [relogio.agora(), clinic_id]
+    # Etapa 29 (D112): arquivados ficam fora da lista; o filtro "arquivados" mostra só eles
+    sql += " and p.archived_at is not null" if arquivados else " and p.archived_at is null"
     if busca:
         sql += " and (p.name ilike %s or p.phone like %s)"
         params += [f"%{busca}%", f"%{''.join(ch for ch in busca if ch.isdigit()) or busca}%"]
@@ -251,6 +254,43 @@ def editar_paciente(clinic_id: UUID, patient_id: UUID, body: EdicaoPaciente, con
 
 
 def _paciente_da_clinica(conn, clinic_id: UUID, patient_id: UUID) -> None:
+@router.post("/clinics/{clinic_id}/patients/{patient_id}/arquivar", summary="Arquivar contato (D112, toda a equipe)")
+def arquivar_paciente(clinic_id: UUID, patient_id: UUID, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    _paciente_da_clinica(conn, clinic_id, patient_id)
+    n = conn.execute("""select count(*) from appointments where clinic_id = %s and patient_id = %s
+                        and status in ('agendada', 'confirmada') and starts_at > %s""",
+                     (clinic_id, patient_id, relogio.agora())).fetchone()[0]
+    if n:  # mesmo cuidado do D111: nada marcado some da vista da equipe
+        raise AgendaError("TEM_CONSULTAS_FUTURAS", f"Este contato tem {n} consulta(s) marcada(s): não dá para arquivar.")
+    conn.execute("update patients set archived_at = now() where clinic_id = %s and id = %s", (clinic_id, patient_id))
+    avisar(conn, clinic_id, "crm", patient_id)
+    return {"ok": True}
+
+
+@router.post("/clinics/{clinic_id}/patients/{patient_id}/desarquivar", summary="Trazer o contato de volta às listas")
+def desarquivar_paciente(clinic_id: UUID, patient_id: UUID, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    _paciente_da_clinica(conn, clinic_id, patient_id)
+    conn.execute("update patients set archived_at = null where clinic_id = %s and id = %s", (clinic_id, patient_id))
+    avisar(conn, clinic_id, "crm", patient_id)
+    return {"ok": True}
+
+
+@router.delete("/clinics/{clinic_id}/patients/{patient_id}", summary="Excluir de vez (D112/D114: só admin, só sem consultas)")
+def excluir_paciente(clinic_id: UUID, patient_id: UUID, request: Request, conn: Conn = Depends(get_conn)):
+    exigir_admin_clinica(request, clinic_id)
+    servico.carregar_clinica(conn, clinic_id)
+    _paciente_da_clinica(conn, clinic_id, patient_id)
+    if conn.execute("select 1 from appointments where clinic_id = %s and patient_id = %s limit 1",
+                    (clinic_id, patient_id)).fetchone():
+        raise AgendaError("STATUS_INVALIDO", "Este contato já teve consulta: dá para arquivar, mas não excluir.")
+    # conversa, mensagens, fila, notas, foto, tratamentos e eventos do CRM vão junto (on delete cascade)
+    conn.execute("delete from patients where clinic_id = %s and id = %s", (clinic_id, patient_id))
+    avisar(conn, clinic_id, "crm", patient_id)
+    return {"ok": True}
+
+
     if not conn.execute("select 1 from patients where clinic_id = %s and id = %s", (clinic_id, patient_id)).fetchone():
         raise AgendaError("DADOS_INVALIDOS", "Paciente não encontrado.")
 

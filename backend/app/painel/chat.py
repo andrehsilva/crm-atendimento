@@ -85,6 +85,10 @@ def processar(conn, clinica: dict, paciente: dict, conversa: dict, texto: str,
     if entrada is None:
         return []
     novas = [entrada]
+    # D113: contato arquivado que escreve de novo volta sozinho às listas, como "Novo Contato"
+    if conn.execute("""update patients set archived_at = null where id = %s and archived_at is not null
+                       returning id""", (paciente["id"],)).fetchone():
+        crm.registrar(conn, clinica["id"], paciente["id"], "voltou_a_escrever", "paciente", "novo_contato")
     crm.registrar(conn, clinica["id"], paciente["id"], "conversando", "paciente")
 
     # RN-MS-04 / RN-DP-04: "1" confirma o lembrete e "PARAR" desliga disparos — resolvidos no código, sem IA

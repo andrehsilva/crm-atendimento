@@ -166,6 +166,9 @@ export type Paciente = {
   phone: string
   birth_date: string | null
   drive_url: string | null
+  /** Etapa 29 (D112): arquivado sai das listas; tem_consultas decide se dá para excluir de vez */
+  arquivado_em: string | null
+  tem_consultas: boolean
   notas: number
   origin: string
   crm_stage: Etapa

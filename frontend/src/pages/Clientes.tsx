@@ -11,6 +11,7 @@ import { PainelTratamentos, Tags } from '../components/Tratamentos'
 import { useTermos } from '../lib/termos'
 import { EnviarImagem, Retrato } from '../components/Imagem'
 import { ModalObservacoes } from '../components/ModalObservacoes'
+import { AcoesArquivo } from '../components/ArquivarContato'
 
 const ETAPA: Record<Etapa, [string, CorSelo]> = {
   novo_contato: ['Novo contato', 'rosa'],
@@ -39,9 +40,15 @@ export function Clientes() {
     return () => clearTimeout(t)
   }, [busca])
 
+  const [arquivados, setArquivados] = useState(false) // Etapa 29 (D112)
   const q = useQuery({
-    queryKey: ['pacientes', clinica.id, termo],
-    queryFn: () => api.get<Paciente[]>(`/clinics/${clinica.id}/patients${termo ? `?busca=${encodeURIComponent(termo)}` : ''}`),
+    queryKey: ['pacientes', clinica.id, termo, arquivados],
+    queryFn: () => {
+      const qs = new URLSearchParams()
+      if (termo) qs.set('busca', termo)
+      if (arquivados) qs.set('arquivados', 'true')
+      return api.get<Paciente[]>(`/clinics/${clinica.id}/patients${qs.size ? `?${qs}` : ''}`)
+    },
   })
   const lista = (q.data ?? []).filter((p) => !tag || p.tags.some((t) => t.codigo === tag))
 
@@ -61,6 +68,10 @@ export function Clientes() {
             <option value="em_tratamento">Em tratamento</option>
             <option value="aguardando">Aguardando</option>
           </Seletor>
+          <label className="flex items-center gap-2 text-sm text-muted">
+            <input type="checkbox" checked={arquivados} onChange={(e) => setArquivados(e.target.checked)} className="size-4 accent-[var(--primary)]" />
+            Ver só arquivados
+          </label>
         </div>
         {!lista.length ? (
           <Vazio icone={<Users className="size-8" />} texto={q.isLoading ? 'Carregando…' : `Nenhum ${pal.cliente} encontrado.`} />
@@ -123,6 +134,8 @@ export function Clientes() {
                           <button type="button" title="Editar cadastro" aria-label={`Editar ${p.name ?? ''}`} onClick={() => setEditando(p)} className={ACAO}>
                             <Pencil className="size-[18px]" strokeWidth={1.75} />
                           </button>
+                          <AcoesArquivo contato={p} arquivado={!!p.arquivado_em} temConsultas={p.tem_consultas} compacto />
+
                         </div>
                       </td>
                     </tr>

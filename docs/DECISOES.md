@@ -118,5 +118,9 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D109 | ✅ **Arrastar e avisar:** a confirmação traz "avisar o paciente" marcado (dá para desmarcar) | Q97, 23/11/2026 |
 | D110 | ✅ **Excluir profissional:** sem nenhuma consulta → apaga de vez (com horários, folgas e foto); com histórico → arquiva: inativo, some da lista ("mostrar arquivados" traz de volta), histórico continua com o nome | Q98, 23/11/2026 |
 | D111 | ✅ **Profissional com consultas marcadas:** excluir ou desativar é recusado e mostra a lista; nada é cancelado sozinho | Q99, 23/11/2026 |
+| D112 | ✅ **Arquivar/excluir contato:** arquivar em qualquer contato (sai do CRM, Clientes e Conversas; dados ficam); excluir de vez só sem nenhuma consulta (apaga conversa e mensagens) | Q100, 23/11/2026 |
+| D113 | ✅ **Contato arquivado que escreve de novo** volta sozinho às listas como "Novo Contato" | Q101, 23/11/2026 |
+| D114 | ✅ **Permissão:** arquivar, toda a equipe; excluir de vez, só o administrador da clínica | Q102, 23/11/2026 |
+| D115 | ✅ **Sem arquivamento automático** de contatos parados (só manual) | Q103, 23/11/2026 |
 | D116 | ✅ **Procedimentos padrão de Odontologia:** 17 procedimentos da lista do usuário; urgência, extração, implante, canal e periodontal só a recepção marca. Vale para clínicas criadas daqui em diante | pedido do usuário, 23/11/2026 |
 | D107 | ✅ **Padrão do lembrete:** pelo tipo de clínica — Psicanálise desligado, demais ligados; muda em cada tratamento, inclusive depois | Q95, 23/11/2026 |

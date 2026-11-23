@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 97 de 106 resolvidas (95 respondidas · 2 adiadas) — 23/11/2026.
+**Progresso:** 101 de 110 resolvidas (99 respondidas · 2 adiadas) — 23/11/2026.
 
 ---
 
@@ -139,6 +139,11 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 ---
 
 ## ✅ Respondidas
+
+- [x] **Q100 — Tirar contato das listas:** "Arquivar" em qualquer contato (some do CRM, Clientes e Conversas; dados ficam); "Excluir de vez" só para quem nunca teve consulta (apaga conversa e mensagens). *(23/11 → D112)*
+- [x] **Q101 — Arquivado escreveu de novo:** sai do arquivo sozinho e volta como "Novo Contato"; a Ísis atende normalmente. *(23/11 → D113)*
+- [x] **Q102 — Quem pode:** arquivar, toda a equipe; excluir de vez, só o administrador da clínica. *(23/11 → D114)*
+- [x] **Q103 — Arquivar automático:** não, só manual. *(23/11 → D115)*
 
 - [x] **Q98 — Excluir profissional:** sem nenhuma consulta → apaga de vez; com histórico → arquiva (inativo e escondido da lista; histórico continua com o nome). *(23/11 → D110)*
 - [x] **Q99 — Excluir/desativar com consultas marcadas:** bloqueia e lista as consultas; a equipe remarca ou cancela antes. *(23/11 → D111)*

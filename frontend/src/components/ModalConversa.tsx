@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, CalendarPlus, Check, CheckCheck, Hand, MessageSquareOff, Send, Stethoscope } from 'lucide-react'
+import { AcoesArquivo } from './ArquivarContato'
 import { PainelTratamentos, Tags } from './Tratamentos'
 import { ModalNovaConsulta } from './agenda/ModalNovaConsulta'
 import { api, type CardCrm, type MensagemChat, type TratamentosPaciente } from '../lib/api'
@@ -88,6 +89,8 @@ export function ModalConversa({ card, onFechar }: { card: Pick<CardCrm, 'id' | '
           {conversa && (manual
             ? <Botao variante="secundario" disabled={devolver.isPending} onClick={() => devolver.mutate()}><Bot className="size-4" />Devolver para {ia}</Botao>
             : <Botao variante="secundario" disabled={assumir.isPending} onClick={() => assumir.mutate()}><Hand className="size-4" />Assumir conversa</Botao>)}
+          {/* Etapa 29 (D112): tirar das listas o contato que entrou por engano */}
+          <AcoesArquivo contato={card} onFeito={() => onFechar()} />
         </div>
       </div>
 
