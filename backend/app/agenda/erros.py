@@ -16,6 +16,7 @@ STATUS_HTTP = {
     "CONVENIO_PENDENTE": 409,  # RN-CV-02 (Etapa 22)
     "STATUS_INVALIDO": 409,
     "SERIE_VAZIA": 409,  # Etapa 26: nenhuma data da série coube
+    "TEM_CONSULTAS_FUTURAS": 409,  # Etapa 28 (D111): excluir/desativar profissional com consultas marcadas
     "FORA_DO_HORARIO": 422,
     "ANTECEDENCIA": 422,
     "HORIZONTE": 422,

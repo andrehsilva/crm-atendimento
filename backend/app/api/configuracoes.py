@@ -357,6 +357,7 @@ def ver_profissionais(clinic_id: UUID, conn=Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
     profs = _cur(conn).execute(
         """select p.id, p.name as nome, p.specialty as especialidade, p.bio, p.color as cor, p.active as ativo,
+                  p.archived_at is not null as arquivado,
                   (select (extract(epoch from f.updated_at) * 1000)::bigint from professional_photos f
                      where f.professional_id = p.id) as foto_versao,
                   coalesce(array_agg(ps.service_id) filter (where ps.service_id is not null), '{}') as procedimentos,
@@ -378,10 +379,18 @@ def _gravar_profissional(conn, clinic_id: UUID, pid: UUID | None, body: Profissi
     if pid is None:
         pid = conn.execute("insert into professionals (clinic_id, name, specialty, bio, color, active) "
                            "values (%s, %s, %s, %s, %s, %s) returning id", (clinic_id, *valores)).fetchone()[0]
-    elif not conn.execute(
-            """update professionals set name = %s, specialty = %s, bio = %s, color = %s, active = %s, updated_at = now()
-               where clinic_id = %s and id = %s returning id""", (*valores, clinic_id, pid)).fetchone():
-        raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
+    else:
+        antes = conn.execute("select active from professionals where clinic_id = %s and id = %s",
+                             (clinic_id, pid)).fetchone()
+        if not antes:
+            raise AgendaError("PROFISSIONAL_NAO_ENCONTRADO", "Profissional não encontrado.")
+        if antes[0] and not body.ativo:  # D111: desativar com consultas marcadas → a equipe resolve antes
+            _bloquear_se_tem_futuras(conn, clinic_id, pid, "desativar")
+        # reativar tira do arquivo (D110)
+        conn.execute(
+            """update professionals set name = %s, specialty = %s, bio = %s, color = %s, active = %s,
+                      archived_at = case when %s then null else archived_at end, updated_at = now()
+               where clinic_id = %s and id = %s""", (*valores, body.ativo, clinic_id, pid))
     conn.execute("delete from professional_services where clinic_id = %s and professional_id = %s", (clinic_id, pid))
     for sid in set(body.procedimentos):
         conn.execute("insert into professional_services (clinic_id, professional_id, service_id) values (%s, %s, %s)",
@@ -400,6 +409,49 @@ def novo_profissional(clinic_id: UUID, body: Profissional, request: Request, con
 def editar_profissional(clinic_id: UUID, professional_id: UUID, body: Profissional, request: Request, conn=Depends(get_conn)):
     _admin(request, clinic_id, conn)
     return {"id": _gravar_profissional(conn, clinic_id, professional_id, body)}
+
+
+def _futuras_do_profissional(conn, clinic_id: UUID, professional_id: UUID) -> list[dict]:
+    return _cur(conn).execute(
+        """select a.id, a.starts_at as quando, p.name as paciente, s.name as procedimento
+           from appointments a join patients p on p.id = a.patient_id join services s on s.id = a.service_id
+           where a.clinic_id = %s and a.professional_id = %s and a.status in ('agendada', 'confirmada')
+             and a.starts_at > %s order by a.starts_at""", (clinic_id, professional_id, relogio.agora())).fetchall()
+
+
+def _bloquear_se_tem_futuras(conn, clinic_id: UUID, professional_id: UUID, acao: str) -> None:
+    """D111: com consultas marcadas, nada é cancelado sozinho — a equipe remarca ou cancela antes."""
+    n = len(_futuras_do_profissional(conn, clinic_id, professional_id))
+    if n:
+        raise AgendaError("TEM_CONSULTAS_FUTURAS",
+                          f"Este profissional tem {n} consulta(s) marcada(s). Remarque ou cancele antes de {acao}.")
+
+
+@router.get("/profissionais/{professional_id}/exclusao", summary="O que acontece ao excluir (consultas marcadas e histórico)")
+def previa_exclusao(clinic_id: UUID, professional_id: UUID, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    _profissional(conn, clinic_id, professional_id)
+    historico = conn.execute("select exists(select 1 from appointments where clinic_id = %s and professional_id = %s)",
+                             (clinic_id, professional_id)).fetchone()[0]
+    return {"futuras": _futuras_do_profissional(conn, clinic_id, professional_id), "tem_historico": historico}
+
+
+@router.delete("/profissionais/{professional_id}", summary="Excluir (sem histórico) ou arquivar (com histórico) — D110")
+def excluir_profissional(clinic_id: UUID, professional_id: UUID, request: Request, conn=Depends(get_conn)):
+    _admin(request, clinic_id, conn)
+    _profissional(conn, clinic_id, professional_id)
+    _bloquear_se_tem_futuras(conn, clinic_id, professional_id, "excluir")
+    historico = conn.execute("select exists(select 1 from appointments where clinic_id = %s and professional_id = %s)",
+                             (clinic_id, professional_id)).fetchone()[0]
+    if historico:  # consultas antigas, relatórios e conversas continuam com o nome dele
+        conn.execute("""update professionals set active = false, archived_at = now(), updated_at = now()
+                        where clinic_id = %s and id = %s""", (clinic_id, professional_id))
+        resultado = "arquivado"
+    else:  # cadastrado por engano: apaga de vez (serviços, horários, folgas e foto vão junto)
+        conn.execute("delete from professionals where clinic_id = %s and id = %s", (clinic_id, professional_id))
+        resultado = "excluido"
+    avisar(conn, clinic_id, "agenda")
+    return {"resultado": resultado}
 
 
 def _profissional(conn, clinic_id: UUID, professional_id: UUID) -> None:

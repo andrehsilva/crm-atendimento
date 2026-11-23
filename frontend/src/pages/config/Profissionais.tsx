@@ -24,6 +24,8 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
   const [folga, setFolga] = useState<ProfissionalCfg | null>(null)
   const [resumo, setResumo] = useState<{ id: string; nome: string } | null>(null)
   const [horario, setHorario] = useState<{ id: string; nome: string } | null>(null)
+  const [excluindo, setExcluindo] = useState<{ id: string; nome: string } | null>(null)
+  const [verArquivados, setVerArquivados] = useState(false)
 
   const atualizar = () => {
     qc.invalidateQueries({ queryKey: ['config'] })
@@ -46,16 +48,24 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
 
   if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
   const nomeServ = Object.fromEntries((servs.data ?? []).map((s) => [s.id, s.nome]))
+  const arquivados = q.data.profissionais.filter((p) => p.arquivado).length
   const paraForm = (p: ProfissionalCfg): Form => ({ nome: p.nome, especialidade: p.especialidade ?? '', bio: p.bio ?? '', cor: p.cor ?? CORES[0], ativo: p.ativo, procedimentos: p.procedimentos })
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-muted">{q.data.profissionais.filter((p) => p.ativo).length} profissionais ativos</p>
+        <p className="text-sm text-muted">
+          {q.data.profissionais.filter((p) => p.ativo).length} profissionais ativos
+          {arquivados > 0 && (
+            <button type="button" onClick={() => setVerArquivados(!verArquivados)} className="ml-2 font-medium text-primary hover:underline">
+              {verArquivados ? 'esconder arquivados' : `mostrar arquivados (${arquivados})`}
+            </button>
+          )}
+        </p>
         {podeEditar && <Botao onClick={() => setEditando({ id: null, f: { nome: '', especialidade: '', bio: '', cor: CORES[1], ativo: true, procedimentos: [] } })}><Plus className="size-4" /> Novo profissional</Botao>}
       </div>
       <ul className="flex flex-col gap-3">
-        {q.data.profissionais.map((p) => (
+        {q.data.profissionais.filter((p) => verArquivados || !p.arquivado).map((p) => (
           <li key={p.id} className={`rounded-3xl bg-surface px-5 py-4 ${p.ativo ? '' : 'opacity-60'}`}>
             <div className="flex items-start gap-4">
               <span className="shrink-0 rounded-full p-0.5" style={{ background: p.cor ?? '#999' }} title="Cor na agenda">
@@ -64,7 +74,7 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2 font-medium">
                   {p.nome}
-                  {!p.ativo && <Selo>inativo</Selo>}
+                  {!p.ativo && <Selo>{p.arquivado ? 'arquivado' : 'inativo'}</Selo>}
                   {p.horario_proprio && <Selo cor="azul">horário próprio</Selo>}
                 </div>
                 {p.especialidade && <p className="text-sm text-muted">{p.especialidade}</p>}
@@ -99,12 +109,65 @@ export function Profissionais({ podeEditar }: { podeEditar: boolean }) {
             versao={q.data.profissionais.find((p) => p.id === editando.id)?.foto_versao ?? null} />}
           <FormProfissional inicial={editando.f} servicos={(servs.data ?? []).filter((s) => s.ativo)} enviando={salvar.isPending}
             onCancelar={() => setEditando(null)} onSalvar={(f) => salvar.mutate({ id: editando.id, f })} />
+          {editando.id && (
+            <div className="mt-6 border-t border-line pt-4">
+              <Botao variante="fantasma" className="text-red-600" onClick={() => setExcluindo({ id: editando.id!, nome: editando.f.nome })}>
+                <Trash2 className="size-4" /> Excluir profissional
+              </Botao>
+            </div>
+          )}
         </Modal>
       )}
+      {excluindo && <ModalExcluir prof={excluindo} base={base} onFechar={() => setExcluindo(null)}
+        onFeito={(r) => {
+          setExcluindo(null); setEditando(null); atualizar()
+          aviso.ok(r === 'excluido' ? 'Profissional excluído.' : 'Profissional arquivado: some da lista e da agenda, o histórico continua.')
+        }} />}
       {folga && <NovaFolga p={folga} onFechar={() => setFolga(null)} onFeita={atualizar} />}
       <ModalResumoDia prof={resumo} podeEditar={podeEditar} onFechar={() => setResumo(null)} />
       <ModalHorarioProfissional prof={horario} podeEditar={podeEditar} onFechar={() => setHorario(null)} />
     </div>
+  )
+}
+
+/** Etapa 28 (D110/D111): sem histórico apaga; com histórico arquiva; com consultas marcadas, bloqueia e lista. */
+function ModalExcluir({ prof, base, onFechar, onFeito }: {
+  prof: { id: string; nome: string }; base: string; onFechar: () => void; onFeito: (r: 'excluido' | 'arquivado') => void
+}) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  type Previa = { futuras: { id: string; quando: string; paciente: string | null; procedimento: string }[]; tem_historico: boolean }
+  const previa = useQuery({ queryKey: ['config', 'exclusao', prof.id], queryFn: () => api.get<Previa>(`${base}/profissionais/${prof.id}/exclusao`) })
+  const excluir = useMutation({
+    mutationFn: () => api.delete<{ resultado: 'excluido' | 'arquivado' }>(`${base}/profissionais/${prof.id}`),
+    onSuccess: (r) => onFeito(r.resultado),
+    onError: aviso.erro,
+  })
+  const p = previa.data
+  return (
+    <Modal titulo={`Excluir · ${prof.nome}`} aberto onFechar={onFechar}>
+      {!p ? <p className="text-sm text-muted">Conferindo…</p> : p.futuras.length > 0 ? (
+        <div className="grid gap-3 text-sm">
+          <p>Este profissional tem <b>{p.futuras.length} consulta(s) marcada(s)</b>. Remarque ou cancele na agenda antes de excluir:</p>
+          <ul className="max-h-60 space-y-1 overflow-auto rounded-2xl bg-surface-muted px-4 py-3">
+            {p.futuras.map((f) => <li key={f.id}>{dataHora(f.quando, clinica.timezone)} · {f.paciente ?? 'Sem nome'} · <span className="text-muted">{f.procedimento}</span></li>)}
+          </ul>
+          <div className="flex justify-end"><Botao variante="fantasma" onClick={onFechar}>Entendi</Botao></div>
+        </div>
+      ) : (
+        <div className="grid gap-4 text-sm">
+          <p>{p.tem_historico
+            ? <>Ele tem atendimentos antigos, então será <b>arquivado</b>: sai da lista, da agenda e do site, mas o histórico (agenda passada, relatórios, conversas) continua com o nome dele. Dá para trazer de volta em "mostrar arquivados".</>
+            : <>Ele não tem nenhum atendimento: será <b>apagado de vez</b>, junto com horários, folgas e foto.</>}</p>
+          <div className="flex justify-end gap-2">
+            <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
+            <Botao onClick={() => excluir.mutate()} disabled={excluir.isPending} className="!bg-red-600">
+              <Trash2 className="size-4" />{p.tem_historico ? 'Arquivar' : 'Excluir de vez'}
+            </Botao>
+          </div>
+        </div>
+      )}
+    </Modal>
   )
 }
 

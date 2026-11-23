@@ -249,6 +249,10 @@ continua selecionado e que os termos e procedimentos iniciais correspondem ao ni
 Na agenda (dia e semana), arrastar uma sessão para outro horário/dia: confirmação "Mover de … para …?" com a caixa
 "avisar o paciente" marcada; grava pelo mesmo caminho do Remarcar (todas as regras); se não couber, volta ao lugar com o motivo.
 
+## Etapa 28 — Excluir profissional ✅ (23/11/2026; D110, D111)
+No "Editar profissional", botão **Excluir profissional**: sem histórico apaga de vez; com histórico arquiva (some da lista,
+"mostrar arquivados" traz de volta; reativar desarquiva). Com consultas marcadas, excluir ou desativar é recusado e mostra a lista.
+
 ---
 
 ## Depois da 1ª versão (backlog)

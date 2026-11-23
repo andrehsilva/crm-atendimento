@@ -321,6 +321,8 @@ export type ProfissionalCfg = {
   bio: string | null
   foto_versao: number | null
   cor: string | null
+  /** Etapa 28 (D110): excluído com histórico — fica inativo e escondido da lista */
+  arquivado: boolean
   ativo: boolean
   procedimentos: string[]
   horario_proprio: boolean

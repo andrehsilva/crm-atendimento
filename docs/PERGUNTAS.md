@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 95 de 104 resolvidas (93 respondidas · 2 adiadas) — 23/11/2026.
+**Progresso:** 97 de 106 resolvidas (95 respondidas · 2 adiadas) — 23/11/2026.
 
 ---
 
@@ -139,6 +139,9 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 ---
 
 ## ✅ Respondidas
+
+- [x] **Q98 — Excluir profissional:** sem nenhuma consulta → apaga de vez; com histórico → arquiva (inativo e escondido da lista; histórico continua com o nome). *(23/11 → D110)*
+- [x] **Q99 — Excluir/desativar com consultas marcadas:** bloqueia e lista as consultas; a equipe remarca ou cancela antes. *(23/11 → D111)*
 
 - [x] **Q96 — Arrastar, confirmar ao soltar:** sim — "Mover de … para …?" com Confirmar/Voltar antes de gravar. *(23/11 → D108)*
 - [x] **Q97 — Arrastar, avisar o paciente:** sim, com a caixa "avisar o paciente" já marcada na confirmação (dá para desmarcar). *(23/11 → D109)*
