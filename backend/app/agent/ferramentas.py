@@ -221,8 +221,7 @@ def criar_ferramentas(s: Sessao) -> list:
                          (s.cid, consulta_id)).fetchone()
         if r:
             return f". Lembrete automático pelo WhatsApp agendado para {quando(r[0], s.tz)} (conte isso ao paciente)"
-        return (". Sem lembrete automático para esta consulta (a confirmação enviada agora já vale; "
-                "não prometa lembrete)")
+        return ". Sem lembrete automático para esta consulta (não prometa lembrete)"
 
     def _faltas_ok() -> None:
         """RN-AG-16 (D91): faltas repetidas → a assistente não tenta marcar; passa para a recepção (no código)."""

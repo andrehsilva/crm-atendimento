@@ -12,7 +12,7 @@ from psycopg.rows import dict_row
 from app.agenda.erros import AgendaError
 from app.eventos import avisar
 from app.mensagens import regras as R
-from app.painel.avisos import palavras, primeiro_nome, quando
+from app.painel.avisos import palavras, primeiro_nome, quando, sem_avisos
 
 MODELO_LEMBRETE = (
     "Olá, {nome}! Passando para lembrar {da_sua} {atendimento} na {clinica} 😊\n\n"
@@ -64,6 +64,8 @@ def horario_do_lembrete(conn, clinica: dict, inicio_consulta: datetime, agora: d
 
 
 def agendar_lembrete(conn, clinica: dict, consulta: dict, agora: datetime) -> datetime | None:
+    if sem_avisos(conn, consulta):  # RN-TR-13: tratamento com lembrete desligado
+        return None
     momento = horario_do_lembrete(conn, clinica, consulta["starts_at"], agora)
     if momento is None:
         return None

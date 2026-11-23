@@ -42,10 +42,19 @@ def palavras(clinica: dict, consulta: dict) -> dict:
             "linha": linha}
 
 
+def sem_avisos(conn, consulta: dict) -> bool:
+    """D105/D106 (RN-TR-13): sessão de tratamento com 'confirmação e lembrete' desligados."""
+    tid = consulta.get("treatment_id")
+    if not tid:
+        return False
+    r = conn.execute("select not avisos_paciente from treatments where id = %s", (tid,)).fetchone()
+    return bool(r and r[0])
+
+
 def enfileirar_serie(conn, clinica: dict, consultas: list[dict], agora: datetime | None = None) -> None:
     """21B (RN-TR-07): série marcada de uma vez → UMA confirmação com todas as datas (não 4 mensagens seguidas).
-    Cada sessão continua com o seu lembrete no dia anterior."""
-    if not consultas:
+    Cada sessão continua com o seu lembrete no dia anterior. Tratamento sem avisos (RN-TR-13): nada sai."""
+    if not consultas or sem_avisos(conn, consultas[0]):
         return
     from app.mensagens.lembretes import agendar_lembrete  # import aqui para evitar import circular
 
@@ -78,7 +87,16 @@ def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | 
                agora: datetime | None = None) -> None:
     tz = clinica["tz"]
     lembrete = ""
-    if tipo in ("confirmacao", "remarcacao"):  # avisa quando vem o lembrete (pedido do usuário, 22/11/2026)
+    # RN-TR-13: sessão de tratamento sem avisos não ganha confirmação nem lembrete. Remarcação e cancelamento
+    # continuam saindo: são mudanças que o paciente precisa saber.
+    mudo = tipo in ("confirmacao", "remarcacao") and sem_avisos(conn, consulta)
+    if mudo and tipo == "confirmacao":
+        conn.execute(
+            """update outbound_messages set status = 'cancelada'
+               where clinic_id = %s and appointment_id = %s and status = 'agendada' and kind = 'lembrete'""",
+            (clinica["id"], consulta["id"]))
+        return
+    if tipo in ("confirmacao", "remarcacao") and not mudo:  # avisa quando vem o lembrete (pedido do usuário, 22/11/2026)
         from app.mensagens.lembretes import horario_do_lembrete  # import aqui para evitar import circular
 
         momento = horario_do_lembrete(conn, clinica, consulta["starts_at"], agora or datetime.now(UTC))
@@ -106,7 +124,7 @@ def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | 
            values (%s, %s, %s, %s, %s)""",
         (clinica["id"], consulta["patient_id"], consulta["id"], tipo, texto),
     )
-    if tipo in ("confirmacao", "remarcacao"):
+    if tipo in ("confirmacao", "remarcacao") and not mudo:
         from app.mensagens.lembretes import agendar_lembrete  # import aqui para evitar import circular
 
         agendar_lembrete(conn, clinica, consulta, agora or datetime.now(UTC))

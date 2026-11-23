@@ -272,8 +272,16 @@ def _tratamentos(conn, clinica: dict, paciente: dict, tz) -> str:
                 dica += f"{prof}."
             linhas.append(f"  - ▶ EM ANDAMENTO: pode marcar a próxima sessão quando a pessoa pedir; não conta no limite de "
                           f"consultas.{dica}")
+            if t.get("horario_fixo") and t.get("serie_ate"):  # Etapa 26 (RN-TR-12)
+                f = t["serie_ate"].astimezone(tz)
+                linhas.append(f"  - HORÁRIO FIXO: {DIAS[f.weekday()]} às {f:%H:%M}, a cada {t['intervalo_dias']} dias. "
+                              "As próximas sessões já ficam marcadas sozinhas: não ofereça marcar a próxima; "
+                              "se a pessoa quiser faltar a uma ou trocar o dia, cancele ou remarque só aquela sessão.")
             if t["ultima_falta"] and (not t["ultima_sessao"] or t["ultima_falta"] > t["ultima_sessao"]):
                 linhas.append(f"  - Faltou à sessão de {quando(t['ultima_falta'], tz)}: se a pessoa escrever, ofereça remarcar.")
+        if t.get("avisos_paciente") is False:  # RN-TR-13
+            linhas.append("  - A clínica NÃO manda lembrete nem confirmação das sessões deste tratamento: não prometa "
+                          "lembrete; a agenda é responsabilidade da pessoa.")
         if t["orientacao"]:
             linhas.append(f"  - Orientação da clínica para você: {t['orientacao']}")
     return "\n# Tratamentos em andamento\n\n" + "\n".join(linhas) + "\n"

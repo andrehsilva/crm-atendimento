@@ -20,7 +20,7 @@ from app.core import relogio
 from app.core.telefone import TelefoneInvalido, normalizar_telefone
 from app.eventos import avisar
 from app.painel import avisos, crm
-from app import tratamentos
+from app import segmentos, tratamentos
 
 Ator = Literal["isis", "recepcao", "paciente"]
 ATIVOS = ("agendada", "confirmada")
@@ -358,7 +358,8 @@ def marcar_serie(conn, clinic_id: UUID, *, telefone: str, nome: str | None, prof
     if not tratamentos.aberto(conn, clinic_id, paciente["id"], service_id):
         novo_tratamento = tratamentos.criar(conn, clinic_id, paciente["id"], service_id=service_id,
                                             professional_id=professional_id, sessoes_previstas=sessoes,
-                                            intervalo_dias=intervalo_dias, orientacao=None)
+                                            intervalo_dias=intervalo_dias, orientacao=None,
+                                            avisos_paciente=segmentos.avisos_tratamento(clinica["settings"]))
     marcadas, falhas = [], []
     for i in range(sessoes):
         quando_ = inicio + timedelta(days=intervalo_dias * i)
@@ -481,7 +482,7 @@ _SELECT = """
     select a.id, a.status, a.source, a.starts_at, a.ends_at, a.cancel_reason, a.rescheduled_from_id,
            a.patient_id, p.name as paciente, p.phone as telefone,
            a.professional_id, pr.name as profissional, pr.color as cor,
-           a.service_id, s.name as procedimento
+           a.service_id, s.name as procedimento, a.treatment_id
     from appointments a
     join patients p on p.id = a.patient_id
     join professionals pr on pr.id = a.professional_id

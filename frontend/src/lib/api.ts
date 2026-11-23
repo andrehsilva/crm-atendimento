@@ -407,8 +407,19 @@ export type Tratamento = {
   marcadas: number
   ultima_sessao: string | null
   proxima_sessao: string | null
+  /** Etapa 26: confirmação e lembrete ligados (D106) e horário fixo sem data para terminar (D105) */
+  avisos_paciente: boolean
+  horario_fixo: boolean
+  serie_ate: string | null
 }
-export type TratamentosPaciente = { tratamentos: Tratamento[]; tags: TagCliente[] }
+export type TratamentosPaciente = {
+  tratamentos: Tratamento[]
+  tags: TagCliente[]
+  /** D107: padrão do "a assistente manda confirmação e lembrete" pelo tipo de clínica */
+  avisos_padrao: boolean
+  /** só na resposta de "Abrir tratamento" quando as sessões foram marcadas junto */
+  serie?: { marcadas: number; falhas: { inicio: string; motivo: string }[] }
+}
 
 /** Etapa 22 (RN-CV): convênios da clínica */
 export type ConveniosClinica = { perguntar: boolean; convenios: { id: string; name: string; active: boolean }[] }

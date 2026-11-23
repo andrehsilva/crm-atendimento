@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 90 de 99 resolvidas (88 respondidas · 2 adiadas) — 22/11/2026.
+**Progresso:** 93 de 102 resolvidas (91 respondidas · 2 adiadas) — 23/11/2026.
 
 ---
 
@@ -102,6 +102,10 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente — Etapa 25 liberada.
 
+## 🗓️ Bloqueia a Etapa 26 (Horário fixo e lembrete por tratamento)
+
+✅ Nada pendente — Etapa 26 liberada.
+
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
 ✅ Nada pendente — Etapa 12 liberada (depois da 11).
@@ -131,6 +135,11 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 ---
 
 ## ✅ Respondidas
+
+
+- [x] **Q93 — Horário fixo, até quando:** sem fim, renova sozinho — o sistema mantém as próximas 8 sessões marcadas e acrescenta uma por semana enquanto o tratamento estiver em andamento; também dá para escolher um número fixo (2 a 20). *(23/11 → D105)*
+- [x] **Q94 — Lembrete desligado, o que some:** confirmação e lembrete das sessões do tratamento; remarcação e cancelamento continuam avisados, e mensagens que o paciente inicia a Ísis responde normalmente. *(23/11 → D106)*
+- [x] **Q95 — Padrão do lembrete ao abrir tratamento:** depende do tipo de clínica — Psicanálise vem desligado, os demais ligados; a equipe muda em cada tratamento, também depois. *(23/11 → D107)*
 
 - [x] **Q89 — Pós-consulta, quando:** ok — dia seguinte às 10:00 (ajustável), para quem compareceu; cada procedimento pode ser desligado. *(22/11 → D101)*
 - [x] **Q91 — Retorno:** ok — automático na data, espaçado como as mensagens em massa e respeitando o PARAR; a Ísis marca quando a pessoa responde. *(22/11 → D102)*

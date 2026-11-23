@@ -15,6 +15,7 @@ STATUS_HTTP = {
     "FALTAS_REPETIDAS": 409,  # RN-AG-16 (D91)
     "CONVENIO_PENDENTE": 409,  # RN-CV-02 (Etapa 22)
     "STATUS_INVALIDO": 409,
+    "SERIE_VAZIA": 409,  # Etapa 26: nenhuma data da série coube
     "FORA_DO_HORARIO": 422,
     "ANTECEDENCIA": 422,
     "HORIZONTE": 422,

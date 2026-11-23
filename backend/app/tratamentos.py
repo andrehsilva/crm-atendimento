@@ -157,16 +157,19 @@ def _profissional_faz(conn, clinic_id: UUID, professional_id: UUID | None, servi
 
 
 def criar(conn, clinic_id: UUID, patient_id: UUID, *, service_id: UUID, professional_id: UUID | None,
-          sessoes_previstas: int | None, intervalo_dias: int | None, orientacao: str | None) -> dict:
+          sessoes_previstas: int | None, intervalo_dias: int | None, orientacao: str | None,
+          avisos_paciente: bool = True) -> dict:
     if not conn.execute("select 1 from services where clinic_id = %s and id = %s", (clinic_id, service_id)).fetchone():
         raise AgendaError("DADOS_INVALIDOS", "Procedimento não encontrado.")
     _profissional_faz(conn, clinic_id, professional_id, service_id)
     if aberto(conn, clinic_id, patient_id, service_id):
         raise AgendaError("DADOS_INVALIDOS", "Este paciente já tem um tratamento aberto desse procedimento.")
     tid = conn.execute(
-        """insert into treatments (clinic_id, patient_id, service_id, professional_id, sessoes_previstas, intervalo_dias, orientacao)
-           values (%s, %s, %s, %s, %s, %s, %s) returning id""",
-        (clinic_id, patient_id, service_id, professional_id, sessoes_previstas, intervalo_dias, (orientacao or "").strip() or None),
+        """insert into treatments (clinic_id, patient_id, service_id, professional_id, sessoes_previstas, intervalo_dias,
+                                   orientacao, avisos_paciente)
+           values (%s, %s, %s, %s, %s, %s, %s, %s) returning id""",
+        (clinic_id, patient_id, service_id, professional_id, sessoes_previstas, intervalo_dias,
+         (orientacao or "").strip() or None, avisos_paciente),
     ).fetchone()[0]
     # consultas futuras desse procedimento passam a ser sessões do tratamento
     conn.execute(
@@ -180,7 +183,18 @@ def editar(conn, clinic_id: UUID, tratamento_id: UUID, dados: dict) -> dict:
     t = obter(conn, clinic_id, tratamento_id)
     if t["status"] not in ABERTOS:
         raise AgendaError("STATUS_INVALIDO", "Tratamento encerrado não pode ser editado.")
-    permitidos = {k: v for k, v in dados.items() if k in ("professional_id", "sessoes_previstas", "intervalo_dias", "orientacao")}
+    permitidos = {k: v for k, v in dados.items()
+                  if k in ("professional_id", "sessoes_previstas", "intervalo_dias", "orientacao", "avisos_paciente",
+                           "horario_fixo")}
+    if permitidos.get("horario_fixo"):  # só dá para DESLIGAR por aqui; ligar é com a série (horario_fixo.iniciar)
+        raise AgendaError("DADOS_INVALIDOS", "Para fixar um horário, abra o tratamento com o horário fixo.")
+    if "avisos_paciente" in permitidos and permitidos["avisos_paciente"] is None:
+        del permitidos["avisos_paciente"]
+    fixo = t["horario_fixo"] and permitidos.get("horario_fixo") is not False
+    if fixo and "intervalo_dias" in permitidos and not permitidos["intervalo_dias"]:
+        raise AgendaError("DADOS_INVALIDOS", "O horário fixo precisa do intervalo entre sessões.")
+    if fixo and "professional_id" in permitidos and not permitidos["professional_id"]:
+        raise AgendaError("DADOS_INVALIDOS", "O horário fixo precisa de um profissional.")
     if permitidos.get("professional_id"):
         _profissional_faz(conn, clinic_id, permitidos["professional_id"], t["service_id"])
     if "orientacao" in permitidos:

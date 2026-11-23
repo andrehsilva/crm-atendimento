@@ -10,6 +10,7 @@ from app.mensagens.envio import enviar_pendentes
 from app.mensagens.lembretes import gerar_aniversarios
 from app.mensagens.resumo_dia import enviar_resumos
 from app.mensagens.automacoes import gerar_retornos
+from app.horario_fixo import renovar_todos
 
 log = logging.getLogger("isis.agendador")
 INTERVALO_S = 30
@@ -26,10 +27,12 @@ def rodada() -> dict:
         with pool().connection() as conn:
             aniversarios = gerar_aniversarios(conn, agora)
             retornos = gerar_retornos(conn, agora)  # Etapa 25 (RN-AU-03/04)
+            fixas = renovar_todos(conn, agora)  # Etapa 26 (RN-TR-12): horário fixo sempre com as próximas sessões
             conn.commit()
             enviadas = enviar_pendentes(conn, agora)
             resumos = enviar_resumos(conn, agora)  # Etapa 23: resumo do dia do profissional
-        return {"ok": True, "aniversarios_na_fila": aniversarios, "enviadas": enviadas, "resumos": resumos, "retornos": retornos}
+        return {"ok": True, "aniversarios_na_fila": aniversarios, "enviadas": enviadas, "resumos": resumos, "retornos": retornos,
+                "sessoes_fixas": fixas}
     finally:
         _rodando.release()
 

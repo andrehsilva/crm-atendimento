@@ -1,16 +1,18 @@
 """Tratamentos em andamento (Etapa 21, RN-TR). Toda a equipe da clínica vê e mexe (recepção e admin)."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from app import horario_fixo, segmentos
 from app import tratamentos as T
 from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.auth.acesso import acesso
+from app.core import relogio
 from app.db import get_conn
 from app.eventos import avisar
 
@@ -25,8 +27,10 @@ def _paciente(conn, clinic_id: UUID, patient_id: UUID) -> dict:
 
 
 def _do_paciente(conn, clinic_id: UUID, patient_id: UUID) -> dict:
+    cfg = conn.execute("select settings from clinics where id = %s", (clinic_id,)).fetchone()[0]
     return {"tratamentos": T.do_paciente(conn, clinic_id, patient_id),
-            "tags": T.tags(conn, clinic_id, [patient_id]).get(patient_id, [])}
+            "tags": T.tags(conn, clinic_id, [patient_id]).get(patient_id, []),
+            "avisos_padrao": segmentos.avisos_tratamento(cfg)}  # D107: padrão do "manda lembrete" ao abrir
 
 
 def _mudou(conn, clinic_id: UUID, t: dict) -> dict:
@@ -41,20 +45,47 @@ def listar(clinic_id: UUID, patient_id: UUID, conn=Depends(get_conn)):
     return _do_paciente(conn, clinic_id, patient_id)
 
 
+class SessoesAoAbrir(BaseModel):
+    """Etapa 26: já marcar as sessões ao abrir. sessoes = None → horário fixo, sem data para terminar (D105)."""
+    inicio: datetime
+    sessoes: int | None = Field(None, ge=2, le=servico.SERIE_MAX)
+
+
 class NovoTratamento(BaseModel):
     service_id: UUID
     professional_id: UUID | None = None
     sessoes_previstas: int | None = Field(None, ge=1, le=100)
     intervalo_dias: int | None = Field(None, ge=1, le=365)
     orientacao: str | None = Field(None, max_length=300)
+    avisos_paciente: bool | None = None  # None = padrão do tipo de clínica (D107)
+    serie: SessoesAoAbrir | None = None
 
 
-@router.post("/patients/{patient_id}/tratamentos", status_code=201, summary="Abrir tratamento")
+@router.post("/patients/{patient_id}/tratamentos", status_code=201, summary="Abrir tratamento (e, se pedido, marcar as sessões)")
 def criar(clinic_id: UUID, patient_id: UUID, body: NovoTratamento, conn=Depends(get_conn)):
-    servico.carregar_clinica(conn, clinic_id)
+    clinica = servico.carregar_clinica(conn, clinic_id)
     _paciente(conn, clinic_id, patient_id)
-    t = T.criar(conn, clinic_id, patient_id, **body.model_dump())
-    return _mudou(conn, clinic_id, t)
+    dados = body.model_dump(exclude={"serie"})
+    if dados["avisos_paciente"] is None:
+        dados["avisos_paciente"] = segmentos.avisos_tratamento(clinica["settings"])
+    if body.serie:
+        if not body.professional_id:
+            raise AgendaError("DADOS_INVALIDOS", "Escolha o profissional das sessões.")
+        dados["intervalo_dias"] = dados["intervalo_dias"] or 7
+    resultado = None
+    with conn.transaction():  # savepoint: se nenhuma data couber, o tratamento também não fica
+        t = T.criar(conn, clinic_id, patient_id, **dados)
+        horario_fixo.sincronizar_lembretes(conn, clinic_id, t["id"])  # consultas já marcadas que viraram sessões
+        if body.serie:
+            resultado = horario_fixo.marcar_ao_abrir(conn, clinic_id, t["id"], inicio=body.serie.inicio,
+                                                     sessoes=body.serie.sessoes)
+    if resultado:
+        avisar(conn, clinic_id, "agenda")
+    saida = _mudou(conn, clinic_id, t)
+    if resultado:
+        saida["serie"] = {"marcadas": len(resultado["marcadas"]),
+                          "falhas": [{"inicio": f["inicio"], "motivo": f["motivo"]} for f in resultado["falhas"]]}
+    return saida
 
 
 class EdicaoTratamento(BaseModel):
@@ -62,12 +93,19 @@ class EdicaoTratamento(BaseModel):
     sessoes_previstas: int | None = Field(None, ge=1, le=100)
     intervalo_dias: int | None = Field(None, ge=1, le=365)
     orientacao: str | None = Field(None, max_length=300)
+    avisos_paciente: bool | None = None
+    horario_fixo: Literal[False] | None = None  # só desligar (parar de renovar)
 
 
 @router.patch("/tratamentos/{tratamento_id}", summary="Editar tratamento aberto")
 def editar(clinic_id: UUID, tratamento_id: UUID, body: EdicaoTratamento, conn=Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
-    return _mudou(conn, clinic_id, T.editar(conn, clinic_id, tratamento_id, body.model_dump(exclude_unset=True)))
+    dados = body.model_dump(exclude_unset=True)
+    t = T.editar(conn, clinic_id, tratamento_id, dados)
+    if "avisos_paciente" in dados:
+        horario_fixo.sincronizar_lembretes(conn, clinic_id, tratamento_id)
+        avisar(conn, clinic_id, "mensagens")
+    return _mudou(conn, clinic_id, t)
 
 
 class Espera(BaseModel):
@@ -115,4 +153,8 @@ class Encerramento(BaseModel):
 @router.post("/tratamentos/{tratamento_id}/encerrar", summary="Concluir (com 'volta em') ou interromper")
 def encerrar(clinic_id: UUID, tratamento_id: UUID, body: Encerramento, conn=Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
-    return _mudou(conn, clinic_id, T.encerrar(conn, clinic_id, tratamento_id, status=body.status, volta_em=body.volta_em))
+    t = T.encerrar(conn, clinic_id, tratamento_id, status=body.status, volta_em=body.volta_em)
+    if t["horario_fixo"]:  # Etapa 26: horário fixo encerrado → sessões futuras saem da agenda
+        if horario_fixo.cancelar_futuras(conn, clinic_id, tratamento_id, relogio.agora()):
+            avisar(conn, clinic_id, "agenda")
+    return _mudou(conn, clinic_id, t)

@@ -238,6 +238,13 @@ procedimentos iniciais e orientações próprias. Clínicas existentes continuam
 **O que testar:** criar uma clínica de cada tipo no Admin geral e conferir, em Configurações › Perfil, que o tipo salvo
 continua selecionado e que os termos e procedimentos iniciais correspondem ao nicho.
 
+## Etapa 26 — Horário fixo e lembrete por tratamento ✅ (23/11/2026; D105–D107)
+- "Abrir tratamento" ganha **"Já marcar as sessões?"**: não · horário fixo sem data para terminar · número de sessões.
+  Escolhe profissional, primeira data, horário e "toda semana" / "a cada 2 semanas".
+- Horário fixo: sempre as próximas 8 sessões marcadas; o sistema acrescenta sozinho; encerrar tira as futuras da agenda.
+- Caixa **"A assistente manda confirmação e lembrete"** (padrão pelo tipo de clínica; Psicanálise desligado).
+  No cartão do tratamento: selos "Horário fixo" / "Sem lembrete" e botões para ligar/desligar lembrete e parar o horário fixo.
+
 ---
 
 ## Depois da 1ª versão (backlog)

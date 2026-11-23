@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, CreditCard, Pause, Play, Plus, Sparkles, Stethoscope, Repeat, UserPlus, Wallet, XCircle } from 'lucide-react'
+import { Bell, BellOff, CheckCircle2, CreditCard, Pause, Play, Plus, Sparkles, Stethoscope, Repeat, UserPlus, Wallet, XCircle } from 'lucide-react'
 import { api, type MotivoEspera, type TagCliente, type Tratamento, type TratamentosPaciente } from '../lib/api'
 import { useClinica } from '../lib/clinica'
 import { dataCurta, hora } from '../lib/formato'
@@ -28,6 +28,8 @@ export function Tags({ tags, className = '' }: { tags: TagCliente[] | undefined;
 }
 
 const ISO = (d: Date) => d.toISOString().slice(0, 10)
+const diaSemana = (iso: string, tz: string) =>
+  new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: tz }).format(new Date(iso)).replace('-feira', '')
 const emMeses = (m: number) => { const d = new Date(); d.setMonth(d.getMonth() + m); return ISO(d) }
 
 /** Etapa 21 (RN-TR): tratamentos do paciente — abrir, pôr em espera, retomar e encerrar. */
@@ -49,6 +51,13 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
     qc.invalidateQueries({ queryKey: ['kanban'] })
     aviso.ok(msg)
   }
+
+  const editar = useMutation({
+    mutationFn: ({ t, dados }: { t: Tratamento; dados: Record<string, unknown>; msg: string }) =>
+      api.patch<TratamentosPaciente>(`/clinics/${clinica.id}/tratamentos/${t.id}`, dados),
+    onSuccess: (r, v) => { depois(r, v.msg); qc.invalidateQueries({ queryKey: ['mensagens'] }) },
+    onError: aviso.erro,
+  })
 
   const lista = q.data?.tratamentos ?? []
   const abertos = lista.filter((t) => t.status === 'em_andamento' || t.status === 'aguardando')
@@ -74,6 +83,12 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
                 {t.intervalo_dias ? ` · a cada ${t.intervalo_dias} dias` : ''}
                 {t.proxima_sessao ? ` · próxima ${dataCurta(t.proxima_sessao, tz)} ${hora(t.proxima_sessao, tz)}` : ''}
               </div>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {t.horario_fixo && t.serie_ate && (
+                  <Selo cor="azul"><Repeat className="size-3" />Horário fixo · {diaSemana(t.serie_ate, tz)} {hora(t.serie_ate, tz)}{t.intervalo_dias === 14 ? ' (quinzenal)' : ''}</Selo>
+                )}
+                {!t.avisos_paciente && <Selo cor="cinza"><BellOff className="size-3" />Sem lembrete</Selo>}
+              </div>
             </div>
             {t.status === 'aguardando'
               ? <Selo cor="ambar"><Pause className="size-3" />Aguardando {t.motivo_espera === 'outro' ? (t.motivo_texto ?? 'outro motivo') : MOTIVOS[t.motivo_espera!].toLowerCase()}
@@ -88,6 +103,18 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
               ? <Botao className="!py-1.5 text-xs" onClick={() => setRetomar(t)}><Play className="size-3.5" />Retomar</Botao>
               : <Botao variante="secundario" className="!py-1.5 text-xs" onClick={() => setEspera(t)}><Pause className="size-3.5" />Aguardar</Botao>}
             <Botao variante="secundario" className="!py-1.5 text-xs" onClick={() => setEncerrar(t)}><CheckCircle2 className="size-3.5" />Encerrar</Botao>
+            <Botao variante="fantasma" className="!py-1.5 text-xs" disabled={editar.isPending}
+              onClick={() => editar.mutate({ t, dados: { avisos_paciente: !t.avisos_paciente },
+                msg: t.avisos_paciente ? 'Lembretes desligados: as sessões deste tratamento não geram mais mensagens automáticas.' : 'Lembretes ligados para as próximas sessões.' })}>
+              {t.avisos_paciente ? <><BellOff className="size-3.5" />Desligar lembrete</> : <><Bell className="size-3.5" />Ligar lembrete</>}
+            </Botao>
+            {t.horario_fixo && (
+              <Botao variante="fantasma" className="!py-1.5 text-xs" disabled={editar.isPending}
+                onClick={() => editar.mutate({ t, dados: { horario_fixo: false },
+                  msg: 'Horário fixo desligado: as sessões já marcadas continuam, mas nenhuma nova é acrescentada.' })}>
+                <XCircle className="size-3.5" />Parar horário fixo
+              </Botao>
+            )}
           </div>
         </div>
       ))}
@@ -107,8 +134,18 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
       )}
 
       <ModalNovo aberto={novo} onFechar={() => setNovo(false)} pacienteId={pacienteId}
-        procedimentos={cadastros.procedimentos}
-        onFeito={(r) => { setNovo(false); depois(r, 'Tratamento aberto.') }} />
+        procedimentos={cadastros.procedimentos} avisosPadrao={q.data?.avisos_padrao ?? true}
+        onFeito={(r) => {
+          setNovo(false)
+          const s = r.serie
+          let msg = 'Tratamento aberto.'
+          if (s) {
+            msg = `Tratamento aberto com ${s.marcadas} ${s.marcadas === 1 ? 'sessão marcada' : 'sessões marcadas'}.`
+            if (s.falhas.length) msg += ` Não couberam: ${s.falhas.map((x) => `${dataCurta(x.inicio, tz)} (${x.motivo})`).join('; ')}`
+            qc.invalidateQueries({ queryKey: ['agenda'] })
+          }
+          depois(r, msg)
+        }} />
       <ModalEspera t={espera} onFechar={() => setEspera(null)} onFeito={(r) => { setEspera(null); depois(r, 'Tratamento em espera: a assistente não marca a próxima sessão.') }} />
       <ModalRetomar t={retomar} onFechar={() => setRetomar(null)} onFeito={(r, avisou) => {
         setRetomar(null)
@@ -120,35 +157,102 @@ export function PainelTratamentos({ pacienteId, compacto = false }: { pacienteId
   )
 }
 
-function ModalNovo({ aberto, onFechar, pacienteId, procedimentos, onFeito }: {
+type ModoSessoes = 'nao' | 'fixo' | 'numero'
+
+function ModalNovo({ aberto, onFechar, pacienteId, procedimentos, avisosPadrao, onFeito }: {
   aberto: boolean; onFechar: () => void; pacienteId: string
   procedimentos: { id: string; name: string }[]
+  avisosPadrao: boolean
   onFeito: (r: TratamentosPaciente) => void
 }) {
-  const { clinica } = useClinica()
+  const { clinica, cadastros } = useClinica()
   const aviso = useAviso()
-  const vazio = { service_id: '', sessoes: '', orientacao: '' }
+  const vazio = { service_id: '', professional_id: '', sessoes: '', orientacao: '', modo: 'nao' as ModoSessoes,
+    data: '', hora: '', intervalo: '7', quantas: '8', avisos: null as boolean | null }
   const [f, setF] = useState(vazio)
+  const avisos = f.avisos ?? avisosPadrao
+  const marcar = f.modo !== 'nao'
+  const profissionais = cadastros.profissionais.filter((p) => !f.service_id || p.service_ids.includes(f.service_id))
+  const quantas = Number(f.quantas)
+  const valido = !!f.service_id && (!marcar || (!!f.professional_id && !!f.data && !!f.hora
+    && (f.modo === 'fixo' || (quantas >= 2 && quantas <= 20))))
   const criar = useMutation({
     mutationFn: () => api.post<TratamentosPaciente>(`/clinics/${clinica.id}/patients/${pacienteId}/tratamentos`, {
-      service_id: f.service_id, sessoes_previstas: f.sessoes ? Number(f.sessoes) : null, orientacao: f.orientacao.trim() || null,
+      service_id: f.service_id, professional_id: f.professional_id || null,
+      sessoes_previstas: !marcar && f.sessoes ? Number(f.sessoes) : null,
+      intervalo_dias: marcar ? Number(f.intervalo) : null,
+      orientacao: f.orientacao.trim() || null, avisos_paciente: avisos,
+      serie: marcar ? { inicio: `${f.data}T${f.hora}:00`, sessoes: f.modo === 'numero' ? quantas : null } : null,
     }),
     onSuccess: (r) => { setF(vazio); onFeito(r) },
     onError: aviso.erro,
   })
-  const enviar = (e: FormEvent) => { e.preventDefault(); if (f.service_id) criar.mutate() }
+  const enviar = (e: FormEvent) => { e.preventDefault(); if (valido) criar.mutate() }
   return (
     <Modal titulo="Abrir tratamento" aberto={aberto} onFechar={onFechar}>
       <form onSubmit={enviar} className="grid gap-4">
         <Campo rotulo="Procedimento">
-          <Seletor value={f.service_id} onChange={(e) => setF({ ...f, service_id: e.target.value })} required>
+          <Seletor value={f.service_id} onChange={(e) => setF({ ...f, service_id: e.target.value, professional_id: '' })} required>
             <option value="">Escolha…</option>
             {procedimentos.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </Seletor>
         </Campo>
-        <Campo rotulo="Quantas sessões (opcional)">
-          <Entrada type="number" min={1} max={100} value={f.sessoes} placeholder="Ex.: 4" onChange={(e) => setF({ ...f, sessoes: e.target.value })} />
+        <Campo rotulo={marcar ? 'Profissional' : 'Profissional (opcional)'}>
+          <Seletor value={f.professional_id} onChange={(e) => setF({ ...f, professional_id: e.target.value })} required={marcar}>
+            <option value="">{marcar ? 'Escolha…' : 'Qualquer um'}</option>
+            {profissionais.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Seletor>
         </Campo>
+        <Campo rotulo="Já marcar as sessões na agenda?">
+          <Seletor value={f.modo} onChange={(e) => setF({ ...f, modo: e.target.value as ModoSessoes })}>
+            <option value="nao">Não, marco depois</option>
+            <option value="fixo">Horário fixo, sem data para terminar</option>
+            <option value="numero">Um número de sessões</option>
+          </Seletor>
+        </Campo>
+        {marcar ? (
+          <div className="grid gap-3 rounded-2xl bg-surface-muted p-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Campo rotulo="Primeira sessão">
+                <Entrada type="date" value={f.data} min={ISO(new Date())} required onChange={(e) => setF({ ...f, data: e.target.value })} />
+              </Campo>
+              <Campo rotulo="Horário">
+                <Entrada type="time" value={f.hora} step={300} required onChange={(e) => setF({ ...f, hora: e.target.value })} />
+              </Campo>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Campo rotulo="Repetir">
+                <Seletor value={f.intervalo} onChange={(e) => setF({ ...f, intervalo: e.target.value })}>
+                  <option value="7">Toda semana</option>
+                  <option value="14">A cada 2 semanas</option>
+                </Seletor>
+              </Campo>
+              {f.modo === 'numero' && (
+                <Campo rotulo="Quantas sessões">
+                  <Entrada type="number" min={2} max={20} value={f.quantas} onChange={(e) => setF({ ...f, quantas: e.target.value })} />
+                </Campo>
+              )}
+            </div>
+            <p className="text-xs text-muted">
+              {f.modo === 'fixo'
+                ? <>O sistema deixa sempre as <b>próximas 8 sessões</b> marcadas e acrescenta mais uma a cada semana enquanto o tratamento estiver em andamento. Ao encerrar, as sessões futuras saem da agenda.</>
+                : 'Cada data passa pelas regras da agenda; as que não couberem (feriado, horário ocupado…) aparecem no aviso.'}
+            </p>
+          </div>
+        ) : (
+          <Campo rotulo="Quantas sessões (opcional)">
+            <Entrada type="number" min={1} max={100} value={f.sessoes} placeholder="Ex.: 4" onChange={(e) => setF({ ...f, sessoes: e.target.value })} />
+          </Campo>
+        )}
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-0.5" checked={avisos} onChange={(e) => setF({ ...f, avisos: e.target.checked })} />
+          <span>
+            A assistente manda confirmação e lembrete no dia anterior
+            <span className="block text-xs text-muted">
+              {avisos ? 'Bom para quem costuma esquecer (ex.: odontologia).' : 'Sem mensagens automáticas das sessões: a agenda fica por conta do paciente (ex.: psicanálise). Remarcações e cancelamentos continuam sendo avisados.'}
+            </span>
+          </span>
+        </label>
         <Campo rotulo="Recado para a assistente (opcional)" ajuda={`${f.orientacao.length}/300`}>
           <textarea value={f.orientacao} maxLength={300} rows={2} placeholder="Ex.: não marcar antes de 10 dias da extração"
             onChange={(e) => setF({ ...f, orientacao: e.target.value })}
@@ -156,7 +260,7 @@ function ModalNovo({ aberto, onFechar, pacienteId, procedimentos, onFeito }: {
         </Campo>
         <div className="flex justify-end gap-2">
           <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
-          <Botao type="submit" disabled={!f.service_id || criar.isPending}>Abrir</Botao>
+          <Botao type="submit" disabled={!valido || criar.isPending}>{criar.isPending ? 'Abrindo…' : 'Abrir'}</Botao>
         </div>
       </form>
     </Modal>
@@ -272,7 +376,10 @@ function ModalEncerrar({ t, onFechar, onFeito }: { t: Tratamento | null; onFecha
             </div>
           </Campo>
         )}
-        <p className="text-xs text-muted">Encerrado não reabre: se o paciente precisar de novo, abra outro tratamento. Consultas já marcadas continuam na agenda.</p>
+        <p className="text-xs text-muted">Encerrado não reabre: se o paciente precisar de novo, abra outro tratamento.{' '}
+          {t?.horario_fixo
+            ? <b>Como o horário é fixo, as sessões futuras saem da agenda (sem mensagem ao paciente).</b>
+            : 'Consultas já marcadas continuam na agenda.'}</p>
         <div className="flex justify-end gap-2">
           <Botao variante="fantasma" onClick={onFechar}>Voltar</Botao>
           <Botao onClick={() => salvar.mutate()} disabled={salvar.isPending}><CheckCircle2 className="size-4" />Encerrar</Botao>

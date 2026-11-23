@@ -25,6 +25,7 @@ class Segmento:
     procedimentos: list = field(default_factory=list)  # (nome, descrição, minutos, IA pode marcar?)
     lembrete_discreto: bool = False  # D41: lembrete sem citar o procedimento
     extra_urgencia: str = ""  # orientação adicional (ex.: CVV na psicologia)
+    avisos_tratamento: bool = True  # D107: tratamento novo já vem com confirmação/lembrete ligados?
 
 
 _CONSULTA = {"atendimento": "consulta", "atendimentos": "consultas", "genero": "f"}
@@ -110,6 +111,7 @@ SEGMENTOS: dict[str, Segmento] = {
             extra_urgencia="lembre também do **CVV (188)**, que atende 24 horas por telefone",
             emoji="🗓️",
             lembrete_discreto=True,
+            avisos_tratamento=False,  # D107: na análise, a agenda é responsabilidade do paciente
             procedimentos=[
                 ("Primeira sessão", "Acolhimento e entendimento da demanda.", 60, True),
                 ("Sessão de psicanálise", "Sessão de acompanhamento.", 60, True),
@@ -195,6 +197,11 @@ def termos(settings: dict | None) -> dict:
 def lembrete_discreto(settings: dict | None) -> bool:
     s = settings or {}
     return bool(s["lembrete_discreto"]) if s.get("lembrete_discreto") is not None else segmento_de(s).lembrete_discreto
+
+
+def avisos_tratamento(settings: dict | None) -> bool:
+    """D107: padrão do 'a assistente manda confirmação e lembrete' ao abrir um tratamento."""
+    return segmento_de(settings).avisos_tratamento
 
 
 def cap(texto: str) -> str:

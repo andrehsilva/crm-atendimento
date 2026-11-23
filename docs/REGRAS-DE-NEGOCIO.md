@@ -113,6 +113,8 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-TR-08 | Sessões ligadas a um tratamento aberto **não contam** no limite de consultas futuras (RN-AG-08). | Código | ✅ |
 | RN-TR-09 | **Falta numa sessão de tratamento:** o sino avisa "Fulano faltou à sessão X de N"; se o paciente escrever, a Ísis oferece remarcar. | Código | ✅ |
 | RN-TR-10 | **Concluído:** a equipe informa "volta em X meses" (padrão = recall da clínica, D74); o recall usa essa data. Tratamento **aberto** nunca entra no recall. | Código | ✅ |
+| RN-TR-12 | **Horário fixo (D105, Etapa 26):** ao abrir o tratamento, a equipe pode já marcar as sessões (mesmo dia/horário, semanal ou quinzenal). "Sem data para terminar" mantém sempre as próximas **8** marcadas (até o horizonte da agenda) e acrescenta as que faltam sozinho, só com o tratamento **em andamento**; continua da última data tentada (cancelada não volta). Encerrar cancela as futuras, sem mensagem. Cada data passa por todas as regras da agenda. | Código | ✅ |
+| RN-TR-13 | **Lembrete por tratamento (D106/D107):** desligado → as sessões dele não geram confirmação nem lembrete (remarcação e cancelamento seguem avisados). Padrão pelo tipo de clínica (Psicanálise desligado). Ligar/desligar depois cancela ou agenda os lembretes das sessões futuras. | Código | ✅ |
 | RN-TR-11 | **Tags (D90):** Novo (nenhum atendimento realizado) · Recorrente (2+ realizados) · Em tratamento · Aguardando (motivo) — calculadas, mostradas no CRM, em Clientes e na conversa; filtro em Clientes. | Código | ✅ |
 
 ## Resumo do dia do profissional (RN-RS) — Etapa 23
