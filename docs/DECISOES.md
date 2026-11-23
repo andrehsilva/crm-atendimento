@@ -116,4 +116,5 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D106 | ✅ **Lembrete por tratamento:** desligado → as sessões não geram confirmação nem lembrete; remarcação e cancelamento continuam avisados | Q94, 23/11/2026 |
 | D108 | ✅ **Arrastar sessão na agenda:** ao soltar, pergunta "Mover de … para …?" antes de gravar; passa pelas mesmas regras do Remarcar | Q96, 23/11/2026 |
 | D109 | ✅ **Arrastar e avisar:** a confirmação traz "avisar o paciente" marcado (dá para desmarcar) | Q97, 23/11/2026 |
+| D116 | ✅ **Procedimentos padrão de Odontologia:** 17 procedimentos da lista do usuário; urgência, extração, implante, canal e periodontal só a recepção marca. Vale para clínicas criadas daqui em diante | pedido do usuário, 23/11/2026 |
 | D107 | ✅ **Padrão do lembrete:** pelo tipo de clínica — Psicanálise desligado, demais ligados; muda em cada tratamento, inclusive depois | Q95, 23/11/2026 |
