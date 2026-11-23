@@ -258,6 +258,12 @@ No cartão do CRM, em Clientes e na conversa: **Arquivar** (toda a equipe; some 
 para ver/desarquivar) e **Excluir de vez** (só admin, só para quem nunca teve consulta; apaga conversa e mensagens).
 Arquivado que escreve de novo volta sozinho como "Novo Contato". Sem arquivamento automático.
 
+## Etapa 30 — Perguntar à assistente ✅ (23/11/2026; D117–D121)
+Botão **"Perguntar à assistente"** na barra lateral, acima de "Abrir demonstração" (só aparece se o admin geral liberou
+a clínica em Admin geral › clínica › IA). Abre um painel de chat: a equipe pergunta sobre agenda, clientes, procedimentos,
+tratamentos, CRM e campanhas. Perguntas livres; a IA consulta o banco só para ler e só a própria clínica (travas no banco).
+Fora da plataforma → recusa; pedido de alterar → indica a tela. Conversa some ao fechar; gasto entra no teto.
+
 ---
 
 ## Depois da 1ª versão (backlog)

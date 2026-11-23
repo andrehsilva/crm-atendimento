@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 101 de 110 resolvidas (99 respondidas · 2 adiadas) — 23/11/2026.
+**Progresso:** 105 de 114 resolvidas (102 respondidas · 3 adiadas) — 23/11/2026.
 
 ---
 
@@ -134,11 +134,16 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 ## ⏸ Adiadas (não bloqueiam; voltamos nelas depois)
 
 - [ ] **Q17 — Selos/tags do cliente:** *"futuramente teremos tags por clientes, poucas: cliente novo / recorrente / em tratamento; ao sair de 'em tratamento' será colocado um 'volta em X tempo'"*. Registrado como ideia futura (D20).
+- [ ] **Q105 — Sexo do paciente:** criar o campo para responder "homens ou mulheres"? → *"não criar agora"*. A assistente responde que a plataforma não guarda esse dado. *(23/11)*
 - [ ] **Q21 — Data de nascimento:** como entra no sistema? → *"veremos depois"*. Por ora: campo no cadastro, editável pela recepção.
 
 ---
 
 ## ✅ Respondidas
+
+- [x] **Q104 — Quem usa o "Perguntar à assistente":** toda a equipe, vendo a clínica inteira (igual ao painel); nunca outra clínica. *(23/11 → D118)*
+- [x] **Q106 — Conversa guardada?** Não: some ao fechar. *(23/11 → D119)*
+- [x] **Q107 — Gasto do chat interno:** entra no teto de IA da clínica. *(23/11 → D120)*
 
 - [x] **Q100 — Tirar contato das listas:** "Arquivar" em qualquer contato (some do CRM, Clientes e Conversas; dados ficam); "Excluir de vez" só para quem nunca teve consulta (apaga conversa e mensagens). *(23/11 → D112)*
 - [x] **Q101 — Arquivado escreveu de novo:** sai do arquivo sozinho e volta como "Novo Contato"; a Ísis atende normalmente. *(23/11 → D113)*

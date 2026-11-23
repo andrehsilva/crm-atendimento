@@ -53,6 +53,8 @@ export type Clinica = {
   termos: Termos
   cor: string
   logo_versao: number | null
+  /** D121: o admin geral libera o "Perguntar à assistente" por clínica */
+  pergunte_liberado: boolean
   /** Etapa 10A (D46): false = assistente desligada (clínica sem chave de IA) */
   ia_ativa: boolean
   pausada_whatsapp: boolean
@@ -164,11 +166,11 @@ export type Paciente = {
   id: string
   name: string | null
   phone: string
-  birth_date: string | null
-  drive_url: string | null
   /** Etapa 29 (D112): arquivado sai das listas; tem_consultas decide se dá para excluir de vez */
   arquivado_em: string | null
   tem_consultas: boolean
+  birth_date: string | null
+  drive_url: string | null
   notas: number
   origin: string
   crm_stage: Etapa
@@ -319,13 +321,13 @@ export type Folga = { id: string; professional_id: string | null; inicio: string
 export type ProfissionalCfg = {
   id: string
   nome: string
+  /** Etapa 28 (D110): excluído com histórico — fica inativo e escondido da lista */
+  arquivado: boolean
   especialidade: string | null
   /** Etapa 11: aparecem no site da clínica */
   bio: string | null
   foto_versao: number | null
   cor: string | null
-  /** Etapa 28 (D110): excluído com histórico — fica inativo e escondido da lista */
-  arquivado: boolean
   ativo: boolean
   procedimentos: string[]
   horario_proprio: boolean
@@ -339,6 +341,7 @@ export type IaClinica = {
   tem_chave: boolean
   chave_final: string | null
   usa_plataforma: boolean
+  pergunte_liberado: boolean
   atualizado_em: string | null
   origem: 'clinica' | 'plataforma' | null
   chave_ilegivel: boolean

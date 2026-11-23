@@ -139,6 +139,16 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-AU-04 | **Sem resposta (D103):** se a pessoa não respondeu nem marcou, 15 dias depois sai um 2º convite; depois disso, para. | Código | ✅ |
 | RN-AU-05 | Pós-consulta e retorno respeitam o **PARAR**, o silêncio noturno e os limites de envio; o retorno também usa o espaçamento das mensagens em massa (D70). | Código | ✅ |
 
+## Perguntar à assistente (RN-PE) — Etapa 30
+
+| Código | Regra | Onde | Status |
+|---|---|---|---|
+| RN-PE-01 | Só consulta: nada é criado, alterado ou apagado. Garantido pelo banco (papel `isis_leitura` só com SELECT nas visões do esquema `leitura` + transação só-leitura), não pela IA (D117). | Banco + Código | ✅ |
+| RN-PE-02 | Só a clínica de quem pergunta: as visões filtram pela clínica gravada pelo backend a partir da sessão do usuário, numa tabela temporária que o papel de leitura não lê nem escreve (D117). | Banco + Código | ✅ |
+| RN-PE-03 | Responde só sobre a plataforma; outro assunto → recusa educada. Dado inexistente (ex.: sexo) → diz que a plataforma não guarda (D117, Q105). | Código | ✅ |
+| RN-PE-04 | Toda a equipe pode usar quando a clínica está liberada pelo admin geral (D118, D121). | Código | ✅ |
+| RN-PE-05 | Conversa não é guardada; cada pergunta registra uso e custo, que entram no teto de IA da clínica (D119, D120). | Código | ✅ |
+
 ## Disparos (RN-DP)
 
 | Código | Regra | Onde | Status |

@@ -5,6 +5,7 @@ import { nomePapel, useAuth } from '../lib/auth'
 import { useClinica } from '../lib/clinica'
 import { escolherClinica } from '../lib/clinicaGuardada'
 import { useSaude } from '../lib/saude'
+import { PergunteAssistente } from './PergunteAssistente'
 import {
   ArrowLeftRight,
   CalendarDays,
@@ -13,6 +14,7 @@ import {
   KanbanSquare,
   LogOut,
   LayoutDashboard,
+  MessageCircleQuestion,
   MessageSquare,
   MonitorPlay,
   ShieldCheck,
@@ -45,6 +47,7 @@ const secoes: { titulo: string; itens: Item[] }[] = [
 
 export function Sidebar() {
   const [recolhida, setRecolhida] = useState(false)
+  const [perguntando, setPerguntando] = useState(false)
   const { clinica, apresentacao } = useClinica()
   const qc = useQueryClient()
   const navegar = useNavigate()
@@ -137,6 +140,15 @@ export function Sidebar() {
             {!recolhida && 'Admin geral'}
           </Link>
         )}
+        {clinica.pergunte_liberado && (
+        <button type="button" onClick={() => setPerguntando(true)}
+          title="Perguntar à assistente sobre os dados da clínica (só consulta)"
+          className="flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-left text-sm text-muted hover:border-primary hover:text-primary">
+          <MessageCircleQuestion className="size-5 shrink-0" />
+          {!recolhida && 'Perguntar à assistente'}
+        </button>
+        )}
+        {perguntando && <PergunteAssistente onFechar={() => setPerguntando(false)} />}
         {saude.data?.chat_teste && (
           <Link
             to="/demo"

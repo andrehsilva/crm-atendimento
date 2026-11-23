@@ -64,7 +64,8 @@ def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
         # 10C: sem concluir, o painel mostra só os "Primeiros passos"; depois, o que faltar vira aviso (D54)
         "configurada": inicial.concluida(conn, clinic_id), "pendencias": inicial.pendencias(conn, clinic_id),
         "uso_ia": uso_ia.situacao(conn, clinic_id),  # 10B: aviso aos 80%, pausa aos 100%
-        "apresentacao": bool(conn.execute("select apresentacao from clinics where id = %s", (clinic_id,)).fetchone()[0]),
+        "apresentacao": bool(c["apresentacao"]),
+        "pergunte_liberado": bool(c["pergunte_liberado"]),  # D121: o admin geral libera por clínica
     }
 
 
@@ -213,9 +214,9 @@ def pacientes(clinic_id: UUID, busca: str | None = None, arquivados: bool = Fals
                     (select (extract(epoch from f.updated_at) * 1000)::bigint from patient_photos f where f.patient_id = p.id) as foto_versao
              from patients p left join professionals pr on pr.id = p.preferred_professional_id
              where p.clinic_id = %s"""
-    params: list = [relogio.agora(), clinic_id]
     # Etapa 29 (D112): arquivados ficam fora da lista; o filtro "arquivados" mostra só eles
     sql += " and p.archived_at is not null" if arquivados else " and p.archived_at is null"
+    params: list = [relogio.agora(), clinic_id]
     if busca:
         sql += " and (p.name ilike %s or p.phone like %s)"
         params += [f"%{busca}%", f"%{''.join(ch for ch in busca if ch.isdigit()) or busca}%"]
@@ -253,7 +254,6 @@ def editar_paciente(clinic_id: UUID, patient_id: UUID, body: EdicaoPaciente, con
     return p
 
 
-def _paciente_da_clinica(conn, clinic_id: UUID, patient_id: UUID) -> None:
 @router.post("/clinics/{clinic_id}/patients/{patient_id}/arquivar", summary="Arquivar contato (D112, toda a equipe)")
 def arquivar_paciente(clinic_id: UUID, patient_id: UUID, conn: Conn = Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
@@ -291,6 +291,7 @@ def excluir_paciente(clinic_id: UUID, patient_id: UUID, request: Request, conn: 
     return {"ok": True}
 
 
+def _paciente_da_clinica(conn, clinic_id: UUID, patient_id: UUID) -> None:
     if not conn.execute("select 1 from patients where clinic_id = %s and id = %s", (clinic_id, patient_id)).fetchone():
         raise AgendaError("DADOS_INVALIDOS", "Paciente não encontrado.")
 

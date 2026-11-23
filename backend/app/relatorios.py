@@ -219,7 +219,7 @@ def gerar(conn, clinic_id: UUID, tipo: str, *, de: date, ate: date, prof: UUID |
             ["Tempo médio de resposta (s)", um("""select round(avg(latency_ms) / 1000.0, 1) from agent_runs where clinic_id = %(c)s
                                                  and tipo = 'resposta' and created_at >= %(i)s and created_at < %(f)s""")],
             ["Falhas da assistente", um("""select count(*) from agent_runs where clinic_id = %(c)s and error is not null
-                                          and created_at >= %(i)s and created_at < %(f)s""")],
+                                          and tipo <> 'equipe' and created_at >= %(i)s and created_at < %(f)s""")],
             ["Conversas passadas para a equipe", um("""select count(*) from crm_events where clinic_id = %(c)s
                                                        and event = 'aguardando_humano' and created_at >= %(i)s and created_at < %(f)s""")],
             ["Consultas marcadas pela assistente", origem.get("isis", 0)],

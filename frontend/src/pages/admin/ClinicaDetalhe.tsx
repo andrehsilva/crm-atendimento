@@ -349,6 +349,15 @@ function Ia({ id }: { id: string }) {
     },
     onError: aviso.erro,
   })
+  const pergunte = useMutation({
+    mutationFn: (liberado: boolean) => api.put<IaClinica>(`/admin/clinicas/${id}/pergunte`, { liberado }),
+    onSuccess: (e) => {
+      qc.setQueryData(['admin', 'ia', id], e)
+      qc.invalidateQueries({ queryKey: ['clinica'] })
+      aviso.ok(e.pergunte_liberado ? '"Perguntar à assistente" liberado para esta clínica.' : '"Perguntar à assistente" bloqueado para esta clínica.')
+    },
+    onError: aviso.erro,
+  })
   if (!q.data) return <p className="text-sm text-muted">Carregando…</p>
   const e = q.data
   const nome = e.provedores.find((p) => p.id === e.provedor)?.nome
@@ -371,6 +380,17 @@ function Ia({ id }: { id: string }) {
           Usar a chave da plataforma
           <span className="block text-xs text-muted">
             Para teste grátis ou demonstração. Vale só enquanto a clínica não tiver chave própria; o gasto fica na conta da plataforma.
+          </span>
+        </span>
+      </label>
+      {/* D121: o chat interno da equipe só aparece no painel da clínica quando liberado aqui */}
+      <label className="mt-4 flex items-start gap-3 text-sm">
+        <input type="checkbox" className="mt-0.5 size-4 accent-[var(--primary)]" checked={e.pergunte_liberado} disabled={pergunte.isPending}
+          onChange={(ev) => pergunte.mutate(ev.target.checked)} />
+        <span>
+          Liberar "Perguntar à assistente"
+          <span className="block text-xs text-muted">
+            Chat em que a equipe da clínica pergunta sobre os próprios dados (só consulta, nunca altera). O gasto entra no teto de IA da clínica.
           </span>
         </span>
       </label>

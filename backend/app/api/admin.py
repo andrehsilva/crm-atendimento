@@ -350,14 +350,31 @@ class UsoPlataforma(BaseModel):
 @router.get("/clinicas/{clinic_id}/ia", summary="Situação da IA da clínica")
 def ia_da_clinica(clinic_id: UUID, conn=Depends(get_conn)):
     _existe(conn, clinic_id)
-    return ia.estado_publico(conn, clinic_id)
+    return _estado_ia(conn, clinic_id)
+
+
+def _estado_ia(conn, clinic_id: UUID) -> dict:
+    liberado = conn.execute("select pergunte_liberado from clinics where id = %s", (clinic_id,)).fetchone()[0]
+    return {**ia.estado_publico(conn, clinic_id), "pergunte_liberado": liberado}
+
+
+class PergunteLiberado(BaseModel):
+    liberado: bool
+
+
+@router.put("/clinicas/{clinic_id}/pergunte", summary="Liberar/bloquear o \"Perguntar à assistente\" (D121)")
+def pergunte_liberado(clinic_id: UUID, body: PergunteLiberado, request: Request, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    conn.execute("update clinics set pergunte_liberado = %s where id = %s", (body.liberado, clinic_id))
+    adm.auditar(conn, usuario_da_requisicao(request).id, "liberar_pergunte" if body.liberado else "bloquear_pergunte", clinic_id)
+    return _estado_ia(conn, clinic_id)
 
 
 @router.put("/clinicas/{clinic_id}/ia", summary="Ligar/desligar o uso da chave da plataforma")
 def ia_plataforma(clinic_id: UUID, body: UsoPlataforma, request: Request, conn=Depends(get_conn)):
     _existe(conn, clinic_id)
     ia.usar_plataforma(conn, clinic_id, body.usa_plataforma, usuario_da_requisicao(request).id)
-    return ia.estado_publico(conn, clinic_id)
+    return _estado_ia(conn, clinic_id)
 
 
 # ---------------------------------------------------------------------------
@@ -413,9 +430,9 @@ def uso(conn=Depends(get_conn)):
                   (select count(*) from agent_runs r where r.clinic_id = c.id and r.tipo = 'resposta'
                      and r.created_at >= date_trunc('month', now())) as respostas_ia,
                   (select round(avg(latency_ms) / 1000.0, 1) from agent_runs r where r.clinic_id = c.id
-                     and r.created_at >= date_trunc('month', now())) as tempo_medio_s,
+                     and r.tipo = 'resposta' and r.created_at >= date_trunc('month', now())) as tempo_medio_s,
                   (select count(*) from agent_runs r where r.clinic_id = c.id and r.error is not null
-                     and r.created_at >= date_trunc('month', now())) as falhas_ia,
+                     and r.tipo <> 'equipe' and r.created_at >= date_trunc('month', now())) as falhas_ia,
                   (select coalesce(sum(coalesce(r.tokens_entrada, 0) + coalesce(r.tokens_saida, 0)), 0) from agent_runs r
                      where r.clinic_id = c.id and r.created_at >= date_trunc('month', now())) as tokens_ia,
                   (select coalesce(sum(r.custo_usd), 0)::float from agent_runs r where r.clinic_id = c.id

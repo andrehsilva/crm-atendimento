@@ -124,3 +124,8 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D115 | ✅ **Sem arquivamento automático** de contatos parados (só manual) | Q103, 23/11/2026 |
 | D116 | ✅ **Procedimentos padrão de Odontologia:** 17 procedimentos da lista do usuário; urgência, extração, implante, canal e periodontal só a recepção marca. Vale para clínicas criadas daqui em diante | pedido do usuário, 23/11/2026 |
 | D107 | ✅ **Padrão do lembrete:** pelo tipo de clínica — Psicanálise desligado, demais ligados; muda em cada tratamento, inclusive depois | Q95, 23/11/2026 |
+| D117 | ✅ **"Perguntar à assistente" (chat interno):** a equipe pergunta livremente sobre os dados da clínica; a IA escreve consultas de leitura, mas a segurança fica no banco: visões só da clínica de quem pergunta (esquema `leitura`), papel sem permissão de escrita, transação só-leitura, 5 s e 200 linhas no máximo. Fora: chaves, usuários, WhatsApp, conteúdo das conversas e observações internas. Só responde sobre a plataforma; pedido de alterar algo → indica a tela do painel | pedido do usuário, 23/11/2026 |
+| D118 | ✅ **Quem usa:** toda a equipe, vendo a clínica inteira | Q104, 23/11/2026 |
+| D119 | ✅ **Conversa do chat interno não é guardada:** some ao fechar (fica só o registro de uso/custo) | Q106, 23/11/2026 |
+| D120 | ✅ **Gasto do chat interno** entra no teto de IA da clínica; teto atingido ou IA desligada → o chat avisa e não chama a IA | Q107, 23/11/2026 |
+| D121 | ✅ **Liberação por clínica:** o admin geral liga/desliga o "Perguntar à assistente" em Admin geral › clínica › IA. Começa desligado; desligado, o botão some e a rota recusa | pedido do usuário, 23/11/2026 |
