@@ -14,6 +14,7 @@ from psycopg.rows import dict_row
 
 from app import segmentos, uso_ia
 from app.agenda import servico
+from app.core import relogio
 from app.painel.avisos import quando
 
 DIAS_ACONTECIMENTOS = 7
@@ -128,7 +129,7 @@ def _texto(linha: dict, clinica: dict, t: dict, ia: str) -> tuple[str, str]:
 
 def listar(conn, clinic_id: UUID, user_id: UUID, agora: datetime | None = None) -> dict:
     clinica = servico.carregar_clinica(conn, clinic_id)
-    agora = agora or datetime.now(clinica["tz"])
+    agora = agora or relogio.agora().astimezone(clinica["tz"])
     t = segmentos.termos(clinica["settings"])
     ia = (clinica["settings"] or {}).get("nome_assistente") or "Ísis"
 
