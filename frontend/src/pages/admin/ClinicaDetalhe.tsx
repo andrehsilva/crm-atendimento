@@ -1,16 +1,16 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, KeyRound, LogIn, PauseCircle, PlayCircle, QrCode, RefreshCw, Smartphone, Unplug, UserPlus, Webhook } from 'lucide-react'
+import { ArrowLeft, KeyRound, LogIn, PauseCircle, PlayCircle, UserPlus } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
 import { Botao, Campo, Entrada, Modal, Secao, Seletor, Selo } from '../../components/ui'
-import { api, type AdminClinica, type IaClinica, type SessaoWaha, type StatusWhatsapp, type UsuarioClinica } from '../../lib/api'
+import { api, type AdminClinica, type IaClinica, type UsuarioClinica } from '../../lib/api'
 import { nomePapel } from '../../lib/auth'
 import { escolherClinica } from '../../lib/clinicaGuardada'
 import { telefone } from '../../lib/formato'
-import { FUSOS, SeloWhatsapp } from './Clinicas'
+import { FUSOS } from './Clinicas'
 import { SenhaProvisoria } from './SenhaProvisoria'
-import { ConexaoWhatsApp } from './ConexaoWhatsApp'
+import { WhatsAppClinica } from './WhatsAppClinica'
 
 const ABAS = ['Dados', 'WhatsApp', 'IA', 'Usuários'] as const
 
@@ -80,7 +80,7 @@ export function AdminClinicaDetalhe() {
         ))}
       </div>
       {aba === 'Dados' && <Dados c={c} />}
-      {aba === 'WhatsApp' && <WhatsApp id={id} />}
+      {aba === 'WhatsApp' && q.data && <WhatsAppClinica id={id} slug={q.data.slug} />}
       {aba === 'IA' && <Ia id={id} />}
       {aba === 'Usuários' && <Usuarios id={id} />}
 
@@ -152,118 +152,6 @@ function Dados({ c }: { c: AdminClinica }) {
         </div>
       </form>
     </Secao>
-    </div>
-  )
-}
-
-function WhatsApp({ id }: { id: string }) {
-  const aviso = useAviso()
-  const qc = useQueryClient()
-  const [qr, setQr] = useState(0)
-  const [nova, setNova] = useState('')
-  const st = useQuery({
-    queryKey: ['admin', 'whatsapp', id],
-    queryFn: () => api.get<StatusWhatsapp>(`/admin/clinicas/${id}/whatsapp`),
-    refetchInterval: (q) => (q.state.data?.ligado && q.state.data.status !== 'WORKING' ? 5000 : false),
-  })
-  const sessoes = useQuery({
-    queryKey: ['admin', 'sessoes'],
-    queryFn: () => api.get<SessaoWaha[]>('/admin/whatsapp/sessoes'),
-    enabled: st.data?.ligado === false,
-    retry: false,
-  })
-  const feito = (msg: string) => () => {
-    aviso.ok(msg)
-    qc.invalidateQueries({ queryKey: ['admin'] })
-  }
-  const ligar = useMutation({
-    mutationFn: ({ sessao, criar }: { sessao: string; criar: boolean }) => api.put(`/admin/clinicas/${id}/whatsapp${criar ? '?criar=true' : ''}`, { sessao }),
-    onSuccess: feito('WhatsApp ligado à clínica.'),
-    onError: aviso.erro,
-  })
-  const webhook = useMutation({ mutationFn: () => api.post(`/admin/clinicas/${id}/whatsapp/webhook`), onSuccess: feito('Webhook apontado para este backend.'), onError: aviso.erro })
-  const reiniciar = useMutation({ mutationFn: () => api.post(`/admin/clinicas/${id}/whatsapp/reiniciar`), onSuccess: feito('Sessão reiniciando…'), onError: aviso.erro })
-  const desligar = useMutation({ mutationFn: () => api.delete(`/admin/clinicas/${id}/whatsapp`), onSuccess: feito('WhatsApp desligado da clínica.'), onError: aviso.erro })
-
-  if (st.isLoading || !st.data) return <p className="text-sm text-muted">Carregando…</p>
-  const s = st.data
-
-  if (!s.ligado) {
-    const livres = (sessoes.data ?? []).filter((x) => !x.clinic_id)
-    return (
-      <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
-        <Secao titulo="Usar uma sessão existente" icone={<Smartphone className="size-5" />}>
-          {sessoes.isError ? (
-            <p className="text-sm text-red-600">{(sessoes.error as Error).message}</p>
-          ) : sessoes.isLoading ? (
-            <p className="text-sm text-muted">Consultando o servidor WAHA…</p>
-          ) : !livres.length ? (
-            <p className="text-sm text-muted">Nenhuma sessão livre no servidor WAHA. Crie uma nova ao lado.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {livres.map((x) => (
-                <li key={x.sessao} className="flex items-center justify-between gap-3 rounded-2xl border border-line p-3">
-                  <div>
-                    <div className="font-medium">{x.sessao}</div>
-                    <div className="text-xs text-muted">{x.numero ? telefone(`+${x.numero}`) : 'sem número conectado'} · {x.status}</div>
-                  </div>
-                  <Botao variante="secundario" onClick={() => ligar.mutate({ sessao: x.sessao, criar: false })} disabled={ligar.isPending}>Ligar</Botao>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Secao>
-        <Secao titulo="Criar sessão nova" icone={<QrCode className="size-5" />}>
-          <form onSubmit={(e: FormEvent) => { e.preventDefault(); ligar.mutate({ sessao: nova, criar: true }) }} className="flex flex-col gap-4">
-            <Campo rotulo="Nome da sessão" ajuda="Letras, números, - e _. Ex.: clinica-sorriso. Depois é só ler o QR code.">
-              <Entrada required pattern="[A-Za-z0-9_\-]{2,40}" value={nova} onChange={(e) => setNova(e.target.value)} />
-            </Campo>
-            <div><Botao type="submit" disabled={ligar.isPending || !nova}>Criar e ligar</Botao></div>
-          </form>
-        </Secao>
-      </div>
-    )
-  }
-
-  const precisaQr = s.status === 'SCAN_QR_CODE'
-  return (
-    <div className="grid max-w-5xl gap-6 lg:grid-cols-2">
-      <Secao titulo="WhatsApp da clínica" icone={<Smartphone className="size-5" />}>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-          <dt className="text-muted">Sessão</dt><dd className="font-medium">{s.sessao}</dd>
-          <dt className="text-muted">Situação</dt><dd><SeloWhatsapp status={s.status} /></dd>
-          <dt className="text-muted">Número</dt><dd>{s.numero ? telefone(s.numero) : '—'}</dd>
-          <dt className="text-muted">Webhook</dt>
-          <dd>{s.webhook_ok ? <Selo cor="verde">aponta para este backend</Selo> : <Selo cor="ambar">não aponta para este backend</Selo>}</dd>
-        </dl>
-        {s.erro && <p className="mt-3 text-sm text-red-600">{s.erro}</p>}
-        {!s.webhook_ok && s.webhooks && s.webhooks.length > 0 && (
-          <p className="mt-3 text-xs text-muted">Hoje vai para: {s.webhooks.join(', ')}. "Apontar webhook" substitui.</p>
-        )}
-        <div className="mt-5 flex flex-wrap gap-2">
-          {!s.webhook_ok && <Botao onClick={() => webhook.mutate()} disabled={webhook.isPending}><Webhook className="size-4" /> Apontar webhook</Botao>}
-          <Botao variante="secundario" onClick={() => setQr(Date.now())}><QrCode className="size-4" /> Mostrar QR code</Botao>
-          <Botao variante="secundario" onClick={() => reiniciar.mutate()} disabled={reiniciar.isPending}><RefreshCw className="size-4" /> Reiniciar</Botao>
-          <Botao variante="fantasma" onClick={() => desligar.mutate()} disabled={desligar.isPending}><Unplug className="size-4" /> Desligar da clínica</Botao>
-        </div>
-      </Secao>
-      <ConexaoWhatsApp id={id} />
-      <Secao titulo="Conectar o número">
-        {qr ? (
-          <div className="flex flex-col items-center gap-3">
-            <img src={`/api/admin/clinicas/${id}/whatsapp/qr?t=${qr}`} alt="QR code do WhatsApp" className="size-64 rounded-2xl bg-white p-2"
-              onError={() => { setQr(0); aviso.erro(new Error('QR indisponível: a sessão precisa estar aguardando QR (não conectada).')) }} />
-            <p className="text-center text-xs text-muted">No celular da clínica: WhatsApp › Aparelhos conectados › Conectar aparelho. O código muda a cada 20 s.</p>
-            <Botao variante="fantasma" onClick={() => setQr(Date.now())}>Atualizar QR</Botao>
-          </div>
-        ) : (
-          <p className="text-sm text-muted">
-            {precisaQr ? 'A sessão está esperando a leitura do QR code. Clique em "Mostrar QR code".'
-              : s.status === 'WORKING' ? 'O número já está conectado. Só precisa de QR se for trocar de aparelho.'
-              : 'Quando a sessão pedir QR code, ele aparece aqui.'}
-          </p>
-        )}
-      </Secao>
     </div>
   )
 }

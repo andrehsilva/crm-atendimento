@@ -1,7 +1,9 @@
-"""WhatsApp de cada clínica (Etapa 16 — D76): qual servidor WAHA e qual webhook ela usa.
+"""WhatsApp de cada clínica (Etapa 16 — D76; Etapa 31 — D122–D124): qual servidor WAHA e qual webhook ela usa.
 
 - Servidor próprio (endereço + chave criptografada) ou, sem ele, o servidor da plataforma (.env).
-- Webhook exclusivo: /webhooks/waha/<token>, com segredo próprio (criptografado). Sem ele, o webhook geral.
+  Pode ser configurado ANTES de ligar a sessão (a linha da clínica existe com session = null).
+- Webhook exclusivo: /webhooks/waha/<token>, com segredo próprio (criptografado). Criado sozinho ao ligar (D123).
+- Desligar mantém servidor e webhook (D124): session = null, enabled = false.
 - Chave e segredo nunca saem daqui em texto: a tela só vê os 4 últimos caracteres da chave.
 """
 
@@ -17,6 +19,31 @@ def _linha(conn, clinic_id: UUID):
     return conn.execute(
         """select session, waha_url, waha_key_cipher, waha_key_last4, webhook_token, webhook_secret_cipher, numero
            from whatsapp_instances where clinic_id = %s""", (clinic_id,)).fetchone()
+
+
+def garantir_linha(conn, clinic_id: UUID) -> None:
+    """A linha da clínica existe mesmo sem sessão ligada (para guardar servidor e webhook)."""
+    conn.execute("""insert into whatsapp_instances (clinic_id, session, enabled, status) values (%s, null, false, 'DESLIGADO')
+                    on conflict (clinic_id) do nothing""", (clinic_id,))
+
+
+def garantir_webhook(conn, clinic_id: UUID) -> tuple[str, str]:
+    """D123: toda clínica ligada usa o webhook exclusivo dela. Cria se ainda não tem; devolve (endereço, segredo)."""
+    garantir_linha(conn, clinic_id)
+    r = _linha(conn, clinic_id)
+    if not (r[4] and r[5] and ia.decifrar(r[5])):
+        gerar_webhook(conn, clinic_id)
+    return webhook_da_clinica(conn, clinic_id)
+
+
+def webhook_alinhado(info: dict, url: str) -> bool:
+    """A sessão (resposta do WAHA) manda os eventos que usamos para o endereço desta clínica?"""
+    from app.canais.waha import EVENTOS_WEBHOOK
+
+    for g in ((info.get("config") or {}).get("webhooks") or []):
+        if g.get("url") == url and all(e in (g.get("events") or []) for e in EVENTOS_WEBHOOK):
+            return True
+    return False
 
 
 def cliente_da_clinica(conn, clinic_id: UUID) -> ClienteWaha:
@@ -48,6 +75,7 @@ def gerar_webhook(conn, clinic_id: UUID) -> None:
 
 def salvar_servidor(conn, clinic_id: UUID, *, numero: str | None, url: str | None, chave: str | None) -> None:
     """url vazio = servidor da plataforma. chave vazia = mantém a salva."""
+    garantir_linha(conn, clinic_id)
     if url and not url.startswith("https://") and get_settings().producao:
         raise ValueError("O endereço do servidor precisa começar com https://")
     if url and not chave and not (_linha(conn, clinic_id) or [None, None, None])[2]:
@@ -75,7 +103,7 @@ def por_token(conn, token: str):
 def estado(conn, clinic_id: UUID) -> dict:
     r = _linha(conn, clinic_id)
     if not r:
-        return {}
+        return {"numero_cadastrado": None, "servidor_proprio": False, "servidor_url": None, "chave_final": None}
     url, segredo = webhook_da_clinica(conn, clinic_id)
     return {"numero_cadastrado": r[6], "servidor_proprio": bool(r[1]), "servidor_url": r[1], "chave_final": r[3],
             "webhook_url": url, "webhook_exclusivo": bool(r[4] and r[5]), "webhook_pronto": bool(segredo)}
@@ -98,7 +126,7 @@ def atualizar_webhooks() -> int:
         return 0
     mudaram = 0
     with pool().connection() as conn:
-        for cid, sessao in conn.execute("select clinic_id, session from whatsapp_instances where enabled").fetchall():
+        for cid, sessao in conn.execute("select clinic_id, session from whatsapp_instances where enabled and session is not null").fetchall():
             try:
                 url, segredo = webhook_da_clinica(conn, cid)
                 if segredo and cliente_da_clinica(conn, cid).atualizar_eventos_do_webhook(sessao, url, segredo):

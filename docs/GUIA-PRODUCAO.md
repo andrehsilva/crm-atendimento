@@ -216,6 +216,8 @@ continua valendo para quem não usa Easypanel.)
    - `DATABASE_URL` do **Session pooler** (porta 5432): a VPS costuma ter só IPv4 e o endereço direto `db.….supabase.co` só tem IPv6.
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `LLM_*`.
    - `IA_CHAVE_MESTRA`: se o banco já tem clínicas com chave de IA, use **a mesma** de antes (outra deixa as chaves ilegíveis).
+   - **No serviço do WAHA**, defina `WAHA_API_KEY` fixa (sem ela o WAHA gera uma chave nova a cada reinício e tudo passa a dar
+     "401"). Pode ser no formato `sha512:<hash>`; aqui vai sempre a chave original. Painel do WAHA: `WAHA_DASHBOARD_USERNAME`/`PASSWORD`.
    - `WAHA_API_URL` (no mesmo Easypanel pode ser `http://<projeto>_<serviço-do-waha>:3000`), `WAHA_API_KEY`,
      `WAHA_WEBHOOK_HMAC_KEY` (32+ caracteres) e `MENSAGENS_AUTOMATICAS`. Nunca `CHAT_TESTE=true`.
 5. **Implantar.** Se não subir, a aba *Logs* lista o que falta.

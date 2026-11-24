@@ -93,6 +93,9 @@ class WahaFalso:
     def criar_sessao(self, nome, url, chave):
         return {"name": nome, "status": "STARTING"}
 
+    def configurar_webhook(self, nome, url, chave):
+        return {}
+
     def listar_sessoes(self):
         return [self.sessao("livre"), self.sessao("ocupada")]
 

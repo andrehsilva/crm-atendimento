@@ -264,6 +264,12 @@ a clínica em Admin geral › clínica › IA). Abre um painel de chat: a equipe
 tratamentos, CRM e campanhas. Perguntas livres; a IA consulta o banco só para ler e só a própria clínica (travas no banco).
 Fora da plataforma → recusa; pedido de alterar → indica a tela. Conversa some ao fechar; gasto entra no teto.
 
+## Etapa 31 — WhatsApp da clínica sem confusão ✅ (24/11/2026; D122–D124)
+Admin geral › clínica › WhatsApp vira um cartão em 3 passos: **servidor** (salvar/testar antes de ligar) → **número**
+(sessão livre desse servidor ou nova, com QR que se atualiza sozinho) → **webhook exclusivo apontado sozinho**.
+Situação com um selo só (webhook certo / desalinhado → "Corrigir webhook"). "Desligar" pede confirmação e não apaga
+servidor nem webhook. Pré-requisito: `WAHA_API_KEY` fixa no serviço do WAHA (sem ela o WAHA gera outra a cada reinício).
+
 ---
 
 ## Depois da 1ª versão (backlog)

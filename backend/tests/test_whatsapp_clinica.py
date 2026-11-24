@@ -61,3 +61,96 @@ def test_so_admin_geral_configura(cliente, conn, clinica):  # noqa: F811
     r = sup.put(url, json={"numero": "(11) 91234-5678"})
     assert r.status_code == 200 and r.json()["numero_cadastrado"] == "+5511912345678"
     assert sup.put(url, json={"numero": "123"}).status_code == 422
+
+
+# --- Etapa 31 (D122–D124): servidor antes de ligar, webhook exclusivo automático, desligar sem perder nada ----
+from app.api import admin as rotas_admin  # noqa: E402
+from app.canais.waha import EVENTOS_WEBHOOK  # noqa: E402
+from app.config import get_settings  # noqa: E402
+
+
+class WahaMemoria:
+    """WAHA simulado que guarda os webhooks de cada sessão (e conta os reinícios)."""
+
+    sessoes: dict = {}
+    reinicios: list = []
+
+    def __init__(self, *a, **k):
+        pass
+
+    def sessao(self, nome):
+        s = self.sessoes[nome]
+        return {"name": nome, "status": s["status"], "me": {"id": "5516991122235@c.us"}, "config": {"webhooks": s["webhooks"]}}
+
+    def listar_sessoes(self):
+        return [self.sessao(n) for n in self.sessoes]
+
+    def criar_sessao(self, nome, url, chave):
+        self.sessoes[nome] = {"status": "SCAN_QR_CODE", "webhooks": [{"url": url, "events": EVENTOS_WEBHOOK}]}
+        return self.sessao(nome)
+
+    def configurar_webhook(self, nome, url, chave):
+        self.sessoes[nome]["webhooks"] = [{"url": url, "events": EVENTOS_WEBHOOK}]
+        self.reinicios.append(nome)
+        return {}
+
+    def remover_webhook(self, nome, url):
+        self.sessoes[nome]["webhooks"] = [g for g in self.sessoes[nome]["webhooks"] if g["url"] != url]
+        self.reinicios.append(nome)
+        return True
+
+
+def _waha_memoria(monkeypatch, **sessoes):
+    WahaMemoria.sessoes = {n: {"status": "WORKING", "webhooks": w} for n, w in sessoes.items()}
+    WahaMemoria.reinicios = []
+    monkeypatch.setattr(rotas_admin, "ClienteWaha", WahaMemoria)
+    monkeypatch.setattr(conexao, "ClienteWaha", WahaMemoria)
+    monkeypatch.setattr(rotas_admin, "get_settings", lambda: get_settings().model_copy(update={"public_base_url": "https://isis.exemplo.com"}))
+    monkeypatch.setattr(conexao, "get_settings", lambda: get_settings().model_copy(update={"public_base_url": "https://isis.exemplo.com"}))
+
+
+def test_ligar_ja_aponta_o_webhook_exclusivo_e_status_reconhece(cliente, conn, clinica, monkeypatch):  # noqa: F811
+    _waha_memoria(monkeypatch, livre=[{"url": "https://n8n.antigo/webhook", "events": ["message"]}])
+    sup = _como(cliente, _usuario(conn, super_admin=True))
+    base = f"/api/admin/clinicas/{clinica.id}/whatsapp"
+    r = sup.put(base, json={"sessao": "livre"}).json()
+    assert r["ligado"] and r["reiniciando"] is True and r["webhook_ok"] is True
+    assert r["conexao"]["webhook_exclusivo"] and "/webhooks/waha/" in r["conexao"]["webhook_url"]
+    assert WahaMemoria.sessoes["livre"]["webhooks"][0]["url"] == r["conexao"]["webhook_url"]
+    # ligar de novo a mesma sessão, já alinhada: não reinicia
+    WahaMemoria.reinicios.clear()
+    assert sup.put(base, json={"sessao": "livre"}).json()["reiniciando"] is False and not WahaMemoria.reinicios
+
+
+def test_desligar_guarda_servidor_e_webhook_e_pode_tirar_do_waha(cliente, conn, clinica, monkeypatch):  # noqa: F811
+    _waha_memoria(monkeypatch, livre=[])
+    sup = _como(cliente, _usuario(conn, super_admin=True))
+    base = f"/api/admin/clinicas/{clinica.id}/whatsapp"
+    assert sup.put(f"{base}/conexao", json={"numero": "16991122235", "url": "https://waha.clinica.com", "chave": "k-123456"}).status_code == 200
+    url = sup.put(base, json={"sessao": "livre"}).json()["conexao"]["webhook_url"]
+    r = sup.delete(f"{base}?tirar_webhook=true").json()
+    assert r["ligado"] is False and WahaMemoria.sessoes["livre"]["webhooks"] == []
+    c = r["conexao"]
+    assert c["servidor_proprio"] and c["chave_final"] == "3456" and c["webhook_url"] == url  # nada se perdeu
+    # religar usa o MESMO endereço exclusivo
+    assert sup.put(base, json={"sessao": "livre"}).json()["conexao"]["webhook_url"] == url
+    # trocar de servidor com a sessão ligada é recusado
+    assert sup.put(f"{base}/conexao", json={"url": "https://outro.waha.com", "chave": "x"}).status_code == 422
+
+
+def test_servidor_antes_de_ligar_e_sessoes_do_servidor_da_clinica(cliente, conn, clinica, monkeypatch):  # noqa: F811
+    _waha_memoria(monkeypatch, propria=[])
+    sup = _como(cliente, _usuario(conn, super_admin=True))
+    base = f"/api/admin/clinicas/{clinica.id}/whatsapp"
+    assert sup.get(base).json() == {"ligado": False, "conexao": {"numero_cadastrado": None, "servidor_proprio": False,
+                                                                  "servidor_url": None, "chave_final": None}}
+    r = sup.put(f"{base}/conexao", json={"url": "https://waha.clinica.com", "chave": "chave-9999"})
+    assert r.status_code == 200 and r.json()["servidor_proprio"]
+    assert [s["sessao"] for s in sup.get(f"{base}/sessoes").json()] == ["propria"]
+
+
+def test_webhook_antigo_de_clinica_desligada_e_ignorado(conn, clinica):
+    conexao.garantir_webhook(conn, clinica.id)  # clínica com webhook, mas sem sessão ligada
+    url, _ = conexao.webhook_da_clinica(conn, clinica.id)
+    _, sessao, _ = conexao.por_token(conn, url.rsplit("/", 1)[1])
+    assert sessao is None  # o endpoint compara a sessão do evento com None → ignora (sem 404, o WAHA não insiste)

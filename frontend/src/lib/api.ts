@@ -263,9 +263,15 @@ export type UsuarioClinica = {
 
 export type SessaoWaha = { sessao: string; status: string; numero: string | null; webhooks: string[]; clinic_id: string | null; clinica: string | null }
 
+/** Etapa 31 (D122–D124): servidor e webhook da clínica, mesmo com o WhatsApp desligado */
+export type ConexaoWhatsapp = {
+  numero_cadastrado: string | null; servidor_proprio: boolean; servidor_url: string | null; chave_final: string | null
+  webhook_url?: string; webhook_exclusivo?: boolean; webhook_pronto?: boolean
+}
+
 export type StatusWhatsapp =
-  | { ligado: false }
-  | { ligado: true; sessao: string; status: string; numero: string | null; ativo: boolean; webhooks?: string[]; webhook_ok?: boolean; webhook_esperado?: string | null; erro?: string }
+  | { ligado: false; conexao: ConexaoWhatsapp }
+  | { ligado: true; conexao: ConexaoWhatsapp; sessao: string; status: string; numero: string | null; ativo: boolean; webhooks?: string[]; webhook_ok?: boolean; erro?: string }
 
 export type UsoClinica = {
   id: string

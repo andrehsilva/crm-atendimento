@@ -250,6 +250,18 @@ class ClienteWaha:
         config.setdefault("ignore", {"status": True, "groups": True, "channels": True, "broadcast": True})
         return self._req("PUT", f"/api/sessions/{sessao}", json={"name": sessao, "config": config}).json()
 
+    def remover_webhook(self, sessao: str, url: str) -> bool:
+        """D124: tira SÓ o nosso webhook da sessão (os de outros sistemas ficam). Devolve True se mudou.
+        ATENÇÃO: mudar a configuração reinicia a sessão no WAHA (alguns segundos sem conexão)."""
+        atual = self.sessao(sessao)
+        config = dict(atual.get("config") or {})
+        ganchos = [g for g in (config.get("webhooks") or []) if g.get("url") != url]
+        if len(ganchos) == len(config.get("webhooks") or []):
+            return False
+        config["webhooks"] = ganchos
+        self._req("PUT", f"/api/sessions/{sessao}", json={"name": sessao, "config": config})
+        return True
+
     def atualizar_eventos_do_webhook(self, sessao: str, url: str, chave_hmac: str) -> bool:
         """D86: se a sessão já manda para `url` mas falta algum evento (ex.: message.ack), atualiza SÓ esse webhook.
         Os outros webhooks da sessão ficam como estão; sessão que manda para outro sistema não é tocada.

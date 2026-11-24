@@ -97,17 +97,11 @@ def _waha(conn=None, clinic_id: UUID | None = None) -> ClienteWaha:
 
 
 def _instancia(conn, clinic_id: UUID) -> dict:
-    r = conn.execute("select session, status, phone, enabled from whatsapp_instances where clinic_id = %s", (clinic_id,)).fetchone()
+    r = conn.execute("""select session, status, phone, enabled from whatsapp_instances
+                        where clinic_id = %s and enabled and session is not null""", (clinic_id,)).fetchone()
     if not r:
         raise AgendaError("DADOS_INVALIDOS", "Esta clínica ainda não tem WhatsApp ligado.")
     return {"sessao": r[0], "status": r[1], "numero": r[2], "ativo": r[3]}
-
-
-def _url_webhook() -> str:
-    s = get_settings()
-    if not (s.public_base_url and s.waha_webhook_hmac_key):
-        raise AgendaError("DADOS_INVALIDOS", "Preencha PUBLIC_BASE_URL e WAHA_WEBHOOK_HMAC_KEY no backend/.env (endereço do túnel).")
-    return s.public_base_url.rstrip("/") + "/webhooks/waha"
 
 
 def _existe(conn, clinic_id: UUID) -> None:
@@ -189,83 +183,142 @@ def editar_usuario(clinic_id: UUID, user_id: UUID, body: EdicaoUsuario, request:
 
 
 # ---------------------------------------------------------------------------
-# WhatsApp da clínica (substitui o scripts/whatsapp.py — D31)
+# WhatsApp da clínica (D31; Etapa 16 — D76; Etapa 31 — D122–D124)
+#   1. servidor (da plataforma ou próprio) — dá para salvar antes de ligar;
+#   2. sessão (uma livre desse servidor, ou nova com QR code);
+#   3. webhook exclusivo da clínica, criado e apontado sozinho ao ligar.
+# Desligar guarda servidor e webhook. Mudar o webhook de uma sessão reinicia a sessão no WAHA.
 # ---------------------------------------------------------------------------
-@router.get("/whatsapp/sessoes", summary="Sessões do servidor WAHA e a clínica ligada a cada uma")
-def sessoes(conn=Depends(get_conn)):
+def _sessoes_do_servidor(conn, w: ClienteWaha) -> list[dict]:
     ligadas = {r[0]: {"clinic_id": r[1], "clinica": r[2]} for r in conn.execute(
-        "select w.session, c.id, c.name from whatsapp_instances w join clinics c on c.id = w.clinic_id").fetchall()}
+        """select w.session, c.id, c.name from whatsapp_instances w join clinics c on c.id = w.clinic_id
+           where w.session is not null""").fetchall()}
     try:
-        lista = _waha().listar_sessoes()
+        lista = w.listar_sessoes()
     except WahaErro as e:
-        raise AgendaError("ENVIO_FALHOU", str(e)) from e
+        raise AgendaError("ENVIO_FALHOU", f"Não consegui falar com o servidor WAHA ({_motivo(e)}). "
+                                          "Confira o endereço e a chave da API.") from e
     return [{"sessao": x.get("name"), "status": x.get("status"),
              "numero": ((x.get("me") or {}).get("id") or "").split("@")[0] or None,
-             "webhooks": [w.get("url") for w in ((x.get("config") or {}).get("webhooks") or [])],
-             **(ligadas.get(x.get("name")) or {"clinic_id": None, "clinica": None})} for x in lista]
+             "webhooks": [g.get("url") for g in ((x.get("config") or {}).get("webhooks") or [])],
+             **(ligadas.get(x.get("name")) or {"clinic_id": None, "clinica": None})}
+            for x in lista if isinstance(x, dict)]
 
 
-@router.get("/clinicas/{clinic_id}/whatsapp", summary="Status do WhatsApp da clínica")
+def _motivo(e: WahaErro) -> str:
+    """Erro do WAHA em português simples (401 = chave errada é o caso mais comum)."""
+    t = str(e)
+    if " 401 " in t:
+        return "chave da API recusada (401)"
+    if " 404 " in t:
+        return "sessão não encontrada no servidor (404)"
+    if "fora do ar" in t:
+        return "servidor fora do ar, endereço errado ou demorou demais para responder"
+    return t[:160]
+
+
+@router.get("/whatsapp/sessoes", summary="Sessões do servidor WAHA da plataforma e a clínica ligada a cada uma")
+def sessoes(conn=Depends(get_conn)):
+    return _sessoes_do_servidor(conn, _waha())
+
+
+@router.get("/clinicas/{clinic_id}/whatsapp/sessoes", summary="Sessões do servidor que ESTA clínica usa")
+def sessoes_da_clinica(clinic_id: UUID, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    return _sessoes_do_servidor(conn, _waha(conn, clinic_id))
+
+
+def _ligada(conn, clinic_id: UUID):
+    return conn.execute("select session from whatsapp_instances where clinic_id = %s and enabled and session is not null",
+                        (clinic_id,)).fetchone()
+
+
+@router.get("/clinicas/{clinic_id}/whatsapp", summary="Status do WhatsApp da clínica (com servidor e webhook)")
 def whatsapp_status(clinic_id: UUID, conn=Depends(get_conn)):
     _existe(conn, clinic_id)
-    r = conn.execute("select session from whatsapp_instances where clinic_id = %s", (clinic_id,)).fetchone()
+    base = {"conexao": conexao.estado(conn, clinic_id)}
+    r = _ligada(conn, clinic_id)
     if not r:
-        return {"ligado": False}
+        return {**base, "ligado": False}
     try:
         info = _waha(conn, clinic_id).sessao(r[0])
     except WahaErro as e:
-        return {"ligado": True, **_instancia(conn, clinic_id), "erro": str(e)}
+        return {**base, "ligado": True, **_instancia(conn, clinic_id), "erro": _motivo(e)}
     status = info.get("status") or "DESCONHECIDO"
     numero = ((info.get("me") or {}).get("id") or "").split("@")[0] or None
     conn.execute("update whatsapp_instances set status = %s, phone = coalesce(%s, phone), updated_at = now() where clinic_id = %s",
                  (status, f"+{numero}" if numero else None, clinic_id))
-    webhooks = [w.get("url") for w in ((info.get("config") or {}).get("webhooks") or [])]
-    s = get_settings()
-    esperado = (s.public_base_url.rstrip("/") + "/webhooks/waha") if s.public_base_url else None
-    return {"ligado": True, **_instancia(conn, clinic_id), "webhooks": webhooks,
-            "webhook_ok": bool(esperado and esperado in webhooks), "webhook_esperado": esperado}
+    url, _ = conexao.webhook_da_clinica(conn, clinic_id)
+    return {**base, "ligado": True, **_instancia(conn, clinic_id),
+            "webhooks": [g.get("url") for g in ((info.get("config") or {}).get("webhooks") or [])],
+            "webhook_ok": conexao.webhook_alinhado(info, url)}
 
 
-@router.put("/clinicas/{clinic_id}/whatsapp", summary="Ligar a clínica a uma sessão do WAHA (existente ou nova)")
+def _exigir_endereco_publico() -> None:
+    if not get_settings().public_base_url:
+        raise AgendaError("DADOS_INVALIDOS", "Preencha PUBLIC_BASE_URL no backend (endereço público deste sistema).")
+
+
+@router.put("/clinicas/{clinic_id}/whatsapp", summary="Ligar a clínica a uma sessão (existente ou nova) — já aponta o webhook")
 def whatsapp_ligar(clinic_id: UUID, body: LigarSessao, request: Request, criar: bool = False, conn=Depends(get_conn)):
     _existe(conn, clinic_id)
+    _exigir_endereco_publico()
     if not SESSAO_VALIDA.match(body.sessao):
         raise AgendaError("DADOS_INVALIDOS", "Nome da sessão: só letras, números, - e _ (2 a 40).")
     dono = conn.execute("select clinic_id from whatsapp_instances where session = %s", (body.sessao,)).fetchone()
     if dono and dono[0] != clinic_id:
         raise AgendaError("DADOS_INVALIDOS", "Essa sessão já está ligada a outra clínica (1 número = 1 clínica, D29).")
+    url, segredo = conexao.garantir_webhook(conn, clinic_id)  # D123: sempre o webhook exclusivo da clínica
     w = _waha(conn, clinic_id)
+    reiniciando = criar
     try:
-        info = w.criar_sessao(body.sessao, _url_webhook(), get_settings().waha_webhook_hmac_key) if criar else w.sessao(body.sessao)
+        if criar:
+            info = w.criar_sessao(body.sessao, url, segredo)
+        else:
+            info = w.sessao(body.sessao)
+            if not conexao.webhook_alinhado(info, url):
+                w.configurar_webhook(body.sessao, url, segredo)  # o WAHA reinicia a sessão
+                reiniciando = True
     except WahaErro as e:
-        raise AgendaError("ENVIO_FALHOU", str(e)) from e
+        raise AgendaError("ENVIO_FALHOU", f"O servidor WAHA recusou: {_motivo(e)}.") from e
     conn.execute(
-        """insert into whatsapp_instances (clinic_id, session, status) values (%s, %s, %s)
-           on conflict (clinic_id) do update set session = excluded.session, status = excluded.status, updated_at = now()""",
-        (clinic_id, body.sessao, info.get("status") or "STARTING"),
-    )
+        "update whatsapp_instances set session = %s, enabled = true, status = %s, updated_at = now() where clinic_id = %s",
+        (body.sessao, "STARTING" if reiniciando else (info.get("status") or "STARTING"), clinic_id))
     adm.auditar(conn, usuario_da_requisicao(request).id, "ligar_whatsapp", clinic_id, {"sessao": body.sessao, "nova": criar})
     avisar(conn, clinic_id, "whatsapp", clinic_id)
-    return whatsapp_status(clinic_id, conn)
+    return {**whatsapp_status(clinic_id, conn), "reiniciando": reiniciando}
 
 
-@router.delete("/clinicas/{clinic_id}/whatsapp", summary="Desligar a clínica da sessão (não mexe no WAHA)")
-def whatsapp_desligar(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
-    conn.execute("delete from whatsapp_instances where clinic_id = %s", (clinic_id,))
-    adm.auditar(conn, usuario_da_requisicao(request).id, "desligar_whatsapp", clinic_id)
-    return {"ligado": False}
+@router.delete("/clinicas/{clinic_id}/whatsapp", summary="Desligar a clínica da sessão (guarda servidor e webhook)")
+def whatsapp_desligar(clinic_id: UUID, request: Request, tirar_webhook: bool = False, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    r = _ligada(conn, clinic_id)
+    aviso = None
+    if r and tirar_webhook:
+        url, _ = conexao.webhook_da_clinica(conn, clinic_id)
+        try:
+            _waha(conn, clinic_id).remover_webhook(r[0], url)
+        except WahaErro as e:
+            aviso = f"Desligado, mas não consegui tirar o webhook no WAHA ({_motivo(e)})."
+    conn.execute("""update whatsapp_instances set session = null, enabled = false, status = 'DESLIGADO', phone = null,
+                    updated_at = now() where clinic_id = %s""", (clinic_id,))
+    adm.auditar(conn, usuario_da_requisicao(request).id, "desligar_whatsapp", clinic_id,
+                {"sessao": r[0] if r else None, "tirou_webhook": tirar_webhook})
+    avisar(conn, clinic_id, "whatsapp", clinic_id)
+    return {**whatsapp_status(clinic_id, conn), **({"aviso": aviso} if aviso else {})}
 
 
-@router.post("/clinicas/{clinic_id}/whatsapp/webhook", summary="Apontar o webhook da sessão para este backend")
+@router.post("/clinicas/{clinic_id}/whatsapp/webhook", summary="Corrigir: apontar o webhook exclusivo da clínica na sessão")
 def whatsapp_webhook(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
+    _exigir_endereco_publico()
     inst = _instancia(conn, clinic_id)
+    url, segredo = conexao.garantir_webhook(conn, clinic_id)
     try:
-        url, segredo = conexao.webhook_da_clinica(conn, clinic_id)
         _waha(conn, clinic_id).configurar_webhook(inst["sessao"], url, segredo)
     except WahaErro as e:
-        raise AgendaError("ENVIO_FALHOU", str(e)) from e
+        raise AgendaError("ENVIO_FALHOU", f"O servidor WAHA recusou: {_motivo(e)}.") from e
     adm.auditar(conn, usuario_da_requisicao(request).id, "configurar_webhook", clinic_id, {"sessao": inst["sessao"]})
-    return whatsapp_status(clinic_id, conn)
+    return {**whatsapp_status(clinic_id, conn), "reiniciando": True}
 
 
 @router.post("/clinicas/{clinic_id}/whatsapp/reiniciar", summary="Reiniciar a sessão no WAHA")
@@ -274,7 +327,7 @@ def whatsapp_reiniciar(clinic_id: UUID, conn=Depends(get_conn)):
     try:
         _waha(conn, clinic_id).reiniciar(inst["sessao"])
     except WahaErro as e:
-        raise AgendaError("ENVIO_FALHOU", str(e)) from e
+        raise AgendaError("ENVIO_FALHOU", f"O servidor WAHA recusou: {_motivo(e)}.") from e
     return {"ok": True}
 
 
@@ -284,28 +337,28 @@ def whatsapp_qr(clinic_id: UUID, conn=Depends(get_conn)):
     try:
         png = _waha(conn, clinic_id).qr_png(inst["sessao"])
     except WahaErro as e:
-        raise AgendaError("ENVIO_FALHOU", f"QR indisponível agora (a sessão precisa estar em SCAN_QR_CODE). {e}") from e
+        raise AgendaError("ENVIO_FALHOU", f"QR indisponível agora (a sessão precisa estar em SCAN_QR_CODE). {_motivo(e)}") from e
     return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
-# ---------------------------------------------------------------------------
-# Etapa 16 (D76): número, servidor WAHA próprio e webhook exclusivo da clínica
-# ---------------------------------------------------------------------------
 class ServidorClinica(BaseModel):
     numero: str | None = Field(None, max_length=20)
     url: str | None = Field(None, max_length=200)   # vazio = servidor da plataforma
     chave: str | None = Field(None, max_length=300)  # vazio = mantém a salva
 
 
-@router.get("/clinicas/{clinic_id}/whatsapp/conexao", summary="Número, servidor e webhook da clínica (sem segredos)")
+@router.get("/clinicas/{clinic_id}/whatsapp/conexao", summary="Número e servidor da clínica (sem segredos)")
 def ver_conexao(clinic_id: UUID, conn=Depends(get_conn)):
-    _instancia(conn, clinic_id)
+    _existe(conn, clinic_id)
     return conexao.estado(conn, clinic_id)
 
 
-@router.put("/clinicas/{clinic_id}/whatsapp/conexao", summary="Salvar número e servidor WAHA da clínica")
+@router.put("/clinicas/{clinic_id}/whatsapp/conexao", summary="Salvar número e servidor WAHA da clínica (antes ou depois de ligar)")
 def salvar_conexao(clinic_id: UUID, body: ServidorClinica, conn=Depends(get_conn)):
-    _instancia(conn, clinic_id)
+    _existe(conn, clinic_id)
+    novo = (body.url or "").strip().rstrip("/") or None
+    if _ligada(conn, clinic_id) and novo != conexao.estado(conn, clinic_id).get("servidor_url"):
+        raise AgendaError("DADOS_INVALIDOS", "Para trocar de servidor, desligue o WhatsApp da clínica primeiro.")
     numero = None
     if body.numero and body.numero.strip():
         try:
@@ -313,7 +366,7 @@ def salvar_conexao(clinic_id: UUID, body: ServidorClinica, conn=Depends(get_conn
         except TelefoneInvalido as e:
             raise AgendaError("TELEFONE_INVALIDO", f"Número do WhatsApp: {e}") from e
     try:
-        conexao.salvar_servidor(conn, clinic_id, numero=numero, url=(body.url or "").strip() or None, chave=(body.chave or "").strip() or None)
+        conexao.salvar_servidor(conn, clinic_id, numero=numero, url=novo, chave=(body.chave or "").strip() or None)
     except ValueError as e:
         raise AgendaError("DADOS_INVALIDOS", str(e)) from e
     return conexao.estado(conn, clinic_id)
@@ -323,21 +376,9 @@ def salvar_conexao(clinic_id: UUID, body: ServidorClinica, conn=Depends(get_conn
 def testar_conexao(clinic_id: UUID, conn=Depends(get_conn)):
     try:
         sessoes = _waha(conn, clinic_id).listar_sessoes()
-    except WahaErro:
-        return {"ok": False, "detalhe": "Não consegui falar com o servidor WAHA. Confira o endereço e a chave."}
+    except WahaErro as e:
+        return {"ok": False, "detalhe": f"Não consegui falar com o servidor WAHA: {_motivo(e)}. Confira o endereço e a chave."}
     return {"ok": True, "sessoes": [x.get("name") for x in sessoes if isinstance(x, dict)]}
-
-
-@router.post("/clinicas/{clinic_id}/whatsapp/webhook-exclusivo", summary="Criar ou trocar o webhook exclusivo e o segredo")
-def webhook_exclusivo(clinic_id: UUID, conn=Depends(get_conn)):
-    inst = _instancia(conn, clinic_id)
-    conexao.gerar_webhook(conn, clinic_id)
-    url, segredo = conexao.webhook_da_clinica(conn, clinic_id)
-    try:  # já aponta o WAHA para o endereço novo
-        _waha(conn, clinic_id).configurar_webhook(inst["sessao"], url, segredo)
-    except (WahaErro, AgendaError) as e:
-        return {**conexao.estado(conn, clinic_id), "aviso": f"Salvo, mas não consegui apontar o WAHA agora: {ia.explicar_erro(e) if not isinstance(e, AgendaError) else e.mensagem}"}
-    return conexao.estado(conn, clinic_id)
 
 
 # ---------------------------------------------------------------------------
