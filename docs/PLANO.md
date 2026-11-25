@@ -270,6 +270,15 @@ Admin geral › clínica › WhatsApp vira um cartão em 3 passos: **servidor** 
 Situação com um selo só (webhook certo / desalinhado → "Corrigir webhook"). "Desligar" pede confirmação e não apaga
 servidor nem webhook. Pré-requisito: `WAHA_API_KEY` fixa no serviço do WAHA (sem ela o WAHA gera outra a cada reinício).
 
+## Etapa 32 — Desempenho (cache) — 🧪 aguardando deploy e medição (25/11/2026; D125, D126)
+**Antes** (temhorario, VPS em Helsinque × banco em São Paulo, ~0,18 s por ida e volta): dados da clínica 3,9 s ·
+dashboard 3,2 s · kanban 2,0 s · clientes 2,0 s · /auth/me 1,2 s.
+- Painel: telas guardadas 5 min + na aba do navegador; pré-carrega CRM e Clientes; atualiza tudo se o tempo real cair e voltar.
+- Servidor: login numa consulta só (eram 3) e guardado 30 s; dados da clínica (18 consultas), cadastros e lista de
+  clínicas guardados 30 s; clínica + fuso numa ida só; conexão só é conferida se ficou parada > 30 s.
+  Qualquer gravação limpa o cache. Consultas na troca de tela: clínica 18→0, login 3→0, kanban 8→3, dashboard 14→9.
+- **Depois:** medir no temhorario após o deploy.
+
 ---
 
 ## Depois da 1ª versão (backlog)

@@ -1,5 +1,6 @@
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { opcoesPersistencia, queryClient } from './lib/cache'
 import { ProvedorAvisos } from './components/Aviso'
 import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
@@ -25,9 +26,6 @@ import { useAuth } from './lib/auth'
 import { useClinica } from './lib/clinica'
 import { RedefinirSenha } from './pages/RedefinirSenha'
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 } },
-})
 
 function Layout() {
   return (
@@ -75,7 +73,7 @@ function Portao() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={opcoesPersistencia}>
       <ProvedorAvisos>
         <BrowserRouter>
           <Routes>
@@ -103,6 +101,6 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </ProvedorAvisos>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   )
 }

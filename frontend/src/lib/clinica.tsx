@@ -29,8 +29,15 @@ function useTempoReal(clinicId: string | undefined) {
     let es: EventSource | null = null
     let espera: ReturnType<typeof setTimeout> | undefined
     let ativo = true
+    let jaAbriu = false
     const conectar = () => {
       es = new EventSource(`/api/clinics/${clinicId}/events`)
+      // Etapa 32: as telas ficam guardadas por mais tempo; se a conexão caiu e voltou, algum aviso pode ter se
+      // perdido no meio — então atualiza tudo (por trás, sem tirar a tela do lugar)
+      es.onopen = () => {
+        if (jaAbriu) qc.invalidateQueries()
+        jaAbriu = true
+      }
       es.onmessage = (m) => {
         try {
           const ev = JSON.parse(m.data) as { tipo: string }
@@ -76,6 +83,18 @@ export function ProvedorClinica({ children }: { children: ReactNode }) {
     aplicarMarca(cor)
     return () => aplicarMarca(null)
   }, [cor])
+  // Etapa 32: logo que o painel abre, busca por trás as telas mais usadas (CRM e Clientes),
+  // para o primeiro clique já abrir pronto. Só busca o que ainda não está guardado.
+  const qcPre = useQueryClient()
+  const pronto = !!clinica.data
+  useEffect(() => {
+    if (!pronto || !id) return
+    const t = setTimeout(() => {
+      qcPre.prefetchQuery({ queryKey: ['kanban', id], queryFn: () => api.get(`/clinics/${id}/kanban`) })
+      qcPre.prefetchQuery({ queryKey: ['pacientes', id, '', false], queryFn: () => api.get(`/clinics/${id}/patients`) })
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [pronto, id, qcPre])
   // A tela de entrar passa a mostrar esta clínica (nome, cor e logo) neste navegador
   const dados = clinica.data
   useEffect(() => {

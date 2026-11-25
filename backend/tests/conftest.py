@@ -28,6 +28,19 @@ def _relogio_no_agora():
     relogio.zerar()
 
 
+@pytest.fixture(autouse=True)
+def _sem_cache():
+    """Etapa 32: os testes mexem direto no banco e conferem na hora — o cache curto fica desligado
+    (test_cache.py liga onde testa ele)."""
+    from app.core import cache
+
+    cache.ATIVO = False
+    cache.limpar()
+    yield
+    cache.ATIVO = False
+    cache.limpar()
+
+
 @pytest.fixture
 def conn():
     url = get_settings().database_url

@@ -26,7 +26,7 @@ from app.eventos import avisar, distribuidor
 from app import convenios, tratamentos
 from app.canais import whatsapp
 from app.canais.conexao import isis_pausada_no_whatsapp
-from app.core import relogio
+from app.core import cache, relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
 from app.painel import chat, crm
@@ -45,6 +45,11 @@ def _cur(conn):
 # ---------------------------------------------------------------------------
 @router.get("/clinics/{clinic_id}", summary="Dados da clínica")
 def clinica(clinic_id: UUID, conn: Conn = Depends(get_conn)):
+    # Etapa 32: pedido em toda tela e quase não muda; qualquer gravação limpa o cache (app/core/cache.py)
+    return cache.memo(f"clinica:{clinic_id}", 30, lambda: _dados_da_clinica(conn, clinic_id))
+
+
+def _dados_da_clinica(conn, clinic_id: UUID) -> dict:
     c = servico.carregar_clinica(conn, clinic_id)
     horario = _cur(conn).execute(
         "select weekday, start_time, end_time from clinic_hours where clinic_id = %s and enabled order by weekday",

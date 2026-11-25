@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from psycopg.rows import dict_row
 
+from app.core import cache
 from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.auth.acesso import acesso, usuario_da_requisicao
@@ -25,15 +26,19 @@ Conn = psycopg.Connection
 @router.get("/clinics", summary="Clínicas que o usuário logado pode ver (super admin: todas)")
 def listar_clinicas(request: Request, conn: Conn = Depends(get_conn)):
     u = usuario_da_requisicao(request)
-    return conn.cursor(row_factory=dict_row).execute(
+    return cache.memo(f"clinicas:{u.id}", 30, lambda: conn.cursor(row_factory=dict_row).execute(
         """select id, name, phone, slug, timezone, status, apresentacao from clinics
            where %s or id = any(%s) order by apresentacao desc, name""",
         (u.super_admin, list(u.clinicas)),
-    ).fetchall()
+    ).fetchall())
 
 
 @router.get("/clinics/{clinic_id}/cadastros", summary="Profissionais e procedimentos da clínica")
 def cadastros(clinic_id: UUID, conn: Conn = Depends(get_conn)):
+    return cache.memo(f"cadastros:{clinic_id}", 30, lambda: _cadastros(conn, clinic_id))
+
+
+def _cadastros(conn, clinic_id: UUID) -> dict:
     servico.carregar_clinica(conn, clinic_id)
     cur = conn.cursor(row_factory=dict_row)
     profs = cur.execute(

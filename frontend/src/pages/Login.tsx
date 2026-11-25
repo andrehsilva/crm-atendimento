@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { limparCache } from '../lib/cache'
 import { useQueryClient } from '@tanstack/react-query'
 import { CartaoAcesso, ErroForm } from '../components/CartaoAcesso'
 import { Botao, Campo, Entrada } from '../components/ui'
@@ -23,6 +24,7 @@ export function Login({ aviso }: { aviso?: string }) {
     try {
       const u = await api.post<Usuario>('/auth/login', { email, senha })
       esquecerClinica() // D55: o admin da plataforma entra sempre pela clínica de apresentação
+      limparCache() // Etapa 32: não mostrar nada guardado de outra conta
       qc.setQueryData(['me'], u)
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Não foi possível entrar.')

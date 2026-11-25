@@ -13,6 +13,7 @@ from app.agenda.erros import AgendaError
 from app.api import admin, agenda, auth, campanhas, canais, configuracoes, health, notificacoes, observacoes, painel, pergunte, relatorios, site, tratamentos, webhooks
 from app.canais.conexao import atualizar_webhooks
 from app.config import get_settings
+from app.core import cache
 from app.core.producao import problemas
 from app.db import fechar_pool
 from app.eventos import distribuidor
@@ -53,6 +54,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def gravou_limpa_cache(request: Request, call_next):
+    """Etapa 32: qualquer gravação do painel ou do admin limpa o cache curto (quem está logado, dados da clínica)."""
+    resposta = await call_next(request)
+    if request.method not in ("GET", "HEAD", "OPTIONS") and not request.url.path.startswith("/webhooks/"):
+        cache.limpar()
+    return resposta
 
 
 @app.exception_handler(AgendaError)

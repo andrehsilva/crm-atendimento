@@ -34,16 +34,17 @@ def _cur(conn: psycopg.Connection):
 
 
 def carregar_clinica(conn, clinic_id: UUID) -> dict:
-    c = _cur(conn).execute("select * from clinics where id = %s", (clinic_id,)).fetchone()
+    # O banco devolve datas no fuso da sessão (UTC por padrão no Supabase). Trabalhamos sempre no fuso da clínica
+    # para não misturar horários. Etapa 32: busca a clínica e acerta o fuso numa ida só ao banco.
+    c = _cur(conn).execute("select c.*, set_config('TimeZone', c.timezone, false) as _fuso from clinics c where c.id = %s",
+                           (clinic_id,)).fetchone()
     if not c:
         raise AgendaError("CLINICA_NAO_ENCONTRADA", "Clínica não encontrada.")
+    c.pop("_fuso", None)
     if c["status"] != "ativa":
         raise AgendaError("CLINICA_SUSPENSA", "Esta clínica está suspensa.")
     c["tz"] = ZoneInfo(c["timezone"])
     c["regras"] = R.RegrasClinica.de_settings(c["settings"])
-    # O banco devolve datas no fuso da sessão (UTC por padrão no Supabase).
-    # Trabalhamos sempre no fuso da clínica para não misturar horários.
-    conn.execute("select set_config('TimeZone', %s, false)", (c["timezone"],))
     return c
 
 

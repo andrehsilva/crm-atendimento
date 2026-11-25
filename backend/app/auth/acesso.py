@@ -15,6 +15,7 @@ from fastapi import Depends, Request, Response
 from app.agenda.erros import AgendaError
 from app.auth import supabase as sb
 from app.config import get_settings
+from app.core import cache
 from app.db import get_conn
 
 COOKIE_ACESSO = "isis_at"
@@ -62,21 +63,20 @@ def apagar_cookies(response: Response) -> None:
 
 
 def carregar_usuario(conn, user_id: str) -> Usuario:
+    """Etapa 32: uma consulta só (antes eram três). Com o servidor longe do banco, cada consulta custa ~0,2 s."""
     r = conn.execute(
         """select u.user_id, u.email, u.name, u.must_change_password, u.active,
-                  (select (extract(epoch from f.updated_at) * 1000)::bigint from user_photos f where f.user_id = u.user_id)
+                  (select (extract(epoch from f.updated_at) * 1000)::bigint from user_photos f where f.user_id = u.user_id),
+                  exists(select 1 from platform_admins pa where pa.user_id = u.user_id),
+                  coalesce((select json_object_agg(cu.clinic_id, cu.role) from clinic_users cu
+                              join clinics c on c.id = cu.clinic_id
+                             where cu.user_id = u.user_id and cu.active and c.status = 'ativa'), '{}'::json)
            from app_users u where u.user_id = %s""", (user_id,)
     ).fetchone()
     if not r or not r[4]:
         raise AgendaError("SEM_ACESSO", "Seu usuário não tem acesso ao sistema. Fale com o administrador.")
-    admin = conn.execute("select 1 from platform_admins where user_id = %s", (user_id,)).fetchone() is not None
-    clinicas = {
-        cid: papel for cid, papel in conn.execute(
-            """select cu.clinic_id, cu.role from clinic_users cu join clinics c on c.id = cu.clinic_id
-               where cu.user_id = %s and cu.active and c.status = 'ativa'""", (user_id,)
-        ).fetchall()
-    }
-    return Usuario(id=r[0], email=r[1], nome=r[2], super_admin=admin, trocar_senha=r[3], clinicas=clinicas,
+    clinicas = {UUID(cid): papel for cid, papel in (r[7] or {}).items()}
+    return Usuario(id=r[0], email=r[1], nome=r[2], super_admin=r[6], trocar_senha=r[3], clinicas=clinicas,
                    foto_versao=r[5])
 
 
@@ -101,7 +101,7 @@ def obter_usuario(request: Request, response: Response | None, conn, pode_renova
             raise AgendaError("NAO_AUTENTICADO", e.mensagem) from e
         gravar_cookies(response, nova)
         claims = sb.conferir_token(nova.access_token)
-    return carregar_usuario(conn, claims["sub"])
+    return cache.memo(f"usuario:{claims['sub']}", 30, lambda: carregar_usuario(conn, claims["sub"]))
 
 
 def _clinica_pedida(request: Request) -> UUID | None:
