@@ -279,6 +279,19 @@ dashboard 3,2 s · kanban 2,0 s · clientes 2,0 s · /auth/me 1,2 s.
   Qualquer gravação limpa o cache. Consultas na troca de tela: clínica 18→0, login 3→0, kanban 8→3, dashboard 14→9.
 - **Depois:** medir no temhorario após o deploy.
 
+## Etapa 33 — Painel no celular (simples e do dia) ✅ (25/11/2026; D127)
+Só no celular (tela < 768 px); no computador nada muda.
+- **Menu:** sai a barra lateral; entra uma barra embaixo com Início · CRM · Agenda · Mensagens · Clientes.
+  No topo: logo, sino, situação da assistente, "Perguntar à assistente" (se liberado) e Sair.
+- **Gestão desligada:** Relatórios, Configurações e o botão **Admin geral** somem; abrir o endereço direto mostra
+  "Disponível no computador".
+- **Agenda:** em vez da semana, a **lista do dia** (abre em hoje, setas ‹ › para outro dia, toque abre a consulta,
+  botão + para marcar).
+- **CRM:** lista simples com **nome e status** de cada contato, filtro **Hoje** já ligado (consulta hoje ou movimento
+  hoje; "Todos" mostra o resto). Toque no nome → conversa; toque no status → **Mover para…** (regras do arrastar, RN-PN-05).
+- **Clientes:** só nome e telefone, com botão **Comentar** (registra um comentário novo nas observações; ver e editar
+  o histórico fica no computador).
+
 ---
 
 ## Depois da 1ª versão (backlog)

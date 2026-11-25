@@ -4,6 +4,8 @@ import { Plus } from 'lucide-react'
 import type { Consulta } from '../lib/api'
 import { PageHeader } from '../components/PageHeader'
 import { AgendaSemana } from '../components/agenda/AgendaSemana'
+import { AgendaDia } from '../components/agenda/AgendaDia'
+import { useCelular } from '../lib/celular'
 import { ModalConsulta } from '../components/agenda/ModalConsulta'
 import { ModalNovaConsulta, type Previa } from '../components/agenda/ModalNovaConsulta'
 import { Botao } from '../components/ui'
@@ -20,6 +22,22 @@ export function Agenda() {
   const ir = useMemo(() => (diaPedido && /^\d{4}-\d{2}-\d{2}$/.test(diaPedido) ? { dia: diaPedido, consultaId: consultaPedida } : undefined),
     [diaPedido, consultaPedida])
   const irFeito = useCallback(() => setBusca({}, { replace: true }), [setBusca])
+  const celular = useCelular()
+
+  if (celular) {
+    // Etapa 33: no celular, só a lista do dia
+    return (
+      <>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
+          <Botao onClick={() => setPrevia({})}><Plus className="size-4" />Marcar</Botao>
+        </div>
+        <AgendaDia ir={ir} onIrFeito={irFeito} onConsulta={setAberta} />
+        <ModalConsulta consulta={aberta} onFechar={() => setAberta(null)} />
+        <ModalNovaConsulta aberto={!!previa} previa={previa} onFechar={() => setPrevia(undefined)} />
+      </>
+    )
+  }
 
   return (
     <>

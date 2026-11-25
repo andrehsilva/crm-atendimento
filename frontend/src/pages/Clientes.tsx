@@ -12,6 +12,7 @@ import { useTermos } from '../lib/termos'
 import { EnviarImagem, Retrato } from '../components/Imagem'
 import { ModalObservacoes } from '../components/ModalObservacoes'
 import { AcoesArquivo } from '../components/ArquivarContato'
+import { useCelular } from '../lib/celular'
 
 const ETAPA: Record<Etapa, [string, CorSelo]> = {
   novo_contato: ['Novo contato', 'rosa'],
@@ -51,6 +52,9 @@ export function Clientes() {
     },
   })
   const lista = (q.data ?? []).filter((p) => !tag || p.tags.some((t) => t.codigo === tag))
+  const celular = useCelular()
+
+  if (celular) return <ClientesCelular lista={lista} carregando={q.isLoading} busca={busca} onBusca={setBusca} />
 
   return (
     <>
@@ -225,6 +229,68 @@ function ModalEditar({ paciente, onFechar }: { paciente: Paciente | null; onFech
         <Botao variante="fantasma" onClick={onFechar}>Cancelar</Botao>
         <Botao disabled={salvar.isPending} onClick={() => salvar.mutate()}>Salvar</Botao>
       </div>
+    </Modal>
+  )
+}
+
+/** Etapa 33: Clientes no celular — só nome, telefone e um botão para registrar um comentário. */
+function ClientesCelular({ lista, carregando, busca, onBusca }: {
+  lista: Paciente[]; carregando: boolean; busca: string; onBusca: (v: string) => void
+}) {
+  const pal = useTermos()
+  const [comentando, setComentando] = useState<Paciente | null>(null)
+  return (
+    <div className="flex flex-col gap-3">
+      <h1 className="text-2xl font-bold tracking-tight">{pal.Clientes}</h1>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+        <Entrada className="w-full pl-9" placeholder="Buscar por nome ou telefone" value={busca} onChange={(e) => onBusca(e.target.value)} />
+      </div>
+      {!lista.length && <Vazio icone={<Users className="size-8" />} texto={carregando ? 'Carregando…' : `Nenhum ${pal.cliente} encontrado.`} />}
+      <ul className="flex flex-col divide-y divide-line rounded-2xl bg-surface">
+        {lista.map((p) => (
+          <li key={p.id} className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className={`truncate font-medium ${p.name ? '' : 'text-muted'}`}>{p.name ?? 'Sem nome'}</div>
+              <div className="text-sm text-muted">{telefone(p.phone)}</div>
+            </div>
+            <button type="button" onClick={() => setComentando(p)}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-line px-3 py-2 text-sm text-primary active:bg-primary-soft">
+              <NotebookPen className="size-4" />Comentar
+            </button>
+          </li>
+        ))}
+      </ul>
+      <ModalComentario paciente={comentando} onFechar={() => setComentando(null)} />
+    </div>
+  )
+}
+
+/** Só registra um comentário novo (vai para as observações do contato); ver e editar o histórico fica no computador. */
+function ModalComentario({ paciente, onFechar }: { paciente: Paciente | null; onFechar: () => void }) {
+  const { clinica } = useClinica()
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const [texto, setTexto] = useState('')
+  const fechar = () => { setTexto(''); onFechar() }
+  const salvar = useMutation({
+    mutationFn: () => api.post(`/clinics/${clinica.id}/patients/${paciente!.id}/observacoes`, { texto: texto.trim() }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['observacoes', paciente?.id] })
+      qc.invalidateQueries({ queryKey: ['pacientes'] })
+      aviso.ok('Comentário salvo.')
+      fechar()
+    },
+    onError: aviso.erro,
+  })
+  return (
+    <Modal titulo={`Comentário · ${paciente?.name ?? (paciente ? telefone(paciente.phone) : '')}`} aberto={!!paciente} onFechar={fechar}>
+      <form onSubmit={(e) => { e.preventDefault(); if (texto.trim()) salvar.mutate() }} className="flex flex-col gap-3">
+        <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={5} autoFocus maxLength={5000}
+          placeholder="Escreva o comentário…"
+          className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-base outline-none focus:border-primary" />
+        <Botao type="submit" disabled={!texto.trim() || salvar.isPending}>{salvar.isPending ? 'Salvando…' : 'Salvar comentário'}</Botao>
+      </form>
     </Modal>
   )
 }

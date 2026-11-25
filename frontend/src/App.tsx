@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { opcoesPersistencia, queryClient } from './lib/cache'
@@ -25,9 +26,28 @@ import { AguardandoConfiguracao, AvisoPendencias, PrimeirosPassos } from './page
 import { useAuth } from './lib/auth'
 import { useClinica } from './lib/clinica'
 import { RedefinirSenha } from './pages/RedefinirSenha'
+import { BarraCelular, SoComputador, TopoCelular } from './components/MenuCelular'
+import { useCelular } from './lib/celular'
 
 
 function Layout() {
+  const celular = useCelular()
+  if (celular) {
+    // Etapa 33: no celular, topo enxuto + abas embaixo (sem a barra lateral nem a gestão)
+    return (
+      <div className="flex h-full flex-col">
+        <main className="flex-1 overflow-y-auto pb-20">
+          <TopoCelular />
+          <div className="px-4 pt-4">
+            <AvisoIaDesligada />
+            <AvisoTetoIa />
+            <Outlet />
+          </div>
+        </main>
+        <BarraCelular />
+      </div>
+    )
+  }
   return (
     <div className="flex h-full">
       <Sidebar />
@@ -66,9 +86,18 @@ function AreaClinica() {
 function Portao() {
   const { clinica } = useClinica()
   const { usuario } = useAuth()
+  const celular = useCelular()
   if (clinica.configurada) return <Outlet />
   const papel = usuario.super_admin ? 'super_admin' : usuario.clinicas.find((c) => c.clinic_id === clinica.id)?.papel
-  return papel === 'clinic_admin' || papel === 'super_admin' ? <PrimeirosPassos /> : <AguardandoConfiguracao />
+  return papel === 'clinic_admin' || papel === 'super_admin'
+    ? <SoComputador celular={celular}><PrimeirosPassos /></SoComputador>
+    : <AguardandoConfiguracao />
+}
+
+/** Etapa 33: gestão (Relatórios, Configurações, Admin geral) só no computador. */
+function SoGestao({ children }: { children: ReactNode }) {
+  const celular = useCelular()
+  return <SoComputador celular={celular}>{children}</SoComputador>
 }
 
 export default function App() {
@@ -79,7 +108,7 @@ export default function App() {
           <Routes>
             <Route path="redefinir-senha" element={<RedefinirSenha />} />
             <Route element={<AreaLogada />}>
-              <Route path="admin" element={<AdminLayout />}>
+              <Route path="admin" element={<SoGestao><AdminLayout /></SoGestao>}>
                 <Route index element={<AdminClinicas />} />
                 <Route path="clinicas/:id" element={<AdminClinicaDetalhe />} />
                 <Route path="uso" element={<AdminUso />} />
@@ -93,8 +122,8 @@ export default function App() {
                   <Route path="agenda" element={<Agenda />} />
                   <Route path="mensagens" element={<Mensagens />} />
                   <Route path="clientes" element={<Clientes />} />
-                  <Route path="relatorios" element={<Relatorios />} />
-                  <Route path="configuracoes" element={<Configuracoes />} />
+                  <Route path="relatorios" element={<SoGestao><Relatorios /></SoGestao>} />
+                  <Route path="configuracoes" element={<SoGestao><Configuracoes /></SoGestao>} />
                 </Route>
               </Route>
             </Route>

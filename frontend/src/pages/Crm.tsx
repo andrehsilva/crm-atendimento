@@ -3,7 +3,8 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Bot, Copy, Hand, Inbox, User } from 'lucide-react'
 import { api, type CardCrm, type Etapa } from '../lib/api'
 import { useClinica } from '../lib/clinica'
-import { dataHora, horasDesde, telefone, tempoParado } from '../lib/formato'
+import { dataHora, hojeYmd, horasDesde, partes, telefone, tempoParado } from '../lib/formato'
+import { useCelular } from '../lib/celular'
 import { useAviso } from '../components/Aviso'
 import { PageHeader } from '../components/PageHeader'
 import { ModalNovaConsulta, type Previa } from '../components/agenda/ModalNovaConsulta'
@@ -49,12 +50,15 @@ export function Crm() {
     onError: aviso.erro,
   })
 
-  // RN-PN-05: o que acontece ao soltar um card em cada coluna
+  // RN-PN-05: o que acontece ao soltar um card em cada coluna (no celular: botão "Mover para…")
   function soltar(etapa: Etapa) {
     const card = arrastando
     setArrastando(null)
     setSobre(null)
-    if (!card || card.crm_stage === etapa) return
+    if (card) moverPara(card, etapa)
+  }
+  function moverPara(card: CardCrm, etapa: Etapa) {
+    if (card.crm_stage === etapa) return
     if (etapa === 'agendado') {
       setPrevia({ telefone: telefone(card.phone), nome: card.name ?? '' })
     } else if (etapa === 'confirmado') {
@@ -68,6 +72,43 @@ export function Crm() {
   }
 
   const cards = q.data?.cards ?? []
+  const celular = useCelular()
+  const [movendo, setMovendo] = useState<CardCrm | null>(null)
+  const modais = (
+    <>
+      <ModalConversa card={cards.find((c) => c.id === aberto) ?? null} onFechar={() => setAberto(null)} />
+      <ModalNovaConsulta aberto={!!previa} previa={previa} onFechar={() => setPrevia(undefined)} />
+      <Modal titulo={`Cancelar ${pal.atendimento}?`} aberto={!!cancelar} onFechar={() => setCancelar(null)}>
+        {cancelar && (
+          <>
+            <p className="text-sm">
+              Cancelar a consulta de <strong>{cancelar.name}</strong> ({cancelar.procedimento}, {dataHora(cancelar.proxima_consulta!, clinica.timezone)})?
+              {pal.Cliente} recebe uma mensagem avisando.
+            </p>
+            <div className="mt-6 flex justify-end gap-2">
+              <Botao variante="fantasma" onClick={() => setCancelar(null)}>Voltar</Botao>
+              <Botao variante="perigo" disabled={cancelarConsulta.isPending} onClick={() => cancelarConsulta.mutate(cancelar)}>Cancelar {pal.atendimento}</Botao>
+            </div>
+          </>
+        )}
+      </Modal>
+      <Modal titulo={`Mover ${movendo?.name ?? 'contato'} para…`} aberto={!!movendo} onFechar={() => setMovendo(null)}>
+        {movendo && (
+          <div className="flex flex-col gap-2">
+            {COLUNAS.filter((c) => c.etapa !== movendo.crm_stage).map((c) => (
+              <button key={c.etapa} type="button" onClick={() => { const card = movendo; setMovendo(null); moverPara(card, c.etapa) }}
+                className="flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-left active:bg-surface-muted">
+                <span className="size-2.5 rounded-full" style={{ background: c.bolinha }} />{c.titulo}
+              </button>
+            ))}
+          </div>
+        )}
+      </Modal>
+    </>
+  )
+
+  if (celular) return <><CrmCelular cards={cards} carregando={q.isLoading} onAbrir={setAberto} onMover={setMovendo} />{modais}</>
+
   return (
     <>
       <PageHeader titulo="CRM" subtitulo="Arraste os leads entre as colunas para atualizar o status do funil" />
@@ -104,22 +145,7 @@ export function Crm() {
         })}
       </div>
 
-      <ModalConversa card={cards.find((c) => c.id === aberto) ?? null} onFechar={() => setAberto(null)} />
-      <ModalNovaConsulta aberto={!!previa} previa={previa} onFechar={() => setPrevia(undefined)} />
-      <Modal titulo={`Cancelar ${pal.atendimento}?`} aberto={!!cancelar} onFechar={() => setCancelar(null)}>
-        {cancelar && (
-          <>
-            <p className="text-sm">
-              Cancelar a consulta de <strong>{cancelar.name}</strong> ({cancelar.procedimento}, {dataHora(cancelar.proxima_consulta!, clinica.timezone)})?
-              {pal.Cliente} recebe uma mensagem avisando.
-            </p>
-            <div className="mt-6 flex justify-end gap-2">
-              <Botao variante="fantasma" onClick={() => setCancelar(null)}>Voltar</Botao>
-              <Botao variante="perigo" disabled={cancelarConsulta.isPending} onClick={() => cancelarConsulta.mutate(cancelar)}>Cancelar {pal.atendimento}</Botao>
-            </div>
-          </>
-        )}
-      </Modal>
+      {modais}
     </>
   )
 }
@@ -163,5 +189,60 @@ function CardLead({ card, cor, titulo, tz, onDragStart, onDragEnd, onAbrir }: {
         </button>
       </div>
     </article>
+  )
+}
+
+/** Etapa 33: CRM no celular — só o nome e o status de cada contato, filtro "Hoje" já ligado.
+ *  Tocar no nome abre a conversa; tocar no status abre "Mover para…" (no lugar de arrastar). */
+function CrmCelular({ cards, carregando, onAbrir, onMover }: {
+  cards: CardCrm[]; carregando: boolean; onAbrir: (id: string) => void; onMover: (c: CardCrm) => void
+}) {
+  const { clinica } = useClinica()
+  const tz = clinica.timezone
+  const [soHoje, setSoHoje] = useState(true)
+  const hoje = hojeYmd(tz)
+  // "Hoje" = consulta marcada para hoje ou conversa/movimento hoje
+  const ehDeHoje = (c: CardCrm) =>
+    (!!c.proxima_consulta && partes(c.proxima_consulta, tz).ymd === hoje) || partes(c.last_activity_at, tz).ymd === hoje
+  const ordem = (c: CardCrm) => COLUNAS.findIndex((x) => x.etapa === c.crm_stage)
+  const lista = (soHoje ? cards.filter(ehDeHoje) : cards).slice().sort((a, b) => ordem(a) - ordem(b))
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">CRM</h1>
+        <div className="flex rounded-xl bg-surface p-1 text-sm" role="group" aria-label="Período">
+          {([true, false] as const).map((v) => (
+            <button key={String(v)} type="button" onClick={() => setSoHoje(v)} aria-pressed={soHoje === v}
+              className={`rounded-lg px-3 py-1.5 ${soHoje === v ? 'bg-primary text-primary-contrast' : 'text-muted'}`}>
+              {v ? 'Hoje' : 'Todos'}
+            </button>
+          ))}
+        </div>
+      </div>
+      {carregando && <p className="py-8 text-center text-sm text-muted">Carregando…</p>}
+      {!carregando && lista.length === 0 && (
+        <div className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted">
+          <Inbox className="size-7 opacity-60" />
+          {soHoje ? <>Nenhum contato hoje.<button type="button" className="text-primary" onClick={() => setSoHoje(false)}>Ver todos</button></> : 'Nenhum lead aqui'}
+        </div>
+      )}
+      <ul className="flex flex-col divide-y divide-line rounded-2xl bg-surface">
+        {lista.map((c) => {
+          const col = COLUNAS.find((x) => x.etapa === c.crm_stage)!
+          return (
+            <li key={c.id} className="flex items-center gap-3 px-4 py-3">
+              <button type="button" onClick={() => onAbrir(c.id)}
+                className={`min-w-0 flex-1 truncate text-left font-medium ${c.name ? '' : 'text-muted'}`}>
+                {c.name ?? telefone(c.phone)}
+              </button>
+              <button type="button" onClick={() => onMover(c)} aria-label={`Status: ${col.titulo}. Tocar para mover`}>
+                <Selo cor={col.cor}>{col.titulo}</Selo>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
