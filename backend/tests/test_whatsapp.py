@@ -367,3 +367,38 @@ def test_clinica_que_nao_aceita_audio_pede_para_escrever(conn, ligada, ouvindo, 
     w = WahaComAudio()
     whatsapp.processar_com(SemCommit(conn), _audio(), w)
     assert w.enviadas[0][2] == whatsapp.RESPOSTA_AUDIO
+
+
+# --- D79: assistente pausada no WhatsApp = nada sai automático (achado do teste de 24/11/2026) -----------------
+class WahaQueAnota(WahaFalso):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self.digitou = 0
+
+    def digitando(self, sessao, chat_id):
+        self.digitou += 1
+
+
+def _pausar(conn, clinica, monkeypatch):
+    conn.execute("""update clinics set settings = settings || '{"isis_pausada_whatsapp": true}' where id = %s""", (clinica.id,))
+    monkeypatch.setattr(chat, "config_da_clinica", lambda conn, cid: object())  # a clínica TEM IA
+    monkeypatch.setattr(chat.isis, "responder", lambda *a, **k: pytest.fail("a assistente não pode responder pausada"))
+
+
+@pytest.mark.parametrize("midia", ["foto", "audio", "documento"])
+def test_pausada_nao_responde_midia_nem_mostra_digitando(conn, ligada, monkeypatch, midia):
+    _pausar(conn, ligada, monkeypatch)
+    w = WahaQueAnota()
+    whatsapp.processar_com(SemCommit(conn), _msg("", id_ext=f"M-{midia}", midia=midia), w, agrupar=True)
+    whatsapp.processar_com(SemCommit(conn), _msg("Oi, tudo bem?", id_ext="M-texto"), w, agrupar=True)
+    assert w.enviadas == [] and w.digitou == 0
+    assert [m[0] for m in _mensagens(conn, ligada)] == ["paciente", "paciente"]  # tudo registrado para a equipe
+    assert conn.execute("select status from conversations where clinic_id = %s", (ligada.id,)).fetchone()[0] == "humano"
+
+
+def test_pausada_parar_continua_valendo(conn, ligada, monkeypatch):
+    _pausar(conn, ligada, monkeypatch)
+    w = WahaQueAnota()
+    whatsapp.processar_com(SemCommit(conn), _msg("PARAR"), w, agrupar=True)
+    assert len(w.enviadas) == 1  # a confirmação do "PARAR" sai mesmo com a assistente pausada (D79)
+    assert conn.execute("select optout_disparos from patients where clinic_id = %s", (ligada.id,)).fetchone()[0] is True

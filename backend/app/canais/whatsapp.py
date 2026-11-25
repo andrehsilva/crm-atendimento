@@ -174,6 +174,20 @@ def processar_com(conn, msg: MensagemEntrada, cliente: ClienteWaha | None = None
         conn.execute("update conversations set external_chat_id = %s where id = %s", (msg.chat_id, conversa["id"]))
         conversa["external_chat_id"] = msg.chat_id
 
+    # D79: assistente pausada no WhatsApp = nada sai automático (nem resposta de áudio/foto, nem "visto"/"digitando");
+    # a mensagem fica registrada e a conversa vai direto para a equipe.
+    if isis_pausada_no_whatsapp(clinica):
+        texto = msg.texto or f"[{ROTULO_MIDIA.get(msg.midia or 'outro', ROTULO_MIDIA['outro'])}]"
+        novas = chat.processar(conn, clinica, paciente, conversa, texto, external_id=msg.id_externo, adiar=True)
+        if len(novas) >= 2:  # "1" confirma o lembrete / "PARAR": resolvidos no código, seguem valendo (D79)
+            conn.commit()
+            _enviar(conn, msg.sessao, msg.chat_id, clinica["id"], conversa["id"], novas[1:], cliente)
+            return
+        if novas:
+            chat.responder_pendentes(conn, clinica, paciente, conversa)  # pausada: só passa para a equipe
+        conn.commit()
+        return
+
     # D67: áudio vira texto (transcrição) e segue o caminho normal; longo demais, pede um resumo por texto
     if msg.midia == "audio" and not msg.texto:
         situacao = _ouvir(conn, clinica, conversa, msg, cliente)
