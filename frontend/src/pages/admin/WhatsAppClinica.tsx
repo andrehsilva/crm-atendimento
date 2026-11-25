@@ -139,7 +139,10 @@ function PassoNumero({ id, slug, onLigado }: { id: string; slug: string; onLigad
               ))}
             </ul>
           )}
-          {sessoes.isError && <Botao className="mt-3" variante="fantasma" onClick={() => sessoes.refetch()}><RefreshCw className="size-4" />Tentar de novo</Botao>}
+          {/* o WAHA pode estar reiniciando na hora da consulta: dá para pedir a lista de novo */}
+          <Botao className="mt-3" variante="fantasma" disabled={sessoes.isFetching} onClick={() => sessoes.refetch()}>
+            <RefreshCw className={`size-4 ${sessoes.isFetching ? 'animate-spin' : ''}`} />Atualizar lista
+          </Botao>
         </div>
         <form onSubmit={(e: FormEvent) => { e.preventDefault(); ligar.mutate({ sessao: nova, criar: true }) }} className="flex flex-col gap-3">
           <p className="text-sm font-medium">Ou criar uma sessão nova (lendo o QR code)</p>
