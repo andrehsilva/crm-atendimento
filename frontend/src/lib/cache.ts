@@ -48,7 +48,9 @@ export const opcoesPersistencia = {
 
 /** Apaga tudo o que o painel guardou (ao sair e ao entrar com outra conta). */
 export function limparCache() {
-  queryClient.clear()
+  // Não usar queryClient.clear(): ele apaga também o "me" que a tela de login está observando, e aí o login dá
+  // certo no servidor mas a tela não percebe (fica parada no formulário). Quem está logado é tratado em lib/auth.
+  queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
   try {
     armazenamento()?.removeItem(CHAVE)
   } catch {
