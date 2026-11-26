@@ -270,14 +270,18 @@ Admin geral › clínica › WhatsApp vira um cartão em 3 passos: **servidor** 
 Situação com um selo só (webhook certo / desalinhado → "Corrigir webhook"). "Desligar" pede confirmação e não apaga
 servidor nem webhook. Pré-requisito: `WAHA_API_KEY` fixa no serviço do WAHA (sem ela o WAHA gera outra a cada reinício).
 
-## Etapa 32 — Desempenho (cache) — 🧪 aguardando deploy e medição (25/11/2026; D125, D126)
+## Etapa 32 — Desempenho (cache) ✅ (26/11/2026; D125, D126)
 **Antes** (temhorario, VPS em Helsinque × banco em São Paulo, ~0,18 s por ida e volta): dados da clínica 3,9 s ·
 dashboard 3,2 s · kanban 2,0 s · clientes 2,0 s · /auth/me 1,2 s.
 - Painel: telas guardadas 5 min + na aba do navegador; pré-carrega CRM e Clientes; atualiza tudo se o tempo real cair e voltar.
 - Servidor: login numa consulta só (eram 3) e guardado 30 s; dados da clínica (18 consultas), cadastros e lista de
   clínicas guardados 30 s; clínica + fuso numa ida só; conexão só é conferida se ficou parada > 30 s.
   Qualquer gravação limpa o cache. Consultas na troca de tela: clínica 18→0, login 3→0, kanban 8→3, dashboard 14→9.
-- **Depois:** medir no temhorario após o deploy.
+- **Depois** (26/11/2026, mesmo teste; 1ª vez = cache do servidor vencido · trocando de tela):
+  dados da clínica 3,1 s · **0,28 s** · dashboard 2,2 s · 2,0 s · kanban 1,0 s · 1,1 s · clientes 1,2 s · 1,0 s ·
+  cadastros 1,0 s · **0,26 s** · /auth/me **0,26–0,33 s**. Piso da rede (navegador → VPS, página estática): ~0,26 s.
+  No painel, voltar a uma tela já vista abre na hora (cache do navegador) e atualiza por trás.
+- Fica para depois: dashboard e `/health` (~2 s, chamado pela barra de situação) ainda dependem da distância até o banco (D126).
 
 ## Etapa 33 — Painel no celular (simples e do dia) ✅ (25/11/2026; D127)
 Só no celular (tela < 768 px); no computador nada muda.
