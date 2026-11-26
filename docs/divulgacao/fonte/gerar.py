@@ -1,14 +1,16 @@
-"""Gera os 3 PDFs de venda do TemHorario: python gerar.py  (troque CONTATO pelo canal real)."""
+"""Gera os PDFs de venda do TemHorario: python gerar.py  (troque CONTATO pelo canal real)."""
 import pathlib, subprocess, sys
 from venda import venda
 from apresentacao import apresentacao
 from apoio import apoio
+from checklist import checklist
 
 CONTATO = sys.argv[1] if len(sys.argv) > 1 else "WhatsApp (00) 00000-0000"
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 aqui = pathlib.Path(__file__).parent
 saida = aqui.parent
-for nome, html in [("TemHorario-Venda", venda(CONTATO)), ("TemHorario-Apresentacao", apresentacao(CONTATO)), ("TemHorario-Apoio-a-venda", apoio(CONTATO))]:
+for nome, html in [("TemHorario-Venda", venda(CONTATO)), ("TemHorario-Apresentacao", apresentacao(CONTATO)), ("TemHorario-Apoio-a-venda", apoio(CONTATO)),
+                   ("TemHorario-Checklist-de-implantacao", checklist(CONTATO))]:
     arq = saida / f"{nome}.html"  # versão HTML pronta, ao lado do PDF
     arq.write_text(html, encoding="utf-8")
     pdf = saida / f"{nome}.pdf"
