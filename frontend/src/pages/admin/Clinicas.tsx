@@ -51,7 +51,7 @@ export function AdminClinicas() {
             <thead className="border-b border-line text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-6 py-3 font-medium">Clínica</th>
-                <th className="px-4 py-3 font-medium">Telefone (chave)</th>
+                <th className="px-4 py-3 font-medium">Telefone principal</th>
                 <th className="px-4 py-3 font-medium">WhatsApp</th>
                 <th className="px-4 py-3 font-medium">Assistente</th>
                 <th className="px-4 py-3 text-right font-medium">Conversas no mês</th>
@@ -123,8 +123,8 @@ function NovaClinica({ onFechar, onCriada }: { onFechar: () => void; onCriada: (
             </Seletor>
           </Campo>
           <Campo rotulo="Nome"><Entrada required value={f.nome} onChange={mudar('nome')} placeholder="Clínica Sorriso" /></Campo>
-          <Campo rotulo="Telefone (WhatsApp)" ajuda="É a chave da clínica: não muda depois.">
-            <Entrada required value={f.telefone} onChange={mudar('telefone')} placeholder="(11) 99999-0000" />
+          <Campo rotulo="Telefone principal da clínica" ajuda="Identifica esta clínica. Pode ser alterado depois no Admin geral.">
+            <Entrada required value={f.telefone} onChange={mudar('telefone')} placeholder="(11) 99999-0000" inputMode="tel" />
           </Campo>
           <Campo rotulo="Endereço"><Entrada value={f.endereco} onChange={mudar('endereco')} placeholder="Rua, número — bairro, cidade" /></Campo>
           <Campo rotulo="Fuso horário">

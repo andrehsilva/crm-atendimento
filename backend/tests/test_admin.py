@@ -59,6 +59,33 @@ def test_telefone_repetido_e_recusado(admin, clinica, supabase_falso):
     r = admin.post("/api/admin/clinicas", json={**NOVA, "telefone": "+5511900000001"})  # telefone da clínica de teste
     assert r.status_code == 422
 
+def test_super_admin_atualiza_telefone_sem_desvincular_clinica(admin, conn, clinica):
+    patient_id = conn.execute(
+        "insert into patients (clinic_id, phone, name) values (%s, '+5511999990001', 'Teste') returning id",
+        (clinica.id,),
+    ).fetchone()[0]
+    old_phone = admin.get(f"/api/admin/clinicas/{clinica.id}").json()["phone"]
+
+    r = admin.patch(f"/api/admin/clinicas/{clinica.id}", json={"telefone": "(11) 90000-0003"})
+
+    assert r.status_code == 200 and r.json()["phone"] == "+5511900000003"
+    assert conn.execute("select phone from clinics where id = %s", (clinica.id,)).fetchone()[0] == "+5511900000003"
+    assert conn.execute("select clinic_id from patients where id = %s", (patient_id,)).fetchone()[0] == clinica.id
+    assert conn.execute(
+        "select action, detail from admin_audit where clinic_id = %s order by created_at desc limit 1", (clinica.id,)
+    ).fetchone() == ("alterar_telefone_clinica", {"anterior": old_phone, "novo": "+5511900000003"})
+
+
+def test_troca_telefone_rejeita_numero_de_outra_clinica(admin, conn, clinica, outra_clinica):
+    telefone_existente = conn.execute("select phone from clinics where id = %s", (outra_clinica.id,)).fetchone()[0]
+    r = admin.patch(f"/api/admin/clinicas/{clinica.id}", json={"telefone": telefone_existente})
+    assert r.status_code == 422
+
+def test_admin_da_clinica_nao_pode_trocar_telefone_principal(cliente, conn, clinica):
+    clinic_admin = _como(cliente, _usuario(conn, clinic_id=clinica.id, papel="clinic_admin"))
+    r = clinic_admin.patch(f"/api/admin/clinicas/{clinica.id}", json={"telefone": "+5511900000003"})
+    assert r.status_code == 403
+
 
 def test_suspender_tira_o_acesso_da_clinica(admin, cliente, conn, clinica):  # noqa: F811
     recepcao = _usuario(conn, clinic_id=clinica.id)

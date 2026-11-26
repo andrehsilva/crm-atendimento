@@ -9,7 +9,7 @@ Cabeçalho: "Configurações — Gerencie o perfil, horários e procedimentos da
 - **Senha de acesso:** senha atual, nova (mín. 8), confirmar, "Mostrar senhas", botão Trocar senha (habilita só quando válido). Texto: esqueceu → "Esqueci minha senha" no login.
 - **Logo da clínica:** pré-visualização quadrada + "Alterar foto" (PNG, mín. 200×200).
 - **Nome da clínica:** campo + Salvar (aparece no topo da barra lateral).
-- **A acrescentar (proposta):** telefone da clínica (somente leitura — é a chave), endereço, telefone de urgência, cor principal, nome/avatar da assistente.
+- **Telefone da clínica:** somente leitura no Perfil. Alteração disponível ao super admin em Admin geral › Clínica › Dados; número único, validado e registrado na auditoria. A mudança da identificação principal não troca o número conectado ao WhatsApp.
 
 ### Horários de Funcionamento (imagem 07)
 - Uma linha por dia (seg–sáb, e domingo): liga/desliga, início "até" fim, Salvar por linha.
@@ -36,9 +36,10 @@ Lista de usuários da clínica (nome, e-mail, papel admin/secretária), convidar
 
 ## B. Admin da plataforma (super-admin)
 Mesmo visual, menu próprio: **Clínicas** · **Uso** · **Configurações da plataforma**.
-- Lista de clínicas: logo, nome, telefone (chave), status, canal conectado, conversas/mês.
-- **Criar clínica:** nome, telefone (E.164, único), slug, fuso, primeiro usuário admin (e-mail). Gera o ambiente com procedimentos e mensagens padrão.
-- Suspender/reativar; "entrar como" a clínica para suporte (registrado em log).
+- **Criar clínica:** nome, telefone principal único, segmento, slug, fuso e primeiro admin. O telefone principal pode ser diferente do número WhatsApp.
+- **Editar clínica:** super admin pode trocar telefone principal; permanece único, normalizado e auditado. UUID e relações existentes ficam.
+- **WhatsApp:** configuração separada, liga número/sessão WAHA, servidor e webhook à clínica. Trocar telefone principal não troca a sessão WhatsApp conectada.
+- **Operações:** suspender/reativar; "entrar como" para suporte (registrado em log).
 
 ## Regras
 - Mudanças de regra valem para **novas** ações; não alteram consultas já marcadas.

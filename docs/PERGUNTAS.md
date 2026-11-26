@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 105 de 114 resolvidas (102 respondidas · 3 adiadas) — 23/11/2026.
+**Progresso:** 106 de 114 resolvidas (103 respondidas · 3 adiadas) — 25/11/2026.
 
 ---
 
@@ -121,7 +121,6 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver objeção, **sigo com elas a partir da Etapa 1** (dá para mudar depois). Detalhes em [DECISOES.md](DECISOES.md).
 
 - [ ] **D2:** stack React + Vite / FastAPI / Postgres Supabase / Agno.
-- [ ] **D4:** cada clínica ganha também um código interno. O telefone continua sendo a chave única de busca, e uma troca de número não quebra os dados.
 - [ ] **D5:** telefones guardados no formato internacional (`+5521987654321`).
 - [ ] **D6:** as regras de agenda são validadas no sistema e no banco de dados, não pela IA.
 - [ ] **D7:** as telas são atualizadas em tempo real por SSE (o servidor "empurra" as mudanças para a tela).
@@ -141,6 +140,7 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **D4 — UUID estável e telefone principal editável:** só o super admin troca pelo Admin geral; vínculos existentes ficam, o número conectado ao WhatsApp não muda e a alteração fica auditada. *(25/11 → D3, D4, D128)*
 - [x] **Q104 — Quem usa o "Perguntar à assistente":** toda a equipe, vendo a clínica inteira (igual ao painel); nunca outra clínica. *(23/11 → D118)*
 - [x] **Q106 — Conversa guardada?** Não: some ao fechar. *(23/11 → D119)*
 - [x] **Q107 — Gasto do chat interno:** entra no teto de IA da clínica. *(23/11 → D120)*

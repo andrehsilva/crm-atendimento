@@ -4,9 +4,9 @@
 Uma instalação, várias clínicas, zero vazamento de dados entre elas.
 
 ## Chaves
-- **Clínica:** `clinics.phone` (E.164, único) é a chave de negócio; `clinics.id` (UUID) é a chave interna usada nas relações.
+- **Clínica:** `clinics.id` (UUID) é a identidade interna estável usada nas relações. `clinics.phone` (E.164, único) é o telefone principal de identificação; só o super admin pode trocá-lo pelo Admin geral. A troca não altera UUID nem relações, e não muda a sessão/número WAHA conectado. O histórico do agente usa `session_id = "{clinic_phone}:{patient_phone}"`.
 - **Paciente:** único por `(clinic_id, phone)`.
-- **Conversa:** única por `(clinic_id, patient_id, channel)` ativa; o histórico do agente usa `session_id = "{clinic_phone}:{patient_phone}"`.
+- **Conversa:** única por `(clinic_id, patient_id, channel)` ativa; conversa e dados relacionados continuam ligados ao UUID quando o telefone principal é atualizado.
 
 ## Como cada canal descobre a clínica
 

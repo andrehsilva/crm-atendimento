@@ -47,7 +47,7 @@ export function Perfil({ podeEditar, modo = 'tudo' }: { podeEditar: boolean; mod
           <Campo rotulo="Nome da clínica" ajuda="Aparece no topo da barra lateral e nas mensagens.">
             <Entrada required disabled={!podeEditar} value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} />
           </Campo>
-          <Campo rotulo="Telefone da clínica" ajuda="É a chave da clínica; só o admin da plataforma muda.">
+          <Campo rotulo="Telefone da clínica" ajuda="Esse é o número principal de identificação da clínica. Para trocar, procure o administrador da plataforma.">
             <Entrada disabled value={telefone(q.data.telefone)} />
           </Campo>
           <Campo rotulo="Endereço" ajuda="Vai na mensagem de confirmação.">

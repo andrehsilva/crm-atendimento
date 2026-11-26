@@ -11,7 +11,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 
 | Código | Regra | Onde | Status |
 |---|---|---|---|
-| RN-MT-01 | Cada clínica é identificada pelo seu telefone (E.164), que é único na plataforma. | Código | ✅ |
+| RN-MT-01 | Cada clínica tem um UUID interno estável. O telefone principal (E.164) é único e identifica a clínica para a operação; só o super admin pode trocá-lo pelo Admin geral. A troca preserva vínculos e dados existentes, não altera o número conectado ao WhatsApp, e é registrada na auditoria. | Código | ✅
 | RN-MT-02 | Um paciente é identificado pelo par (clínica, telefone do paciente). O mesmo telefone em duas clínicas são dois pacientes distintos. | Código | ✅ |
 | RN-MT-03 | Toda leitura/escrita é filtrada pela clínica da sessão. Nenhum dado cruza clínicas. | Código | ✅ |
 | RN-MT-04 | Telefones são normalizados para E.164 antes de comparar (aceita +55, parênteses, traço, espaços; trata 9º dígito). | Código | 🟡 |

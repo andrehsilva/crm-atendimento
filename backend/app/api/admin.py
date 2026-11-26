@@ -60,6 +60,7 @@ class NovaClinica(BaseModel):
 
 class EdicaoClinica(BaseModel):
     nome: str | None = Field(None, min_length=2, max_length=120)
+    telefone: str | None = Field(None, min_length=8, max_length=30)
     endereco: str | None = Field(None, max_length=300)
     fuso: str | None = None
     nome_assistente: str | None = Field(None, min_length=1, max_length=40)
@@ -137,9 +138,13 @@ def detalhe(clinic_id: UUID, conn=Depends(get_conn)):
 def editar(clinic_id: UUID, body: EdicaoClinica, request: Request, conn=Depends(get_conn)):
     _existe(conn, clinic_id)
     dados = body.model_dump(exclude_none=True)
-    adm.atualizar_clinica(conn, clinic_id, dados)
+    alteracao_telefone = adm.atualizar_clinica(conn, clinic_id, dados)
+    u = usuario_da_requisicao(request)
+    if alteracao_telefone:
+        adm.auditar(conn, u.id, "alterar_telefone_clinica", clinic_id,
+                    {"anterior": alteracao_telefone[0], "novo": alteracao_telefone[1]})
     if "status" in dados:
-        adm.auditar(conn, usuario_da_requisicao(request).id, "suspender" if dados["status"] == "suspensa" else "reativar", clinic_id)
+        adm.auditar(conn, u.id, "suspender" if dados["status"] == "suspensa" else "reativar", clinic_id)
     return detalhe(clinic_id, conn)
 
 

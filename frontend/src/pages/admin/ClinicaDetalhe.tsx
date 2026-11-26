@@ -101,13 +101,15 @@ export function AdminClinicaDetalhe() {
 function Dados({ c }: { c: AdminClinica }) {
   const aviso = useAviso()
   const qc = useQueryClient()
-  const [f, setF] = useState({ nome: c.name, endereco: c.address ?? '', fuso: c.timezone, nome_assistente: c.nome_assistente })
-  useEffect(() => setF({ nome: c.name, endereco: c.address ?? '', fuso: c.timezone, nome_assistente: c.nome_assistente }), [c])
+  const [f, setF] = useState({ nome: c.name, telefone: telefone(c.phone), endereco: c.address ?? '', fuso: c.timezone, nome_assistente: c.nome_assistente })
+  useEffect(() => setF({ nome: c.name, telefone: telefone(c.phone), endereco: c.address ?? '', fuso: c.timezone, nome_assistente: c.nome_assistente }), [c])
   const salvar = useMutation({
-    mutationFn: () => api.patch(`/admin/clinicas/${c.id}`, f),
-    onSuccess: () => {
-      aviso.ok('Dados salvos.')
+    mutationFn: () => api.patch<AdminClinica>(`/admin/clinicas/${c.id}`, f),
+    onSuccess: (atualizada) => {
+      aviso.ok(atualizada.phone === c.phone ? 'Dados salvos.' : 'Dados salvos. A identificação da clínica foi atualizada; o WhatsApp conectado permanece o mesmo.')
+      qc.setQueryData(['admin', 'clinica', c.id], atualizada)
       qc.invalidateQueries({ queryKey: ['admin'] })
+      qc.invalidateQueries({ queryKey: ['clinicas'] })
       qc.invalidateQueries({ queryKey: ['clinica'] })
     },
     onError: aviso.erro,
@@ -139,7 +141,9 @@ function Dados({ c }: { c: AdminClinica }) {
     <Secao>
       <form onSubmit={(e) => { e.preventDefault(); salvar.mutate() }} className="grid gap-4 sm:grid-cols-2">
         <Campo rotulo="Nome da clínica"><Entrada required value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} /></Campo>
-        <Campo rotulo="Telefone (chave)" ajuda="Não muda: identifica a clínica."><Entrada value={telefone(c.phone)} disabled /></Campo>
+        <Campo rotulo="Telefone principal da clínica" ajuda="Identificação e contato principal. Alterá-lo não troca o número conectado no WhatsApp.">
+          <Entrada required value={f.telefone} onChange={(e) => setF({ ...f, telefone: e.target.value })} inputMode="tel" />
+        </Campo>
         <Campo rotulo="Endereço"><Entrada value={f.endereco} onChange={(e) => setF({ ...f, endereco: e.target.value })} /></Campo>
         <Campo rotulo="Fuso horário">
           <Seletor value={f.fuso} onChange={(e) => setF({ ...f, fuso: e.target.value })}>

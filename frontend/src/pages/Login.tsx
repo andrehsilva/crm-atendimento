@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { limparCache } from '../lib/cache'
 import { useQueryClient } from '@tanstack/react-query'
 import { CartaoAcesso, ErroForm } from '../components/CartaoAcesso'
@@ -8,6 +9,7 @@ import { esquecerClinica } from '../lib/clinicaGuardada'
 
 /** Tela de entrar (D34) + "Esqueci minha senha". */
 export function Login({ aviso }: { aviso?: string }) {
+  const navegar = useNavigate()
   const qc = useQueryClient()
   const [modo, setModo] = useState<'entrar' | 'esqueci'>('entrar')
   const [email, setEmail] = useState('')
@@ -22,10 +24,13 @@ export function Login({ aviso }: { aviso?: string }) {
     setErro(null)
     setEnviando(true)
     try {
+      // Evita que a consulta /auth/me iniciada antes do login sobrescreva a nova sessão.
+      await qc.cancelQueries({ queryKey: ['me'] })
       const u = await api.post<Usuario>('/auth/login', { email, senha })
       esquecerClinica() // D55: o admin da plataforma entra sempre pela clínica de apresentação
       limparCache() // Etapa 32: não mostrar nada guardado de outra conta
       qc.setQueryData(['me'], u)
+      navegar('/', { replace: true })
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Não foi possível entrar.')
     } finally {

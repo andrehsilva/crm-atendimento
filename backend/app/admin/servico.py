@@ -93,7 +93,26 @@ def criar_clinica(conn, *, nome: str, telefone: str, fuso: str, endereco: str | 
     return {"id": cid, "slug": slug, "admin_email": admin_email.strip().lower(), "senha_provisoria": senha}
 
 
-def atualizar_clinica(conn, clinic_id: UUID, dados: dict) -> None:
+def atualizar_clinica(conn, clinic_id: UUID, dados: dict) -> tuple[str, str] | None:
+    alteracao_telefone = None
+    bruto = dados.get("telefone")
+    if bruto is not None:
+        try:
+            novo_telefone = normalizar_telefone(bruto)
+        except TelefoneInvalido as e:
+            raise AgendaError("TELEFONE_INVALIDO", str(e)) from e
+        atual = conn.execute("select phone from clinics where id = %s", (clinic_id,)).fetchone()[0]
+        if novo_telefone != atual:
+            existente = conn.execute("select id from clinics where phone = %s", (novo_telefone,)).fetchone()
+            if existente and existente[0] != clinic_id:
+                raise AgendaError("DADOS_INVALIDOS", "Já existe uma clínica com esse telefone.")
+            try:
+                with conn.transaction():
+                    conn.execute("update clinics set phone = %s, updated_at = now() where id = %s", (novo_telefone, clinic_id))
+            except errors.UniqueViolation as e:
+                raise AgendaError("DADOS_INVALIDOS", "Já existe uma clínica com esse telefone.") from e
+            alteracao_telefone = (atual, novo_telefone)
+
     campos = {"name": dados.get("nome"), "address": dados.get("endereco"), "timezone": dados.get("fuso"),
               "status": dados.get("status")}
     for coluna, valor in campos.items():
@@ -110,6 +129,7 @@ def atualizar_clinica(conn, clinic_id: UUID, dados: dict) -> None:
         novos["segmento"] = dados["segmento"]
     if novos:
         conn.execute("update clinics set settings = settings || %s where id = %s", (Jsonb(novos), clinic_id))
+    return alteracao_telefone
 
 
 def usuarios_da_clinica(conn, clinic_id: UUID) -> list[dict]:

@@ -10,8 +10,8 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 |---|---|---|
 | D1 | ✅ Sem n8n; toda lógica em código | Pedido do usuário |
 | D2 | 🟡 React+Vite / FastAPI / Postgres Supabase / Agno | Pedido do usuário, confirmado como adequado |
-| D3 | ✅ Multi-tenant: **telefone da clínica identifica a instância**; conversa = telefone da clínica + telefone do paciente | Premissa do usuário |
-| D4 | 🟡 Internamente cada clínica tem um `id` (UUID) e o telefone é chave **única** de busca | Se a clínica trocar de número, não precisamos reescrever todos os dados |
+| D3 | ✅ Multi-tenant: cada clínica tem UUID interno estável; telefone principal único, usado para identificação e comunicação. Troca controlada pelo super admin atualiza a clínica sem migrar vínculos. | Premissa do usuário, esclarecida em 25/11/2026 |
+| D4 | ✅ Clínica pode trocar seu telefone principal pelo Admin geral. A mudança preserva UUID e relações, não muda o número da sessão WhatsApp e registra anterior/novo na auditoria. | Revisão do fluxo e pedido do usuário, 25/11/2026 |
 | D5 | 🟡 Telefones guardados em formato E.164 (`+5521987654321`) | Comparar sem erro de formato (+55, parênteses, traço, 9º dígito) |
 | D6 | 🟡 Validações de agenda no backend + restrição no banco | Lição do vídeo: "o que não pode falhar fica no processo" |
 | D7 | 🟡 Tempo real por SSE | Simples, sem infraestrutura extra |
@@ -36,8 +36,9 @@ Legenda: ✅ decidido · 🟡 proposta (aguardando seu ok)
 | D26 | ✅ Projeto Supabase recriado na região **South America (São Paulo)** — menor latência e dados no Brasil (LGPD) | Q27, 19/11/2026 |
 | D27 | ✅ Quando a Ísis não sabe responder, ela **continua passando a conversa para a equipe** (e para de responder), mas o paciente **sempre recebe um aviso claro** de que a equipe assume dali em diante. O aviso é acrescentado pelo código | Q28, 20/11/2026 — no teste da Etapa 4 a Ísis ficou em silêncio sem avisar |
 | D28 | ✅ WAHA roda num **servidor do usuário** (não no Docker local). O webhook do WAHA aponta **direto para o backend** (sem n8n, D1); em desenvolvimento, via túnel até a máquina local | Q29, 20/11/2026 |
-| D29 | ✅ Primeira versão: **1 número de WhatsApp = 1 clínica** | Q12, 20/11/2026 |
-| D30 | ✅ Clínicas (instâncias) são criadas **só pelo dono da plataforma**, num **painel de admin geral** separado do painel da clínica: nome da clínica, nome do agente, telefone (chave), WAHA/webhook e demais configurações | Q15, 20/11/2026 |
+| D29 | ✅ Primeira versão: **1 sessão de WhatsApp = 1 clínica** | Q12, 20/11/2026 |
+| D30 | ✅ Clínicas (instâncias) são criadas **só pelo dono da plataforma**, num **painel de admin geral** separado do painel da clínica: nome da clínica, telefone principal, nome do agente, WhatsApp/WAHA e demais configurações | Q15, 20/11/2026 |
+| D128 | ✅ **Telefone principal da clínica e número WhatsApp são distintos:** o telefone principal identifica a clínica; a sessão/número WhatsApp é configurada separadamente. Super admin pode trocar o telefone principal pelo Admin geral; UUID, registros existentes e sessão WAHA não mudam. A troca é auditada | pedido de esclarecimento do usuário, 25/11/2026 |
 | D31 | ✅ Etapa 5 já guarda os dados do WAHA **por clínica no banco** (não no `.env`); a tela do admin geral para editá-los vem na Etapa 7 | 20/11/2026 |
 | D32 | ✅ 1ª versão com duas entradas: página web (teste) e WhatsApp pelo WAHA. Terceira entrada fica para depois | Q2, 20/11/2026 |
 | D33 | ✅ Sem WhatsApp oficial (Cloud API) na 1ª versão; templates da Meta não se aplicam. A Etapa 7 fica só com o admin multi-tenant | Q25, 20/11/2026 |
