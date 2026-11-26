@@ -1,0 +1,179 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>TemHorario · Material de venda</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+:root{--marca:#b85c74;--marca-soft:#f6e4ea;--marca-escura:#8f4257;--bg:#f3f1ee;--surface:#fff;--text:#1f1f22;
+--muted:#77737a;--line:#ece8e4;--verde:#1f7a43;--verde-soft:#e1f4e8;--ambar:#9a6a0c;--ambar-soft:#fcf1dc;
+--vermelho:#c0362e;--vermelho-soft:#fce8e6;--azul:#1f6aa8;--azul-soft:#e3effa}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Lexend',system-ui,sans-serif;color:var(--text);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{background:var(--surface)}
+.marca{display:inline-flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em}
+.marca svg{flex:none}
+.marca b{color:var(--marca)}
+.selo{display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:500}
+.s-verde{background:var(--verde-soft);color:var(--verde)}.s-ambar{background:var(--ambar-soft);color:var(--ambar)}
+.s-vermelho{background:var(--vermelho-soft);color:var(--vermelho)}.s-rosa{background:#fce7ee;color:#a63e5f}
+.s-azul{background:var(--azul-soft);color:var(--azul)}.s-cinza{background:var(--bg);color:var(--muted)}
+.ilustra{font-size:10px;color:var(--muted);text-align:center;margin-top:6px}
+
+/* ---------- celular ---------- */
+.fone{width:270px;border-radius:38px;background:#1f1f22;padding:10px;box-shadow:0 18px 40px rgba(31,31,34,.18)}
+.fone .tela{border-radius:30px;overflow:hidden;background:#efeae2;height:520px;display:flex;flex-direction:column;color:var(--text)}
+.escuro .fone{box-shadow:0 0 0 2px #45454b,0 18px 40px rgba(0,0,0,.4)}
+.chat-topo{background:#fff;display:flex;align-items:center;gap:10px;padding:16px 14px 10px;border-bottom:1px solid var(--line)}
+.chat-topo .av{width:34px;height:34px;border-radius:50%;background:var(--marca);color:#fff;display:grid;place-items:center;font-weight:600;font-size:14px}
+.chat-topo .n{font-size:13px;font-weight:600;line-height:1.2}.chat-topo .st{font-size:10px;color:var(--muted)}
+.chat{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:6px;font-size:11.5px;line-height:1.4}
+.b{max-width:82%;padding:7px 10px;border-radius:12px;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.b small{display:block;text-align:right;font-size:9px;color:#8a8a8a;margin-top:2px}
+.eu{align-self:flex-end;background:#dff3d9;border-bottom-right-radius:4px}
+.ela{align-self:flex-start;background:#fff;border-bottom-left-radius:4px}
+.dia{align-self:center;background:#fff;border-radius:8px;padding:3px 10px;font-size:9.5px;color:var(--muted);margin:4px 0}
+
+/* ---------- painel (computador) ---------- */
+.janela{border-radius:16px;overflow:hidden;background:var(--bg);box-shadow:0 18px 40px rgba(31,31,34,.14);border:1px solid var(--line)}
+.barra{height:26px;background:#e7e3df;display:flex;align-items:center;gap:6px;padding:0 12px}
+.barra i{width:9px;height:9px;border-radius:50%;background:#cfc9c4;display:block}
+.painel{display:flex;font-size:11px}
+.lado{width:150px;background:#fff;border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:3px}
+.lado .cl{display:flex;align-items:center;gap:7px;font-weight:600;font-size:11.5px;padding:2px 6px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.lado .cl span{width:24px;height:24px;border-radius:7px;background:var(--marca);color:#fff;display:grid;place-items:center;font-size:11px}
+.lado a{display:block;padding:6px 9px;border-radius:8px;color:var(--muted)}
+.lado a.on{background:var(--marca-soft);color:var(--marca);font-weight:500}
+.lado .sec{font-size:8px;letter-spacing:.08em;color:#aaa;padding:6px 9px 2px;text-transform:uppercase}
+.conteudo{flex:1;padding:14px 16px}
+.conteudo h4{font-size:15px;font-weight:700;margin-bottom:2px}.conteudo .sub{color:var(--muted);font-size:10px;margin-bottom:10px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.card{background:#fff;border-radius:12px;padding:10px}
+.card .num{font-size:18px;font-weight:700}.card .rot{font-size:9.5px;color:var(--muted)}
+.linha{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.linha:first-child{border-top:0}
+.linha .h{font-weight:600;width:36px}.linha .q{flex:1;line-height:1.25}.linha .q span{display:block;color:var(--muted);font-size:9.5px}
+/* agenda */
+.grade{display:grid;grid-template-columns:34px repeat(5,1fr);background:#fff;border-radius:12px;padding:8px;gap:0 4px;font-size:9px}
+.grade .cab{text-align:center;color:var(--muted);padding-bottom:6px;font-size:9px}.grade .cab b{display:block;color:var(--text);font-size:12px}
+.grade .cab.hoje b{background:var(--marca);color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;margin:2px auto 0}
+.col{position:relative;height:230px;border-left:1px solid var(--line)}
+.horas{position:relative;height:230px}.horas div{position:absolute;right:4px;color:#aaa;font-size:8px}
+.ev{position:absolute;left:2px;right:2px;border-radius:6px;padding:3px 5px;font-size:8.5px;line-height:1.2;border-left:3px solid}
+.ev b{display:block;font-weight:600}
+.e1{background:#f6e4ea;border-color:#b85c74}.e2{background:#e3effa;border-color:#1f6aa8}.e3{background:#e1f4e8;border-color:#1f7a43}
+.e4{background:#fcf1dc;border-color:#c89416;border-left-style:dashed}
+/* kanban */
+.kan{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.kcol{background:rgba(255,255,255,.55);border-radius:12px;padding:7px;display:flex;flex-direction:column;gap:6px;min-height:220px}
+.kcol h5{font-size:10.5px;display:flex;align-items:center;gap:5px;justify-content:space-between;padding:0 2px 2px}
+.kcol h5 i{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.kcol h5 em{font-style:normal;font-weight:400;color:var(--muted);background:#fff;border-radius:8px;padding:0 6px}
+.kc{background:#fff;border-radius:10px;padding:7px;box-shadow:0 0 0 1px var(--line)}
+.kc b{display:block;font-size:10px}.kc span{display:block;color:var(--muted);font-size:8.5px;margin:1px 0 4px}
+/* celular painel */
+.mob{color:var(--text);background:var(--bg);height:520px;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;font-size:11px}
+.mob .topo{background:#fff;padding:18px 12px 9px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.mob .topo span.lg{width:28px;height:28px;border-radius:8px;background:var(--marca);color:#fff;display:grid;place-items:center;font-weight:600}
+.mob .topo .t{line-height:1.2;flex:1}.mob .topo .t b{font-size:12px}.mob .topo .t small{display:block;color:var(--muted);font-size:9px}
+.mob .corpo{flex:1;min-height:0;overflow:hidden;padding:10px;display:flex;flex-direction:column;gap:7px}
+.mob .nav{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:8px 10px}
+.mob .item{background:#fff;border-radius:12px;padding:8px 10px;display:flex;gap:8px;align-items:center}
+.mob .item .h{width:38px;text-align:center;font-weight:600;line-height:1.1}.mob .item .h small{display:block;color:var(--muted);font-weight:400;font-size:9px}
+.mob .item .fx{width:3px;align-self:stretch;border-radius:3px}
+.mob .item .q{flex:1;line-height:1.3}.mob .item .q span{display:block;color:var(--muted);font-size:9.5px}
+.mob .abas{background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);text-align:center;font-size:8.5px;color:var(--muted);padding:7px 0 12px}
+.mob .abas .on{color:var(--marca);font-weight:600}
+.mob .abas i{display:block;width:16px;height:16px;border-radius:5px;border:1.6px solid currentColor;margin:0 auto 3px}
+
+@page{size:A4;margin:0}
+.pg{width:210mm;height:297mm;padding:16mm 16mm 14mm;position:relative;overflow:hidden;page-break-after:always}
+.pg:last-child{page-break-after:auto}
+.topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:12mm}
+.topo .tag{font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+h1{font-size:33px;line-height:1.12;font-weight:800;letter-spacing:-.03em;max-width:118mm}
+h1 em{font-style:normal;color:var(--marca)}
+.lead{font-size:13.5px;line-height:1.55;color:#4a474d;margin:5mm 0 8mm;max-width:112mm}
+.heroi{display:grid;grid-template-columns:1fr 70mm;gap:8mm;align-items:start}
+.dor{background:var(--bg);border-radius:14px;padding:6mm 7mm}
+.dor h3,.bloco h3{font-size:13px;font-weight:700;margin-bottom:3mm}
+.dor ul{list-style:none;display:grid;gap:2.2mm;font-size:11.5px;color:#4a474d}
+.dor li::before{content:'✕';color:var(--vermelho);font-weight:700;margin-right:7px}
+.passos{display:grid;grid-template-columns:repeat(3,1fr);gap:5mm;margin-top:9mm}
+.passo{border:1px solid var(--line);border-radius:14px;padding:5mm}
+.passo .n{width:26px;height:26px;border-radius:50%;background:var(--marca);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px;margin-bottom:3mm}
+.passo b{display:block;font-size:12.5px;margin-bottom:1.5mm}.passo p{font-size:10.5px;color:var(--muted);line-height:1.5}
+.rodape{position:absolute;left:16mm;right:16mm;bottom:10mm;display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:4mm 7mm}
+.rec{display:flex;gap:3.5mm}
+.rec .ic{flex:none;width:30px;height:30px;border-radius:9px;background:var(--marca-soft);color:var(--marca);display:grid;place-items:center;font-size:15px}
+.rec b{font-size:12px;display:block;margin-bottom:1mm}.rec p{font-size:10.3px;color:#57535a;line-height:1.5}
+h2{font-size:21px;font-weight:800;letter-spacing:-.02em;margin-bottom:5mm}
+h2 em{font-style:normal;color:var(--marca)}
+.seg{display:flex;flex-wrap:wrap;gap:2mm;margin-top:3mm}
+.seg span{border:1px solid var(--line);border-radius:20px;padding:1.5mm 4mm;font-size:10.5px}
+.cta{background:var(--text);color:#fff;border-radius:18px;padding:8mm 9mm;display:grid;grid-template-columns:1fr auto;gap:6mm;align-items:center;margin-top:8mm}
+.cta h3{font-size:19px;font-weight:700;margin-bottom:2mm}.cta p{font-size:11px;color:#cfcbd2;line-height:1.5}
+.cta .bt{background:var(--marca);border-radius:12px;padding:4mm 6mm;font-weight:600;font-size:12px;text-align:center;line-height:1.4}
+.cta .bt small{display:block;font-weight:400;font-size:10px;opacity:.9}
+.telas{display:grid;grid-template-columns:1fr 1fr;gap:6mm;margin:6mm 0 3mm}
+.telas .janela{zoom:.8}
+</style></head><body>
+
+<section class="pg">
+  <div class="topo"><span class="marca" style="font-size:25px;color:var(--text)"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span><span class="tag">Para clínicas e consultórios</span></div>
+  <div class="heroi">
+    <div>
+      <h1>Atendimento pelo WhatsApp e <em>agenda da clínica</em> em um só lugar.</h1>
+      <p class="lead">A <b>Ísis</b>, assistente virtual do TemHorario, conversa com seus clientes no WhatsApp e ajuda a marcar,
+      remarcar e cancelar seguindo as regras que a sua clínica cadastrou. Sua equipe acompanha tudo pelo painel e
+      assume a conversa quando precisar de uma pessoa.</p>
+      <div class="dor"><h3>Parece com a rotina da sua recepção?</h3><ul>
+        <li>Mensagens chegando o dia todo, muitas fora do horário.</li>
+        <li>Agenda no caderno ou planilha, e o WhatsApp em outro lugar.</li>
+        <li>Tempo gasto confirmando consulta, uma por uma.</li>
+        <li>Paciente que some depois do primeiro “oi”.</li>
+        <li>Ninguém sabe ao certo quem já foi atendido e quem está esperando.</li>
+      </ul></div>
+    </div>
+    <div><div class="fone"><div class="tela">
+<div class="chat-topo"><div class="av">Í</div><div><div class="n">Clínica Sorriso</div><div class="st">Ísis · assistente virtual</div></div></div>
+<div class="chat"><div class="dia">HOJE</div>
+<div class="b eu">Oi, boa tarde!<small>14:02</small></div>
+<div class="b eu">queria marcar uma limpeza, tem horário na quinta?<small>14:02</small></div>
+<div class="b ela">Oi, Juliana! Aqui é a Ísis, da Clínica Sorriso 😊 Na quinta (27/11) tenho <b>09:00</b>, <b>10:30</b> ou <b>15:00</b> com a Dra. Ana Lima. Qual fica melhor?<small>14:02</small></div>
+<div class="b eu">10:30<small>14:03</small></div>
+<div class="b ela">Prontinho! Limpeza marcada para <b>quinta, 27/11, às 10:30</b> com a Dra. Ana Lima. Um dia antes eu mando um lembrete para você confirmar. 💙<small>14:03</small></div></div></div></div><div class="ilustra">Ilustração com dados fictícios</div></div>
+  </div>
+  <div class="passos">
+    <div class="passo"><div class="n">1</div><b>A clínica configura</b><p>Horários, profissionais, procedimentos, convênios e o jeito de falar com os clientes.</p></div>
+    <div class="passo"><div class="n">2</div><b>A Ísis atende no WhatsApp</b><p>Tira dúvidas, oferece horários livres e marca, remarca ou cancela — sempre dentro das regras.</p></div>
+    <div class="passo"><div class="n">3</div><b>A equipe acompanha</b><p>Conversas, agenda e contatos no painel, no computador ou no celular. Assume quando quiser.</p></div>
+  </div>
+  <div class="rodape"><span>TemHorario · atendimento e agenda para clínicas</span><span>1/2</span></div>
+</section>
+
+<section class="pg">
+  <h2>O que o TemHorario <em>faz pela sua clínica</em></h2>
+  <div class="grid2">
+    <div class="rec"><div class="ic">💬</div><div><b>Atendimento no WhatsApp</b><p>Entende mensagens picadas e áudios, responde sobre a clínica e conduz a marcação.</p></div></div>
+    <div class="rec"><div class="ic">📅</div><div><b>Agenda que não deixa conflitar</b><p>Horário de funcionamento, pausas e agenda de cada profissional são conferidos pelo sistema, não pela memória da IA.</p></div></div>
+    <div class="rec"><div class="ic">🔔</div><div><b>Confirmação e lembrete</b><p>Lembrete na véspera: o cliente responde 1 para confirmar, 2 para remarcar ou 3 para cancelar, e a agenda já se atualiza.</p></div></div>
+    <div class="rec"><div class="ic">🙋</div><div><b>Equipe no controle</b><p>A recepção assume qualquer conversa, marca e cancela pelo painel. A Ísis pede ajuda quando precisa.</p></div></div>
+    <div class="rec"><div class="ic">📊</div><div><b>CRM e clientes</b><p>Cada contato no seu momento: novo, agendado, confirmado, cancelado. Observações e histórico de cada cliente.</p></div></div>
+    <div class="rec"><div class="ic">🔁</div><div><b>Tratamentos e retornos</b><p>Sessões em série, horário fixo semanal, pós-consulta e convite de retorno na data certa.</p></div></div>
+    <div class="rec"><div class="ic">🎂</div><div><b>Aniversário e campanhas</b><p>Mensagens agendadas (Natal, férias, avisos) enviadas com intervalo, sem disparar tudo de uma vez.</p></div></div>
+    <div class="rec"><div class="ic">📱</div><div><b>No celular também</b><p>Agenda do dia, CRM, mensagens e clientes num painel simples para o celular.</p></div></div>
+  </div>
+  <div class="telas">
+    <div><div class="janela"><div class="barra"><i></i><i></i><i></i></div><div class="painel"><div class="conteudo"><h4>Agenda</h4><div class="sub">24 – 28 de novembro · todos os profissionais</div><div class="grade"><div></div><div class="cab ">Seg<b>24</b></div><div class="cab ">Ter<b>25</b></div><div class="cab hoje">Qua<b>26</b></div><div class="cab ">Qui<b>27</b></div><div class="cab ">Sex<b>28</b></div><div class="horas"><div style="top:0px">8:00</div><div style="top:28px">9:00</div><div style="top:56px">10:00</div><div style="top:84px">11:00</div><div style="top:112px">12:00</div><div style="top:140px">13:00</div><div style="top:168px">14:00</div><div style="top:196px">15:00</div></div><div class="col"><div class="ev e1" style="top:0px;height:25px"><b>Carlos M.</b>Avaliação</div><div class="ev e2" style="top:56px;height:39px"><b>Pedro A.</b>Canal</div><div class="ev e3" style="top:168px;height:25px"><b>Ana B.</b>Limpeza</div></div><div class="col"><div class="ev e3" style="top:14px;height:25px"><b>Lucas M.</b>Limpeza</div><div class="ev e1" style="top:84px;height:39px"><b>Camila R.</b>Implante</div><div class="ev e2" style="top:182px;height:25px"><b>Bruno T.</b>Retorno</div></div><div class="col"><div class="ev e3" style="top:14px;height:25px"><b>Mariana C.</b>Limpeza</div><div class="ev e4" style="top:70px;height:25px"><b>Juliana P.</b>Limpeza</div><div class="ev e2" style="top:98px;height:39px"><b>Pedro A.</b>Canal</div><div class="ev e1" style="top:168px;height:25px"><b>Fernanda R.</b>Clareamento</div></div><div class="col"><div class="ev e1" style="top:0px;height:25px"><b>Thiago M.</b>Avaliação</div><div class="ev e3" style="top:70px;height:25px"><b>Juliana P.</b>Limpeza</div><div class="ev e2" style="top:140px;height:39px"><b>Rodrigo P.</b>Canal</div></div><div class="col"><div class="ev e4" style="top:28px;height:25px"><b>Natália D.</b>Avaliação</div><div class="ev e3" style="top:112px;height:25px"><b>Felipe C.</b>Limpeza</div><div class="ev e1" style="top:196px;height:25px"><b>Isabela M.</b>Retorno</div></div></div></div></div></div><div class="ilustra">Agenda da semana — ilustração com dados fictícios</div></div>
+    <div><div class="janela"><div class="barra"><i></i><i></i><i></i></div><div class="painel"><div class="conteudo"><h4>CRM</h4><div class="sub">Cada contato no seu momento do funil</div><div class="kan"><div class="kcol"><h5><span><i style="background:#C2547A"></i>Novo Contato</span><em>3</em></h5><div class="kc"><b>Larissa Gomes</b><span>Perguntou sobre clareamento</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Diego Barbosa</b><span>Quer saber de convênio</span><span class="selo s-ambar">Manual</span></div><div class="kc"><b>Aline Carvalho</b><span>Pediu valores</span><span class="selo s-cinza">Automático</span></div></div><div class="kcol"><h5><span><i style="background:#2E9E5B"></i>Agendados</span><em>2</em></h5><div class="kc"><b>Juliana Prado</b><span>Limpeza · qui 27/11 10:30</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Thiago Moreira</b><span>Avaliação · qui 27/11 08:00</span><span class="selo s-cinza">Automático</span></div></div><div class="kcol"><h5><span><i style="background:#1F8A4C"></i>Confirmado</span><em>3</em></h5><div class="kc"><b>Mariana Costa</b><span>Limpeza · qua 26/11 09:00</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Pedro Alves</b><span>Canal · qua 26/11 11:00</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Carlos Mendes</b><span>Avaliação · qua 26/11 08:30</span><span class="selo s-cinza">Automático</span></div></div><div class="kcol"><h5><span><i style="background:#D9473F"></i>Cancelados</span><em>1</em></h5><div class="kc"><b>Gustavo Araújo</b><span>Remarcar na próxima semana</span><span class="selo s-ambar">Manual</span></div></div></div></div></div></div><div class="ilustra">CRM — ilustração com dados fictícios</div></div>
+  </div>
+  <h3 style="font-size:13px;margin-top:4mm">Feito para quem trabalha com horário marcado</h3>
+  <div class="seg"><span>Odontologia</span><span>Medicina</span><span>Fisioterapia</span><span>Psicologia</span><span>Psicanálise</span><span>Psiquiatria</span><span>Estética</span><span>Outros consultórios</span></div>
+  <div class="cta"><div><h3>Veja a Ísis atendendo na prática.</h3>
+    <p>Agende uma demonstração de 20 minutos: mostramos o WhatsApp, a agenda e o painel com os horários e procedimentos da sua clínica.</p></div>
+    <div class="bt">Fale com a gente<small>WhatsApp (16) 99112-2235</small></div></div>
+  <div class="rodape"><span>Conexão com o WhatsApp por integração não oficial (WAHA). Imagens ilustrativas com dados fictícios.</span><span>2/2</span></div>
+</section>
+</body></html>

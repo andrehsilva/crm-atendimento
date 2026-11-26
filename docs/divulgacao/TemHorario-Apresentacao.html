@@ -1,0 +1,236 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>TemHorario · Apresentação</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
+:root{--marca:#b85c74;--marca-soft:#f6e4ea;--marca-escura:#8f4257;--bg:#f3f1ee;--surface:#fff;--text:#1f1f22;
+--muted:#77737a;--line:#ece8e4;--verde:#1f7a43;--verde-soft:#e1f4e8;--ambar:#9a6a0c;--ambar-soft:#fcf1dc;
+--vermelho:#c0362e;--vermelho-soft:#fce8e6;--azul:#1f6aa8;--azul-soft:#e3effa}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Lexend',system-ui,sans-serif;color:var(--text);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{background:var(--surface)}
+.marca{display:inline-flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em}
+.marca svg{flex:none}
+.marca b{color:var(--marca)}
+.selo{display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:500}
+.s-verde{background:var(--verde-soft);color:var(--verde)}.s-ambar{background:var(--ambar-soft);color:var(--ambar)}
+.s-vermelho{background:var(--vermelho-soft);color:var(--vermelho)}.s-rosa{background:#fce7ee;color:#a63e5f}
+.s-azul{background:var(--azul-soft);color:var(--azul)}.s-cinza{background:var(--bg);color:var(--muted)}
+.ilustra{font-size:10px;color:var(--muted);text-align:center;margin-top:6px}
+
+/* ---------- celular ---------- */
+.fone{width:270px;border-radius:38px;background:#1f1f22;padding:10px;box-shadow:0 18px 40px rgba(31,31,34,.18)}
+.fone .tela{border-radius:30px;overflow:hidden;background:#efeae2;height:520px;display:flex;flex-direction:column;color:var(--text)}
+.escuro .fone{box-shadow:0 0 0 2px #45454b,0 18px 40px rgba(0,0,0,.4)}
+.chat-topo{background:#fff;display:flex;align-items:center;gap:10px;padding:16px 14px 10px;border-bottom:1px solid var(--line)}
+.chat-topo .av{width:34px;height:34px;border-radius:50%;background:var(--marca);color:#fff;display:grid;place-items:center;font-weight:600;font-size:14px}
+.chat-topo .n{font-size:13px;font-weight:600;line-height:1.2}.chat-topo .st{font-size:10px;color:var(--muted)}
+.chat{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:6px;font-size:11.5px;line-height:1.4}
+.b{max-width:82%;padding:7px 10px;border-radius:12px;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.b small{display:block;text-align:right;font-size:9px;color:#8a8a8a;margin-top:2px}
+.eu{align-self:flex-end;background:#dff3d9;border-bottom-right-radius:4px}
+.ela{align-self:flex-start;background:#fff;border-bottom-left-radius:4px}
+.dia{align-self:center;background:#fff;border-radius:8px;padding:3px 10px;font-size:9.5px;color:var(--muted);margin:4px 0}
+
+/* ---------- painel (computador) ---------- */
+.janela{border-radius:16px;overflow:hidden;background:var(--bg);box-shadow:0 18px 40px rgba(31,31,34,.14);border:1px solid var(--line)}
+.barra{height:26px;background:#e7e3df;display:flex;align-items:center;gap:6px;padding:0 12px}
+.barra i{width:9px;height:9px;border-radius:50%;background:#cfc9c4;display:block}
+.painel{display:flex;font-size:11px}
+.lado{width:150px;background:#fff;border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:3px}
+.lado .cl{display:flex;align-items:center;gap:7px;font-weight:600;font-size:11.5px;padding:2px 6px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.lado .cl span{width:24px;height:24px;border-radius:7px;background:var(--marca);color:#fff;display:grid;place-items:center;font-size:11px}
+.lado a{display:block;padding:6px 9px;border-radius:8px;color:var(--muted)}
+.lado a.on{background:var(--marca-soft);color:var(--marca);font-weight:500}
+.lado .sec{font-size:8px;letter-spacing:.08em;color:#aaa;padding:6px 9px 2px;text-transform:uppercase}
+.conteudo{flex:1;padding:14px 16px}
+.conteudo h4{font-size:15px;font-weight:700;margin-bottom:2px}.conteudo .sub{color:var(--muted);font-size:10px;margin-bottom:10px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.card{background:#fff;border-radius:12px;padding:10px}
+.card .num{font-size:18px;font-weight:700}.card .rot{font-size:9.5px;color:var(--muted)}
+.linha{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.linha:first-child{border-top:0}
+.linha .h{font-weight:600;width:36px}.linha .q{flex:1;line-height:1.25}.linha .q span{display:block;color:var(--muted);font-size:9.5px}
+/* agenda */
+.grade{display:grid;grid-template-columns:34px repeat(5,1fr);background:#fff;border-radius:12px;padding:8px;gap:0 4px;font-size:9px}
+.grade .cab{text-align:center;color:var(--muted);padding-bottom:6px;font-size:9px}.grade .cab b{display:block;color:var(--text);font-size:12px}
+.grade .cab.hoje b{background:var(--marca);color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;margin:2px auto 0}
+.col{position:relative;height:230px;border-left:1px solid var(--line)}
+.horas{position:relative;height:230px}.horas div{position:absolute;right:4px;color:#aaa;font-size:8px}
+.ev{position:absolute;left:2px;right:2px;border-radius:6px;padding:3px 5px;font-size:8.5px;line-height:1.2;border-left:3px solid}
+.ev b{display:block;font-weight:600}
+.e1{background:#f6e4ea;border-color:#b85c74}.e2{background:#e3effa;border-color:#1f6aa8}.e3{background:#e1f4e8;border-color:#1f7a43}
+.e4{background:#fcf1dc;border-color:#c89416;border-left-style:dashed}
+/* kanban */
+.kan{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.kcol{background:rgba(255,255,255,.55);border-radius:12px;padding:7px;display:flex;flex-direction:column;gap:6px;min-height:220px}
+.kcol h5{font-size:10.5px;display:flex;align-items:center;gap:5px;justify-content:space-between;padding:0 2px 2px}
+.kcol h5 i{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.kcol h5 em{font-style:normal;font-weight:400;color:var(--muted);background:#fff;border-radius:8px;padding:0 6px}
+.kc{background:#fff;border-radius:10px;padding:7px;box-shadow:0 0 0 1px var(--line)}
+.kc b{display:block;font-size:10px}.kc span{display:block;color:var(--muted);font-size:8.5px;margin:1px 0 4px}
+/* celular painel */
+.mob{color:var(--text);background:var(--bg);height:520px;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;font-size:11px}
+.mob .topo{background:#fff;padding:18px 12px 9px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.mob .topo span.lg{width:28px;height:28px;border-radius:8px;background:var(--marca);color:#fff;display:grid;place-items:center;font-weight:600}
+.mob .topo .t{line-height:1.2;flex:1}.mob .topo .t b{font-size:12px}.mob .topo .t small{display:block;color:var(--muted);font-size:9px}
+.mob .corpo{flex:1;min-height:0;overflow:hidden;padding:10px;display:flex;flex-direction:column;gap:7px}
+.mob .nav{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:8px 10px}
+.mob .item{background:#fff;border-radius:12px;padding:8px 10px;display:flex;gap:8px;align-items:center}
+.mob .item .h{width:38px;text-align:center;font-weight:600;line-height:1.1}.mob .item .h small{display:block;color:var(--muted);font-weight:400;font-size:9px}
+.mob .item .fx{width:3px;align-self:stretch;border-radius:3px}
+.mob .item .q{flex:1;line-height:1.3}.mob .item .q span{display:block;color:var(--muted);font-size:9.5px}
+.mob .abas{background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);text-align:center;font-size:8.5px;color:var(--muted);padding:7px 0 12px}
+.mob .abas .on{color:var(--marca);font-weight:600}
+.mob .abas i{display:block;width:16px;height:16px;border-radius:5px;border:1.6px solid currentColor;margin:0 auto 3px}
+
+@page{size:1280px 720px;margin:0}
+.sl{width:1280px;height:720px;padding:64px 80px 70px;position:relative;overflow:hidden;page-break-after:always;background:#fff}
+.sl:last-child{page-break-after:auto}
+.sl.escuro{background:var(--text);color:#fff}
+.sl h1{font-size:52px;line-height:1.08;font-weight:800;letter-spacing:-.03em}
+.sl h1 em,.sl h2 em{font-style:normal;color:var(--marca)}.sl.escuro h1 em{color:#f2a7bd}
+.sl h2{font-size:38px;line-height:1.15;font-weight:800;letter-spacing:-.025em;margin-bottom:36px}
+.kick{display:block;font-size:14px;font-weight:600;color:var(--marca);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.lead{font-size:22px;line-height:1.5;margin-top:22px}
+.tres{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}.quatro{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.bx{background:var(--bg);border-radius:22px;padding:30px}
+.bx b{display:block;font-size:20px;margin:12px 0 8px}.bx p{font-size:15.5px;line-height:1.55;color:#57535a}
+.bx .big{font-size:34px}
+.passos .n{width:46px;height:46px;border-radius:50%;background:var(--marca);color:#fff;display:grid;place-items:center;font-size:20px;font-weight:700}
+.lista{list-style:none;display:grid;gap:16px;font-size:19px;line-height:1.45;color:#3d3a40}
+.lista li{padding-left:30px;position:relative}.lista li::before{content:'';position:absolute;left:0;top:9px;width:14px;height:14px;border-radius:50%;background:var(--marca-soft);box-shadow:inset 0 0 0 4px var(--marca)}
+.duas{display:grid;grid-template-columns:420px 1fr;gap:50px;align-items:center;height:100%}
+.duas h2{font-size:34px}
+.nota{font-size:16px;color:var(--muted);margin-top:30px;line-height:1.5;max-width:900px}
+.chips{display:flex;flex-wrap:wrap;gap:14px}.chips span{border:1.5px solid var(--line);border-radius:30px;padding:12px 24px;font-size:20px}
+.rod{position:absolute;left:80px;right:80px;bottom:28px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+.escuro .rod{color:#8d8991}
+.contato{background:#2b2b30;border-radius:26px;padding:44px}
+.contato .cv{font-size:16px;color:#cfcbd2;margin-top:34px}.contato .cn{font-size:28px;font-weight:700;margin-top:6px}
+.ilustra{font-size:12px}
+.sl.centro{display:flex;flex-direction:column;justify-content:center}
+.sl.centro .bx{padding:38px 32px}
+.contato .cn{white-space:nowrap;font-size:26px}
+</style></head><body><section class="sl escuro "><div style="display:grid;grid-template-columns:1.15fr 1fr;height:100%;align-items:center;gap:50px">
+<div><span class="marca" style="font-size:33px;color:#fff"><svg width="54" height="54" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span><h1 style="margin-top:46px">Atendimento pelo WhatsApp e agenda da clínica <em>em um só lugar.</em></h1>
+<p class="lead" style="color:#cfcbd2">Conheça a Ísis, a assistente virtual do TemHorario.</p></div>
+<div style="display:flex;justify-content:center"><div class="fone"><div class="tela">
+<div class="chat-topo"><div class="av">Í</div><div><div class="n">Clínica Sorriso</div><div class="st">Ísis · assistente virtual</div></div></div>
+<div class="chat"><div class="dia">HOJE</div>
+<div class="b eu">Oi, boa tarde!<small>14:02</small></div>
+<div class="b eu">queria marcar uma limpeza, tem horário na quinta?<small>14:02</small></div>
+<div class="b ela">Oi, Juliana! Aqui é a Ísis, da Clínica Sorriso 😊 Na quinta (27/11) tenho <b>09:00</b>, <b>10:30</b> ou <b>15:00</b> com a Dra. Ana Lima. Qual fica melhor?<small>14:02</small></div>
+<div class="b eu">10:30<small>14:03</small></div>
+<div class="b ela">Prontinho! Limpeza marcada para <b>quinta, 27/11, às 10:30</b> com a Dra. Ana Lima. Um dia antes eu mando um lembrete para você confirmar. 💙<small>14:03</small></div></div></div></div></div></div></section><section class="sl  centro"><span class="kick">O dia a dia de hoje</span><h2>A agenda da clínica começa no WhatsApp.<br>E é aí que a recepção se perde.</h2>
+<div class="tres">
+<div class="bx"><div class="big">💬</div><b>Mensagens o dia todo</b><p>“Oi”, “tem horário?”, “quanto custa?” — muitas chegam com a recepção ocupada ou fora do expediente.</p></div>
+<div class="bx"><div class="big">🗂️</div><b>Informação espalhada</b><p>WhatsApp num lugar, agenda em outro, planilha em outro. Fica difícil saber quem está esperando resposta.</p></div>
+<div class="bx"><div class="big">⏱️</div><b>Tempo em tarefas repetidas</b><p>Confirmar consulta por consulta, remarcar, lembrar do retorno. A equipe faz tudo à mão.</p></div>
+</div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>2</span></div></section><section class="sl  "><div style="display:grid;grid-template-columns:1fr 330px;gap:50px;align-items:center;height:100%">
+<div><span class="kick">A solução</span><h2>A Ísis atende no WhatsApp.<br><em>Sua equipe acompanha pelo painel.</em></h2>
+<ul class="lista">
+<li><b>Responde</b> sobre a clínica com as informações que vocês cadastraram.</li>
+<li><b>Oferece horários livres</b> e marca, remarca ou cancela.</li>
+<li><b>Entende</b> mensagens picadas e áudios.</li>
+<li><b>Passa para a recepção</b> quando o caso pede uma pessoa.</li></ul></div>
+<div style="display:flex;justify-content:center"><div class="fone"><div class="tela">
+<div class="chat-topo"><div class="av">Í</div><div><div class="n">Clínica Sorriso</div><div class="st">Ísis · assistente virtual</div></div></div>
+<div class="chat"><div class="dia">HOJE</div>
+<div class="b eu">Oi, boa tarde!<small>14:02</small></div>
+<div class="b eu">queria marcar uma limpeza, tem horário na quinta?<small>14:02</small></div>
+<div class="b ela">Oi, Juliana! Aqui é a Ísis, da Clínica Sorriso 😊 Na quinta (27/11) tenho <b>09:00</b>, <b>10:30</b> ou <b>15:00</b> com a Dra. Ana Lima. Qual fica melhor?<small>14:02</small></div>
+<div class="b eu">10:30<small>14:03</small></div>
+<div class="b ela">Prontinho! Limpeza marcada para <b>quinta, 27/11, às 10:30</b> com a Dra. Ana Lima. Um dia antes eu mando um lembrete para você confirmar. 💙<small>14:03</small></div></div></div></div></div></div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>3</span></div></section><section class="sl  centro"><span class="kick">Como funciona</span><h2>Três passos, do cadastro ao atendimento.</h2>
+<div class="tres passos">
+<div class="bx"><div class="n">1</div><b>A clínica configura</b><p>Horários, pausas, profissionais e a agenda de cada um, procedimentos, convênios e o jeito de falar com os clientes.</p></div>
+<div class="bx"><div class="n">2</div><b>A Ísis conversa</b><p>No WhatsApp da clínica, ela atende, oferece horários e cuida das marcações seguindo essas regras.</p></div>
+<div class="bx"><div class="n">3</div><b>A equipe acompanha</b><p>Conversas, agenda e contatos aparecem em tempo real no painel. A recepção assume quando quiser.</p></div>
+</div>
+<p class="nota">A segurança da agenda fica no sistema: conflito de horário, expediente e agenda do profissional são conferidos pelo código — a Ísis só pede, o sistema decide.</p><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>4</span></div></section><section class="sl  "><div class="duas"><div><span class="kick">Agenda</span><h2>Uma agenda que <em>não deixa marcar errado.</em></h2>
+<ul class="lista"><li>Visão por dia ou semana, por profissional.</li><li>Arraste uma sessão para remarcar.</li>
+<li>Séries de sessões e horário fixo semanal para tratamentos.</li><li>Status claros: aguardando, confirmada, compareceu, faltou.</li></ul></div>
+<div><div class="janela"><div class="barra"><i></i><i></i><i></i></div><div class="painel"><div class="lado"><div class="cl"><span>S</span>Clínica Sorriso</div><div class="sec">Atendimento</div><a class="">Dashboard</a><a class="">CRM</a><a class="on">Agenda</a><a class="">Mensagens</a><a class="">Leads / Clientes</a>
+<div class="sec" style="margin-top:8px">Gestão</div><a>Relatórios</a><a>Configurações</a></div><div class="conteudo"><h4>Agenda</h4><div class="sub">24 – 28 de novembro · todos os profissionais</div><div class="grade"><div></div><div class="cab ">Seg<b>24</b></div><div class="cab ">Ter<b>25</b></div><div class="cab hoje">Qua<b>26</b></div><div class="cab ">Qui<b>27</b></div><div class="cab ">Sex<b>28</b></div><div class="horas"><div style="top:0px">8:00</div><div style="top:28px">9:00</div><div style="top:56px">10:00</div><div style="top:84px">11:00</div><div style="top:112px">12:00</div><div style="top:140px">13:00</div><div style="top:168px">14:00</div><div style="top:196px">15:00</div></div><div class="col"><div class="ev e1" style="top:0px;height:25px"><b>Carlos M.</b>Avaliação</div><div class="ev e2" style="top:56px;height:39px"><b>Pedro A.</b>Canal</div><div class="ev e3" style="top:168px;height:25px"><b>Ana B.</b>Limpeza</div></div><div class="col"><div class="ev e3" style="top:14px;height:25px"><b>Lucas M.</b>Limpeza</div><div class="ev e1" style="top:84px;height:39px"><b>Camila R.</b>Implante</div><div class="ev e2" style="top:182px;height:25px"><b>Bruno T.</b>Retorno</div></div><div class="col"><div class="ev e3" style="top:14px;height:25px"><b>Mariana C.</b>Limpeza</div><div class="ev e4" style="top:70px;height:25px"><b>Juliana P.</b>Limpeza</div><div class="ev e2" style="top:98px;height:39px"><b>Pedro A.</b>Canal</div><div class="ev e1" style="top:168px;height:25px"><b>Fernanda R.</b>Clareamento</div></div><div class="col"><div class="ev e1" style="top:0px;height:25px"><b>Thiago M.</b>Avaliação</div><div class="ev e3" style="top:70px;height:25px"><b>Juliana P.</b>Limpeza</div><div class="ev e2" style="top:140px;height:39px"><b>Rodrigo P.</b>Canal</div></div><div class="col"><div class="ev e4" style="top:28px;height:25px"><b>Natália D.</b>Avaliação</div><div class="ev e3" style="top:112px;height:25px"><b>Felipe C.</b>Limpeza</div><div class="ev e1" style="top:196px;height:25px"><b>Isabela M.</b>Retorno</div></div></div></div></div></div><div class="ilustra">Ilustração com dados fictícios</div></div></div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>5</span></div></section><section class="sl  "><div class="duas" style="grid-template-columns:1fr 330px"><div><span class="kick">Confirmação e lembrete</span><h2>O cliente confirma <em>respondendo um número.</em></h2>
+<ul class="lista"><li>Aviso na hora ao marcar, remarcar ou cancelar.</li><li>Lembrete na véspera: 1 Confirmar · 2 Remarcar · 3 Cancelar.</li>
+<li>A resposta já atualiza a agenda e o CRM.</li><li>Resumo do dia no WhatsApp do profissional, de manhã.</li></ul></div>
+<div style="display:flex;justify-content:center"><div class="fone"><div class="tela">
+<div class="chat-topo"><div class="av">Í</div><div><div class="n">Clínica Sorriso</div><div class="st">Ísis · assistente virtual</div></div></div>
+<div class="chat"><div class="dia">QUARTA-FEIRA</div>
+<div class="b ela">Oi, Juliana! Lembrete da Clínica Sorriso: amanhã, <b>quinta, 27/11, às 10:30</b>, limpeza com a Dra. Ana Lima.<br><br>Responda:<br><b>1</b> Confirmar<br><b>2</b> Remarcar<br><b>3</b> Cancelar<small>09:00</small></div>
+<div class="b eu">1<small>09:14</small></div>
+<div class="b ela">Confirmado! Até amanhã, Juliana. 😊<small>09:14</small></div>
+<div class="dia">QUINTA-FEIRA</div>
+<div class="b ela">Oi, Juliana! Como você está depois da limpeza? Qualquer dúvida, é só chamar. 💙<small>16:30</small></div></div></div></div></div></div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>6</span></div></section><section class="sl  "><div class="duas"><div><span class="kick">CRM</span><h2>Cada contato no <em>seu momento.</em></h2>
+<ul class="lista"><li>Novo contato, agendado, confirmado, cancelado.</li><li>Atendimento automático ou manual em cada conversa.</li>
+<li>Alerta de contato parado há mais de 24 horas.</li><li>Observações e histórico de cada cliente.</li></ul></div>
+<div><div class="janela"><div class="barra"><i></i><i></i><i></i></div><div class="painel"><div class="lado"><div class="cl"><span>S</span>Clínica Sorriso</div><div class="sec">Atendimento</div><a class="">Dashboard</a><a class="on">CRM</a><a class="">Agenda</a><a class="">Mensagens</a><a class="">Leads / Clientes</a>
+<div class="sec" style="margin-top:8px">Gestão</div><a>Relatórios</a><a>Configurações</a></div><div class="conteudo"><h4>CRM</h4><div class="sub">Cada contato no seu momento do funil</div><div class="kan"><div class="kcol"><h5><span><i style="background:#C2547A"></i>Novo Contato</span><em>3</em></h5><div class="kc"><b>Larissa Gomes</b><span>Perguntou sobre clareamento</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Diego Barbosa</b><span>Quer saber de convênio</span><span class="selo s-ambar">Manual</span></div><div class="kc"><b>Aline Carvalho</b><span>Pediu valores</span><span class="selo s-cinza">Automático</span></div></div><div class="kcol"><h5><span><i style="background:#2E9E5B"></i>Agendados</span><em>2</em></h5><div class="kc"><b>Juliana Prado</b><span>Limpeza · qui 27/11 10:30</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Thiago Moreira</b><span>Avaliação · qui 27/11 08:00</span><span class="selo s-cinza">Automático</span></div></div><div class="kcol"><h5><span><i style="background:#1F8A4C"></i>Confirmado</span><em>3</em></h5><div class="kc"><b>Mariana Costa</b><span>Limpeza · qua 26/11 09:00</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Pedro Alves</b><span>Canal · qua 26/11 11:00</span><span class="selo s-cinza">Automático</span></div><div class="kc"><b>Carlos Mendes</b><span>Avaliação · qua 26/11 08:30</span><span class="selo s-cinza">Automático</span></div></div><div class="kcol"><h5><span><i style="background:#D9473F"></i>Cancelados</span><em>1</em></h5><div class="kc"><b>Gustavo Araújo</b><span>Remarcar na próxima semana</span><span class="selo s-ambar">Manual</span></div></div></div></div></div></div><div class="ilustra">Ilustração com dados fictícios</div></div></div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>7</span></div></section><section class="sl  centro"><span class="kick">Relacionamento</span><h2>Depois da consulta, <em>a clínica continua presente.</em></h2>
+<div class="quatro">
+<div class="bx"><div class="big">🩺</div><b>Pós-consulta</b><p>Mensagem de cuidado depois do atendimento.</p></div>
+<div class="bx"><div class="big">🔁</div><b>Retorno</b><p>Convite para voltar na data combinada.</p></div>
+<div class="bx"><div class="big">🎂</div><b>Aniversário</b><p>Mensagem automática no dia, com o nome do cliente.</p></div>
+<div class="bx"><div class="big">📣</div><b>Campanhas</b><p>Natal, férias, avisos — com envio espaçado.</p></div>
+</div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>8</span></div></section><section class="sl  "><div class="duas" style="grid-template-columns:1fr 300px"><div><span class="kick">No bolso da equipe</span><h2>O dia da clínica <em>no celular.</em></h2>
+<ul class="lista"><li>Agenda do dia, com setas para os próximos dias.</li><li>CRM simples: nome e status de quem falou hoje.</li>
+<li>Mensagens e clientes, com comentário rápido.</li><li>Configurações e relatórios ficam no computador.</li></ul></div>
+<div style="display:flex;justify-content:center"><div class="fone"><div class="mob"><div class="topo"><span class="lg">S</span><div class="t"><b>Clínica Sorriso</b><small>● Ísis atendendo</small></div></div>
+<div class="corpo"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:15px">Agenda</b><span class="selo" style="background:var(--marca);color:#fff;padding:4px 9px">+ Marcar</span></div>
+<div class="nav"><span>‹</span><div style="text-align:center;line-height:1.2"><b>Hoje</b><small style="display:block;color:var(--muted);font-size:9px">5 consultas</small></div><span>›</span></div><div class="item"><div class="h">08:30<small>09:00</small></div><div class="fx" style="background:#b85c74"></div><div class="q"><b>Carlos Mendes</b><span>Avaliação · Dr. Rafael Prado</span><span class="selo s-verde" style="margin-top:3px;display:inline-flex">Confirmada</span></div></div><div class="item"><div class="h">09:00<small>09:40</small></div><div class="fx" style="background:#1f7a43"></div><div class="q"><b>Mariana Costa</b><span>Limpeza · Dra. Ana Lima</span><span class="selo s-verde" style="margin-top:3px;display:inline-flex">Confirmada</span></div></div><div class="item"><div class="h">10:30<small>11:10</small></div><div class="fx" style="background:#1f7a43"></div><div class="q"><b>Juliana Prado</b><span>Limpeza · Dra. Ana Lima</span><span class="selo s-ambar" style="margin-top:3px;display:inline-flex">Aguardando</span></div></div><div class="item"><div class="h">11:00<small>12:00</small></div><div class="fx" style="background:#1f6aa8"></div><div class="q"><b>Pedro Alves</b><span>Canal · Dr. Rafael Prado</span><span class="selo s-verde" style="margin-top:3px;display:inline-flex">Confirmada</span></div></div><div class="item"><div class="h">14:00<small>15:00</small></div><div class="fx" style="background:#b85c74"></div><div class="q"><b>Fernanda Rocha</b><span>Clareamento · Dra. Ana Lima</span><span class="selo s-azul" style="margin-top:3px;display:inline-flex">Compareceu</span></div></div></div>
+<div class="abas"><div class=""><i></i>Início</div><div class=""><i></i>CRM</div><div class="on"><i></i>Agenda</div><div class=""><i></i>Mensagens</div><div class=""><i></i>Clientes</div></div></div></div></div></div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>9</span></div></section><section class="sl  centro"><span class="kick">Gestão</span><h2>Informação para decidir, <em>sem planilha manual.</em></h2>
+<div class="tres">
+<div class="bx"><div class="big">📥</div><b>Relatórios em Excel</b><p>Atendimentos, produção por profissional, faltas e cancelamentos, aniversariantes e pacientes para chamar de volta.</p></div>
+<div class="bx"><div class="big">❓</div><b>Pergunte à assistente</b><p>A equipe pergunta “quantos pacientes vieram este mês?” e recebe a resposta — só leitura, só dados da clínica.</p></div>
+<div class="bx"><div class="big">🎨</div><b>Do jeito da clínica</b><p>Logo, cores, termos do segmento (consulta, sessão, atendimento) e o tom de voz da Ísis.</p></div>
+</div><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>10</span></div></section><section class="sl  centro"><span class="kick">Para quem</span><h2>Feito para quem trabalha <em>com horário marcado.</em></h2>
+<div class="chips"><span>Odontologia</span><span>Medicina</span><span>Fisioterapia</span><span>Psicologia</span><span>Psicanálise</span><span>Psiquiatria</span><span>Estética</span><span>Outros consultórios</span></div>
+<p class="nota" style="margin-top:40px">Cada segmento já vem com termos, procedimentos iniciais e orientações próprios. Convênios, vários profissionais e horários diferentes por profissional são suportados.</p><div class="rod"><span><span class="marca" style="font-size:11px;color:currentColor"><svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span></span><span>11</span></div></section><section class="sl escuro "><div style="display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:center;height:100%">
+<div><span class="kick" style="color:#f2a7bd">Próximo passo</span><h1 style="font-size:46px">Vamos ver a Ísis atendendo <em>a sua clínica?</em></h1>
+<p class="lead" style="color:#cfcbd2">Uma demonstração de 20 minutos com os seus horários e procedimentos.</p></div>
+<div class="contato"><span class="marca" style="font-size:25px;color:#fff"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+<rect width="40" height="40" rx="11" fill="#b85c74"/>
+<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
+<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>Tem<b>Horario</b></span></span><div class="cv">Fale com a gente</div><div class="cn">WhatsApp (16) 99112-2235</div></div></div></section></body></html>
