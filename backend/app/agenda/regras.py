@@ -18,6 +18,7 @@ class RegrasClinica:
     horizonte_dias: int = 60  # RN-AG-05
     aviso_cancelamento_horas: float = 24  # RN-AG-07
     limite_consultas_futuras: int = 2  # RN-AG-08
+    confirmar_automatico_horas: float = 24  # RN-AG-19 (D129): marcada para menos que isso já entra confirmada (0 = desliga)
     faltas_limite: int = 2  # RN-AG-16 (D91): com tantas faltas na janela, a assistente passa para a recepção (0 = desliga)
     faltas_janela_dias: int = 45
     passo_slot_min: int = 30  # grade de horários oferecidos

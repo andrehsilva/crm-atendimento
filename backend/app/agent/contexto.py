@@ -220,6 +220,14 @@ def _convenio(conn, clinica: dict, paciente: dict) -> str:
     return f"não informado (não é o primeiro contato: não pergunte). {lista.capitalize()}."
 
 
+def _auto(r) -> str:
+    """RN-AG-19 (D129): marcada para menos de X horas já entra confirmada."""
+    if r.confirmar_automatico_horas <= 0:
+        return ""
+    return (f"- Marcada ou remarcada para menos de {r.confirmar_automatico_horas:g} h à frente: já fica confirmada; "
+            "a pessoa não precisa confirmar e não recebe lembrete (a mensagem da marcação é o comprovante).\n")
+
+
 def _avisos_automaticos(conn, clinica: dict) -> str:
     """O que a clínica manda sozinha — para a assistente responder "vocês me lembram?" sem inventar."""
     r = clinica["regras"]
@@ -234,7 +242,7 @@ def _avisos_automaticos(conn, clinica: dict) -> str:
 - Ao marcar, remarcar ou cancelar: a pessoa recebe na hora uma mensagem com a data, o horário e o endereço.
 - Lembrete: {dias} à consulta, às {r.lembrete_hora}, com as opções 1 Confirmar · 2 Remarcar · 3 Cancelar.
 - Se a consulta for marcada depois do horário do lembrete, não há lembrete (a mensagem de confirmação já vale).
-- Nada sai entre {r.silencio_inicio} e {r.silencio_fim}.
+{_auto(r)}- Nada sai entre {r.silencio_inicio} e {r.silencio_fim}.
 - Se perguntarem "vocês me lembram?", responda com isso e com o lembrete da consulta (está na lista de consultas).
   Ao terminar de marcar ou remarcar, diga numa frase quando vem o lembrete.
 """)

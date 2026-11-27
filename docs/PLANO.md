@@ -296,6 +296,13 @@ Só no celular (tela < 768 px); no computador nada muda.
 - **Clientes:** só nome e telefone, com botão **Comentar** (registra um comentário novo nas observações; ver e editar
   o histórico fica no computador).
 
+## Etapa 34 — Marcada para menos de 24 h já confirmada 🧪 aguardando teste (27/11/2026; D129)
+- Marcou ou remarcou (Ísis ou recepção) para dali a menos de 24 h → a consulta já entra **confirmada** e o contato vai
+  para **Confirmado** no CRM.
+- Não sai lembrete pedindo "1 Confirmar". A mensagem da marcação continua, como comprovante, com
+  "✅ Já está confirmada, não precisa confirmar". A Ísis também avisa isso na conversa.
+- Configurações › Assistente › Regras da agenda: "Já confirmada se marcada com menos de (horas)" — padrão 24; 0 desliga.
+
 ---
 
 ## Depois da 1ª versão (backlog)

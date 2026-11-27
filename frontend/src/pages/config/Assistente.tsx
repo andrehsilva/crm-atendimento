@@ -60,6 +60,9 @@ export function Assistente({ podeEditar, comIa = true }: { podeEditar: boolean; 
             <Campo rotulo="Aviso de cancelamento (horas)" ajuda="Cancelar com menos que isso: avisa a política e sinaliza a recepção.">
               <Entrada type="number" min={0} max={168} value={f.aviso_cancelamento_horas} onChange={num('aviso_cancelamento_horas')} />
             </Campo>
+            <Campo rotulo="Já confirmada se marcada com menos de (horas)" ajuda={`Marcou ou remarcou para dali a menos que isso: entra confirmad${pal.o}, sem lembrete para confirmar. 0 = desliga.`}>
+              <Entrada type="number" min={0} max={168} value={f.confirmar_automatico_horas} onChange={num('confirmar_automatico_horas')} />
+            </Campo>
             <Campo rotulo={`${pal.Atendimentos} futur${pal.o}s por ${pal.cliente}`}>
               <Entrada type="number" min={1} max={10} value={f.limite_consultas_futuras} onChange={num('limite_consultas_futuras')} />
             </Campo>

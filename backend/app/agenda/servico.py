@@ -240,6 +240,17 @@ def _como_aware(dt: datetime, tz: ZoneInfo) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=tz)
 
 
+def ja_confirmada(clinica: dict, inicio: datetime, agora: datetime) -> bool:
+    """RN-AG-19 (D129): marcada (ou remarcada) para menos de X horas à frente → já entra confirmada.
+    Não há tempo para o lembrete com "1 Confirmar"; a mensagem da marcação vale como comprovante."""
+    horas = clinica["regras"].confirmar_automatico_horas
+    return horas > 0 and inicio - agora < timedelta(hours=horas)
+
+
+def _etapa_crm(consulta: dict) -> str:
+    return "confirmado" if consulta["status"] == "confirmada" else "agendado"
+
+
 def marcar(
     conn,
     clinic_id: UUID,
@@ -268,6 +279,7 @@ def marcar(
 
     fim = inicio + timedelta(minutes=servico["duration_min"])
     _validar_horario(conn, clinica, professional_id, inicio, fim, agora)
+    status = "confirmada" if ja_confirmada(clinica, inicio, agora) else "agendada"
 
     with conn.transaction():  # savepoint: se algo falhar, nada desta marcação fica gravado
         paciente = obter_ou_criar_paciente(conn, clinic_id, telefone, nome, origem)
@@ -296,12 +308,12 @@ def marcar(
                 consulta = _cur(conn).execute(
                     """insert into appointments
                          (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at, source, rescheduled_from_id,
-                          treatment_id)
-                       values (%s, %s, %s, %s, %s, %s, %s, %s, %s) returning *""",
+                          treatment_id, status)
+                       values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) returning *""",
                     (
                         clinic_id, paciente["id"], professional_id, service_id, inicio, fim,
                         "paciente_botao" if ator == "paciente" else ator, _remarcando,
-                        tratamento["id"] if tratamento else None,
+                        tratamento["id"] if tratamento else None, status,
                     ),
                 ).fetchone()
         except (errors.ExclusionViolation, errors.DeadlockDetected) as e:
@@ -310,7 +322,7 @@ def marcar(
         _registrar(conn, clinic_id, consulta["id"], ator, "marcada", depois=_foto(consulta))
         detalhe = detalhar(conn, clinic_id, consulta["id"])
         if not _remarcando:  # na remarcação, quem avisa é remarcar()
-            crm.registrar(conn, clinic_id, paciente["id"], "consulta_agendada", ator, "agendado")
+            crm.registrar(conn, clinic_id, paciente["id"], "consulta_agendada", ator, _etapa_crm(consulta))
             if avisar_paciente:
                 avisos.enfileirar(conn, clinica, detalhe, "confirmacao", agora=agora)
     return detalhe
@@ -437,7 +449,7 @@ def remarcar(conn, clinic_id: UUID, *, appointment_id: UUID, telefone: str | Non
             _remarcando=appointment_id,
         )
         _registrar(conn, clinic_id, appointment_id, ator, "remarcada", _foto(antiga), {"nova_consulta": str(nova["id"])})
-        crm.registrar(conn, clinic_id, antiga["patient_id"], "consulta_remarcada", ator, "agendado")
+        crm.registrar(conn, clinic_id, antiga["patient_id"], "consulta_remarcada", ator, _etapa_crm(nova))
         if avisar_paciente or ator != "recepcao":
             avisos.enfileirar(conn, clinica, nova, "remarcacao", anterior=antiga, agora=agora)
         else:

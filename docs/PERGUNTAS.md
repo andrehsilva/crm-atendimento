@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 106 de 114 resolvidas (103 respondidas · 3 adiadas) — 25/11/2026.
+**Progresso:** 110 de 118 resolvidas (107 respondidas · 3 adiadas) — 27/11/2026.
 
 ---
 
@@ -110,6 +110,13 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 
 ✅ Nada pendente — Etapa 27 liberada (depois do "pode seguir" da Etapa 26).
 
+## ⏱️ Bloqueia a Etapa 34 (Marcação para menos de 24 h já confirmada)
+
+Pedido (27/11/2026): quem marca para dali a menos de 24 h (ex.: quinta 18h → sexta 8h) já fica **confirmado**, sem precisar confirmar.
+Hoje: a consulta entra como "agendada" (a confirmar); o lembrete da véspera já passou e não sai; sai na hora a mensagem "está marcada ✅" com data, hora e endereço.
+
+✅ Nada pendente — Etapa 34 liberada.
+
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
 ✅ Nada pendente — Etapa 12 liberada (depois da 11).
@@ -140,6 +147,10 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q108 — Mensagem ao marcar com menos de 24 h:** continua saindo, mas só como comprovante, sem pedir confirmação. *(27/11 → D129)*
+- [x] **Q109 — Quem marca:** vale para a Ísis e para a recepção. *(27/11 → D129)*
+- [x] **Q110 — Remarcação:** remarcar para menos de 24 h também já fica confirmada. *(27/11 → D129)*
+- [x] **Q111 — Prazo:** 24 h por padrão, ajustável por clínica em Configurações. *(27/11 → D129)*
 - [x] **D4 — UUID estável e telefone principal editável:** só o super admin troca pelo Admin geral; vínculos existentes ficam, o número conectado ao WhatsApp não muda e a alteração fica auditada. *(25/11 → D3, D4, D128)*
 - [x] **Q104 — Quem usa o "Perguntar à assistente":** toda a equipe, vendo a clínica inteira (igual ao painel); nunca outra clínica. *(23/11 → D118)*
 - [x] **Q106 — Conversa guardada?** Não: some ao fechar. *(23/11 → D119)*

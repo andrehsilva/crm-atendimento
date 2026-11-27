@@ -216,6 +216,11 @@ def criar_ferramentas(s: Sessao) -> list:
 
     def _lembrete_de(consulta_id) -> str:
         """Diz à assistente se há lembrete agendado para a consulta (e quando), para ela contar ao paciente."""
+        st = conn.execute("select status from appointments where id = %s", (consulta_id,)).fetchone()
+        if st and st[0] == "confirmada":  # RN-AG-19 (D129)
+            return (". Já ficou CONFIRMADA (marcada com menos de "
+                    f"{s.clinica['regras'].confirmar_automatico_horas:g} h): o paciente não precisa confirmar e não "
+                    "haverá lembrete; a mensagem da marcação vale como comprovante (conte isso ao paciente)")
         r = conn.execute("""select scheduled_for from outbound_messages where clinic_id = %s and appointment_id = %s
                             and kind = 'lembrete' and status = 'agendada' order by scheduled_for limit 1""",
                          (s.cid, consulta_id)).fetchone()

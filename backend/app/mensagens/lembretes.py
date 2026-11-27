@@ -53,6 +53,10 @@ def _feriados(conn, clinica: dict, de: date, ate: date) -> set[date]:
 
 
 def horario_do_lembrete(conn, clinica: dict, inicio_consulta: datetime, agora: datetime) -> datetime | None:
+    from app.agenda.servico import ja_confirmada  # import aqui para evitar import circular
+
+    if ja_confirmada(clinica, inicio_consulta, agora):  # RN-AG-19 (D129): já entra confirmada, nada a confirmar
+        return None
     regras, tz = clinica["regras"], clinica["tz"]
     dia_c = inicio_consulta.astimezone(tz).date()
     dia = R.dia_do_lembrete(dia_c, _dias_abertos(conn, clinica["id"]),

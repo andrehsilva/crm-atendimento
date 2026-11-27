@@ -15,12 +15,12 @@ DIAS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-
 MODELOS = {
     "confirmacao": (
         "Olá, {nome}! {Sua} {atendimento} na {clinica} está marcad{o} ✅\n\n"
-        "📅 {quando}\n{linha}\n📍 {endereco}{lembrete}\n\n"
+        "📅 {quando}\n{linha}\n📍 {endereco}{lembrete}{confirmada}\n\n"
         "Precisa remarcar ou cancelar? É só me chamar por aqui."
     ),
     "remarcacao": (
         "Olá, {nome}! {Sua} {atendimento} na {clinica} foi remarcad{o} 🔄\n\n"
-        "Antes: {antes}\nAgora: 📅 {quando}\n{linha}{lembrete}"
+        "Antes: {antes}\nAgora: 📅 {quando}\n{linha}{lembrete}{confirmada}"
     ),
     "cancelamento": (
         "Olá, {nome}. {Sua} {atendimento} de {quando} com {profissional} na {clinica} foi cancelad{o}.\n\n"
@@ -102,8 +102,13 @@ def enfileirar(conn, clinica: dict, consulta: dict, tipo: str, anterior: dict | 
         momento = horario_do_lembrete(conn, clinica, consulta["starts_at"], agora or datetime.now(UTC))
         if momento:
             lembrete = f"\n🔔 Lembrete por aqui: {quando(momento, tz)}"
+    # RN-AG-19 (D129): já entra confirmada → a mensagem é só o comprovante, sem pedir confirmação
+    confirmada = ""
+    if tipo in ("confirmacao", "remarcacao") and consulta.get("status") == "confirmada":
+        confirmada = "\n✅ Já está confirmad{o}, não precisa confirmar.".format(**palavras(clinica, consulta))
     texto = MODELOS[tipo].format(
         lembrete=lembrete,
+        confirmada=confirmada,
         nome=primeiro_nome(consulta["paciente"]),
         clinica=clinica["name"],
         quando=quando(consulta["starts_at"], tz),
