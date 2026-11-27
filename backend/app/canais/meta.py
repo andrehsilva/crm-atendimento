@@ -72,6 +72,27 @@ class ClienteMeta:
             return None
         return msgs[0].get("id") if msgs else None
 
+    def enviar_modelo(self, chat_id: str, nome: str, parametros: list[str], idioma: str = "pt_BR") -> str | None:
+        """Modelo aprovado (36C): o único jeito de escrever fora da janela de 24 h. Devolve o wamid."""
+        comp = [{"type": "body", "parameters": [{"type": "text", "text": p} for p in parametros]}] if parametros else []
+        r = self._req("POST", f"/{self.phone_number_id}/messages", json={
+            "messaging_product": "whatsapp", "recipient_type": "individual", "to": numero_do_chat(chat_id),
+            "type": "template", "template": {"name": nome, "language": {"code": idioma}, "components": comp},
+        })
+        try:
+            msgs = r.json().get("messages") or []
+        except ValueError:
+            return None
+        return msgs[0].get("id") if msgs else None
+
+    def listar_modelos(self, waba_id: str) -> list[dict]:
+        d = self._req("GET", f"/{waba_id}/message_templates",
+                      params={"fields": "name,language,status,category,rejected_reason", "limit": 200}).json()
+        return d.get("data") or []
+
+    def criar_modelo(self, waba_id: str, pedido: dict) -> dict:
+        return self._req("POST", f"/{waba_id}/message_templates", json=pedido).json()
+
     def marcar_lido(self, message_id: str) -> None:
         """"Visto" na mensagem recebida (na Meta é por mensagem, não por conversa)."""
         try:

@@ -4,6 +4,7 @@ O ponto principal: clínica em WAHA (o padrão) continua exatamente como antes.
 """
 
 import json
+import re
 
 import httpx
 import pytest
@@ -310,3 +311,186 @@ def test_entregue_lida_e_falha_pela_sessao_meta(conn, clinica):
     st = dict(conn.execute("select id, status from outbound_messages where id = any(%s)", ([ok, ruim],)).fetchall())
     assert st == {ok: "lida", ruim: "falhou"}
     assert "131047" in conn.execute("select error from outbound_messages where id = %s", (ruim,)).fetchone()[0]
+
+
+# ---------------------------------------------------------------------------
+# Etapa 36C — modelos (templates) e janela de 24 h
+# ---------------------------------------------------------------------------
+from datetime import timedelta  # noqa: E402
+
+from app.agenda import servico as S  # noqa: E402
+from app.agenda.erros import AgendaError  # noqa: E402
+from app.canais import modelos_meta  # noqa: E402
+from app.config import Settings  # noqa: E402
+from app.mensagens import regras as R  # noqa: E402
+from app.mensagens import resumo_dia  # noqa: E402
+from tests.conftest import AGORA, as_  # noqa: E402
+
+TEL_CLIENTE = "+5511988887777"
+
+
+def _cfg():
+    return Settings(_env_file=None, env="prod", envio_somente_para="", waha_api_url="http://waha", waha_api_key="x")
+
+
+def _meta_falsa(chamadas):
+    return ClienteMeta(PHONE_ID, TOKEN, base_url="https://graph.test/v23.0", transport=_meta_simulada(chamadas))
+
+
+def _recebeu_mensagem(conn, clinica, pid, quando):
+    """O cliente escreveu para a clínica em `quando` (abre a janela de 24 h)."""
+    cid = conn.execute("""insert into conversations (clinic_id, patient_id, channel, external_chat_id)
+                          values (%s, %s, 'whatsapp', '5511988887777')
+                          on conflict (clinic_id, patient_id, channel) do update set external_chat_id = excluded.external_chat_id
+                          returning id""", (clinica.id, pid)).fetchone()[0]
+    conn.execute("""insert into messages (clinic_id, conversation_id, direction, author, content, created_at)
+                    values (%s, %s, 'in', 'paciente', 'oi', %s)""", (clinica.id, cid, quando))
+    return cid
+
+
+def test_catalogo_parametros_batem_com_os_exemplos():
+    for m in modelos_meta.CATALOGO.values():
+        n = len(set(re.findall(r"\{\{(\d+)\}\}", m.texto)))
+        assert n == len(m.exemplo), m.nome
+        pedido = modelos_meta.pedido_de_criacao(m)
+        assert pedido["language"] == "pt_BR" and pedido["category"] in ("UTILITY", "MARKETING")
+        assert all(len(b) <= 25 for b in m.botoes)
+    assert modelos_meta.CATALOGO["temhorario_aniversario"].rodape  # marketing sempre com "PARAR"
+    assert set(modelos_meta.POR_TIPO) >= {"lembrete", "confirmacao", "remarcacao", "cancelamento", "aniversario",
+                                          "pos_consulta", "retorno", "tratamento"}
+
+
+def test_parametro_sem_quebra_de_linha_e_nunca_vazio():
+    assert modelos_meta._param("linha 1\nlinha 2\t  fim") == "linha 1 · linha 2 · fim"
+    assert modelos_meta._param("") == "-" and modelos_meta._param(None) == "-"
+
+
+def test_botoes_do_lembrete_valem_como_resposta():
+    assert [R.resposta_ao_lembrete(b) for b in modelos_meta.CATALOGO["temhorario_lembrete"].botoes] == [
+        "confirmar", "remarcar", "cancelar"]
+
+
+def test_janela_de_24h(conn, clinica):
+    pid = conn.execute("insert into patients (clinic_id, name, phone) values (%s, 'Rita Moraes', %s) returning id",
+                       (clinica.id, TEL_CLIENTE)).fetchone()[0]
+    assert not modelos_meta.janela_aberta(conn, clinica.id, pid, AGORA)
+    _recebeu_mensagem(conn, clinica, pid, AGORA - timedelta(hours=25))
+    assert not modelos_meta.janela_aberta(conn, clinica.id, pid, AGORA)
+    _recebeu_mensagem(conn, clinica, pid, AGORA - timedelta(hours=23))
+    assert modelos_meta.janela_aberta(conn, clinica.id, pid, AGORA)
+
+
+def test_montar_modelos_da_agenda_e_campanha_sem_modelo(conn, clinica):
+    c = S.marcar(conn, clinica.id, telefone=TEL_CLIENTE, nome="Rita Moraes", professional_id=clinica.prof_a,
+                 service_id=clinica.servico, inicio=as_(24, 9), ator="recepcao", agora=AGORA)
+    cl = S.carregar_clinica(conn, clinica.id)
+    o = {"kind": "lembrete", "patient_id": c["patient_id"], "appointment_id": c["id"]}
+    modelo, params, texto = modelos_meta.montar(conn, cl, o)
+    assert modelo.nome == "temhorario_lembrete"
+    assert params[0] == "Rita" and params[1] == cl["name"] and "24/11 às 09:00" in params[2] and "Dra. A" in params[3]
+    assert "{{" not in texto and "Rita" in texto
+
+    nova = S.remarcar(conn, clinica.id, appointment_id=c["id"], telefone=None, ator="recepcao",
+                      novo_inicio=as_(25, 10), agora=AGORA)["consulta"]
+    _, p_rem, _ = modelos_meta.montar(conn, cl, {"kind": "remarcacao", "patient_id": c["patient_id"],
+                                                  "appointment_id": nova["id"]})
+    assert "24/11 às 09:00" in p_rem[2] and "25/11 às 10:00" in p_rem[3]
+
+    _, p_aniv, t_aniv = modelos_meta.montar(conn, cl, {"kind": "aniversario", "patient_id": c["patient_id"]})
+    assert p_aniv == ["Rita", cl["name"]] and modelos_meta.RODAPE_PARAR in t_aniv
+
+    with pytest.raises(modelos_meta.SemModelo):
+        modelos_meta.montar(conn, cl, {"kind": "campanha", "patient_id": c["patient_id"]})
+
+
+def _fila_meta(conn, clinica, kind="lembrete", body="Texto livre de sempre"):
+    _na_meta(conn, clinica)
+    pid = conn.execute("insert into patients (clinic_id, name, phone) values (%s, 'Rita Moraes', %s) returning id",
+                       (clinica.id, TEL_CLIENTE)).fetchone()[0]
+    oid = conn.execute("""insert into outbound_messages (clinic_id, patient_id, kind, body, scheduled_for)
+                          values (%s, %s, %s, %s, %s) returning id""",
+                       (clinica.id, pid, kind, body, AGORA - timedelta(minutes=1))).fetchone()[0]
+    return pid, oid
+
+
+def test_fila_fora_da_janela_sai_como_modelo(conn, clinica):
+    pid, oid = _fila_meta(conn, clinica, kind="aniversario")
+    chamadas: list = []
+    assert envio.enviar_pendentes(SemCommit(conn), AGORA, cliente=_meta_falsa(chamadas), s=_cfg(), so_clinica=clinica.id) == 1
+    corpo = json.loads(chamadas[0].content)
+    assert corpo["type"] == "template" and corpo["template"]["name"] == "temhorario_aniversario"
+    assert corpo["template"]["language"]["code"] == "pt_BR"
+    assert [p["text"] for p in corpo["template"]["components"][0]["parameters"]][0] == "Rita"
+    st, ext = conn.execute("select status, external_id from outbound_messages where id = %s", (oid,)).fetchone()
+    assert (st, ext) == ("enviada", "wamid.ABC")
+    gravada = conn.execute("""select content from messages where clinic_id = %s and external_id = 'wamid.ABC'""",
+                           (clinica.id,)).fetchone()[0]
+    assert gravada.startswith("Feliz aniversário, Rita!")  # a conversa mostra o texto do modelo, não o livre
+
+
+def test_fila_dentro_da_janela_sai_como_texto(conn, clinica):
+    pid, oid = _fila_meta(conn, clinica, kind="aniversario", body="Parabéns do jeito da clínica!")
+    _recebeu_mensagem(conn, clinica, pid, AGORA - timedelta(hours=2))
+    chamadas: list = []
+    envio.enviar_pendentes(SemCommit(conn), AGORA, cliente=_meta_falsa(chamadas), s=_cfg(), so_clinica=clinica.id)
+    corpo = json.loads(chamadas[0].content)
+    assert corpo["type"] == "text" and corpo["text"]["body"] == "Parabéns do jeito da clínica!"
+
+
+def test_campanha_fora_da_janela_falha_com_motivo_sem_tentar_de_novo(conn, clinica):
+    _, oid = _fila_meta(conn, clinica, kind="campanha")
+    chamadas: list = []
+    envio.enviar_pendentes(SemCommit(conn), AGORA, cliente=_meta_falsa(chamadas), s=_cfg(), so_clinica=clinica.id)
+    assert chamadas == []
+    st, erro = conn.execute("select status, error from outbound_messages where id = %s", (oid,)).fetchone()
+    assert st == "falhou" and "modelo" in erro
+
+
+def test_equipe_fora_da_janela_recebe_aviso_claro(conn, clinica):
+    _na_meta(conn, clinica)
+    pid = conn.execute("insert into patients (clinic_id, name, phone) values (%s, 'Rita Moraes', %s) returning id",
+                       (clinica.id, TEL_CLIENTE)).fetchone()[0]
+    cid = _recebeu_mensagem(conn, clinica, pid, AGORA - timedelta(days=3))
+    conversa = {"id": cid, "patient_id": pid, "external_chat_id": "5511988887777"}
+    chamadas: list = []
+    with pytest.raises(AgendaError) as e:
+        whatsapp.enviar_da_equipe(conn, clinica.id, conversa, "Oi!", cliente=_meta_falsa(chamadas))
+    assert e.value.codigo == "FORA_DA_JANELA" and chamadas == []
+    conn.execute("update messages set created_at = now() where conversation_id = %s", (cid,))
+    assert whatsapp.enviar_da_equipe(conn, clinica.id, conversa, "Oi!", cliente=_meta_falsa(chamadas)) == "wamid.ABC"
+
+
+def test_resumo_do_dia_na_meta_vai_como_modelo():
+    chamadas: list = []
+    texto = ("Bom dia, Dra. A! ☀️\nHoje, terça-feira, 24/11, você tem 2 consultas na Clínica Teste:\n\n"
+             "09:00 · Rita · Limpeza ✅\n10:00 · Bruno · Avaliação ⏳\n\n🕒 Livre: 11:00–12:00")
+    resumo_dia._mandar(_meta_falsa(chamadas), "s", "+5511977776666", texto, "Dra. A", as_(24, 9).date(),
+                       {"name": "Clínica Teste"})
+    corpo = json.loads(chamadas[0].content)
+    assert corpo["to"] == "5511977776666" and corpo["template"]["name"] == "temhorario_resumo_dia"
+    params = [p["text"] for p in corpo["template"]["components"][0]["parameters"]]
+    assert params[:3] == ["Dra. A", "terça-feira, 24/11", "Clínica Teste"]
+    assert "09:00 · Rita · Limpeza ✅" in params[3] and "\n" not in params[3]
+
+
+def test_criar_modelos_que_faltam_e_situacao():
+    existentes = [{"name": "temhorario_lembrete", "language": "pt_BR", "status": "APPROVED"},
+                  {"name": "temhorario_aniversario", "language": "pt_BR", "status": "REJECTED",
+                   "rejected_reason": "INVALID_FORMAT"}]
+    criados: list = []
+
+    class Falso:
+        def listar_modelos(self, waba):
+            return existentes + [{"name": n, "language": "pt_BR", "status": "PENDING"} for n in criados]
+
+        def criar_modelo(self, waba, pedido):
+            criados.append(pedido["name"])
+            return {"id": "1", "status": "PENDING"}
+
+    lista = {m["nome"]: m for m in modelos_meta.criar_faltantes(Falso(), WABA_ID)}
+    assert "temhorario_lembrete" not in criados and "temhorario_aniversario" not in criados  # já existem
+    assert len(criados) == len(modelos_meta.CATALOGO) - 2
+    assert lista["temhorario_lembrete"]["situacao"] == "aprovado"
+    assert lista["temhorario_aniversario"]["situacao"] == "recusado"
+    assert lista["temhorario_aniversario"]["motivo"] == "INVALID_FORMAT"
+    assert lista["temhorario_confirmacao"]["situacao"] == "em análise"

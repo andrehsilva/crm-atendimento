@@ -26,6 +26,7 @@ STATUS_HTTP = {
     "TELEFONE_INVALIDO": 422,
     "DADOS_INVALIDOS": 422,
     "ENVIO_FALHOU": 502,
+    "FORA_DA_JANELA": 409,  # Etapa 36C (D131): WhatsApp oficial, 24 h sem mensagem do cliente
     "NAO_AUTENTICADO": 401,
     "SEM_ACESSO": 403,
     "TROCAR_SENHA": 403,

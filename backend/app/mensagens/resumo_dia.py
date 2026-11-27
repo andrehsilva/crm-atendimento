@@ -15,7 +15,9 @@ from psycopg.rows import dict_row
 from app import segmentos
 from app.agenda import regras as R
 from app.agenda import servico
+from app.canais import modelos_meta
 from app.canais.conexao import cliente_da_clinica
+from app.canais.meta import ClienteMeta
 from app.canais.waha import ClienteWaha, WahaErro
 from app.config import Settings, get_settings
 from app.mensagens import regras as RM
@@ -87,6 +89,16 @@ def montar(conn, clinica: dict, prof: dict, dia: date) -> str | None:
     return texto
 
 
+def _mandar(cliente, sessao, numero: str, texto: str, prof_nome: str, dia: date, clinica: dict) -> None:
+    """WAHA: texto livre. WhatsApp oficial (36C, D131): sempre o modelo do resumo — o profissional quase nunca
+    escreveu para o número da clínica nas últimas 24 h."""
+    if isinstance(cliente, ClienteMeta):
+        modelo, params, _ = modelos_meta.resumo_dia(prof_nome, dia, clinica, texto)
+        cliente.enviar_modelo(numero, modelo.nome, params)
+    else:
+        cliente.enviar_texto(sessao, f"{numero.lstrip('+')}@c.us", texto, simular_digitacao=False)
+
+
 def _registrar(conn, clinic_id, prof_id, dia, status, body=None, erro=None, enviado=False) -> None:
     conn.execute(
         """insert into professional_digests (clinic_id, professional_id, dia, status, body, attempts, error, sent_at)
@@ -145,8 +157,8 @@ def enviar_resumos(conn, agora: datetime, cliente: ClienteWaha | None = None, s:
                 _registrar(conn, clinica["id"], p["id"], dia, "falhou", texto, "clínica sem WhatsApp conectado")
             else:
                 try:
-                    (cliente or cliente_da_clinica(conn, clinica["id"])).enviar_texto(
-                        inst[0], f"{p['whatsapp_pessoal'].lstrip('+')}@c.us", texto, simular_digitacao=False)
+                    _mandar(cliente or cliente_da_clinica(conn, clinica["id"]), inst[0], p["whatsapp_pessoal"], texto,
+                            p["name"], dia, clinica)
                     _registrar(conn, clinica["id"], p["id"], dia, "enviado", texto, enviado=True)
                     enviados += 1
                 except WahaErro as e:
@@ -179,6 +191,9 @@ def enviar_teste(conn, clinica: dict, prof: dict, agora: datetime, cliente: Clie
     if not texto:
         texto = f"Bom dia, {prof['name']}! ☀️\nVocê não tem consultas marcadas nos próximos 14 dias."
     corpo = f"🧪 Teste do resumo do dia (de verdade ele chega às {prof.get('resumo_hora') or '07:00'})\n\n{texto}"
-    (cliente or cliente_da_clinica(conn, clinica["id"])).enviar_texto(
-        inst[0], f"{prof['whatsapp_pessoal'].lstrip('+')}@c.us", corpo, simular_digitacao=False)
+    c = cliente or cliente_da_clinica(conn, clinica["id"])
+    if isinstance(c, ClienteMeta):  # 36C: na Meta sai o modelo do resumo (o "🧪 teste" não cabe nele)
+        _mandar(c, inst[0], prof["whatsapp_pessoal"], texto, prof["name"], dia, clinica)
+    else:
+        c.enviar_texto(inst[0], f"{prof['whatsapp_pessoal'].lstrip('+')}@c.us", corpo, simular_digitacao=False)
     return {"ok": True, "dia": dia, "texto": corpo}

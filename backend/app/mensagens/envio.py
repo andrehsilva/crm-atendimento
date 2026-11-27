@@ -18,6 +18,8 @@ from psycopg.rows import dict_row
 
 from app.agenda.erros import AgendaError
 from app.agenda.servico import carregar_clinica
+from app.canais import modelos_meta
+from app.canais.meta import ClienteMeta
 from app.canais.waha import ClienteWaha, WahaErro
 from app.canais.whatsapp import instancia_da_clinica
 from app.config import Settings, get_settings
@@ -92,7 +94,7 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
     enviados = 0
     while enviados < maximo:
         o = conn.cursor(row_factory=dict_row).execute(
-            """select o.id, o.clinic_id, o.patient_id, o.kind, o.body, o.attempts, p.phone, p.optout_disparos
+            """select o.id, o.clinic_id, o.patient_id, o.kind, o.body, o.attempts, o.appointment_id, p.phone, p.optout_disparos
                from outbound_messages o join patients p on p.id = o.patient_id
                where o.status = 'agendada' and o.channel = 'whatsapp' and o.scheduled_for <= %s
                  and not (o.clinic_id = any(%s))
@@ -147,8 +149,18 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
 def _enviar(conn, clinica: dict, sessao: str, o: dict, agora: datetime, cliente: ClienteWaha) -> bool:
     conversa = chat._conversa(conn, clinica["id"], o["patient_id"], "whatsapp")
     chat_id = conversa.get("external_chat_id") or f"{o['phone'].lstrip('+')}@c.us"
+    texto = o["body"]
     try:
-        id_ext = cliente.enviar_texto(sessao, chat_id, o["body"])
+        if isinstance(cliente, ClienteMeta) and not modelos_meta.janela_aberta(conn, clinica["id"], o["patient_id"], agora):
+            # 36C (D131): fora da janela de 24 h a Meta só aceita modelo aprovado
+            modelo, params, texto = modelos_meta.montar(conn, clinica, o)
+            id_ext = cliente.enviar_modelo(chat_id, modelo.nome, params)
+        else:
+            id_ext = cliente.enviar_texto(sessao, chat_id, o["body"])
+    except modelos_meta.SemModelo as e:  # não adianta tentar de novo
+        conn.execute("update outbound_messages set status = 'falhou', attempts = attempts + 1, error = %s where id = %s",
+                     (str(e)[:300], o["id"]))
+        return False
     except WahaErro as e:
         tentativas = o["attempts"] + 1
         if tentativas >= MAX_TENTATIVAS:
@@ -171,6 +183,6 @@ def _enviar(conn, clinica: dict, sessao: str, o: dict, agora: datetime, cliente:
     if not conversa.get("external_chat_id"):
         conn.execute("update conversations set external_chat_id = %s where id = %s", (chat_id, conversa["id"]))
     # Aparece na conversa (painel) e no histórico da Ísis: se o paciente responder, ela sabe do que se trata (RN-DP-09)
-    chat._gravar(conn, clinica["id"], conversa["id"], "out", "isis", o["body"], ext)
+    chat._gravar(conn, clinica["id"], conversa["id"], "out", "isis", texto, ext)
     avisar(conn, clinica["id"], "conversa", conversa["id"])
     return True

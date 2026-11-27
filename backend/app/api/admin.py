@@ -21,7 +21,7 @@ from app.db import get_conn
 from app.eventos import avisar
 from app.segmentos import SEGMENTOS
 from app import ia, uso_ia
-from app.canais import conexao
+from app.canais import conexao, modelos_meta
 
 
 def _so_super_admin(request: Request, _=Depends(acesso)) -> None:
@@ -424,6 +424,30 @@ def testar_meta(clinic_id: UUID, conn=Depends(get_conn)):
         return {"ok": True, **conexao.cliente_meta(conn, clinic_id).testar()}
     except WahaErro as e:  # MetaErro herda de WahaErro
         return {"ok": False, "detalhe": f"A Meta não aceitou: {_motivo(e)}"}
+
+
+def _modelos(conn, clinic_id: UUID, criar: bool) -> dict:
+    """36C: os modelos do TemHorario na conta da Meta da clínica (criar os que faltam ou só ver a situação)."""
+    _existe(conn, clinic_id)
+    waba = conexao.estado_meta(conn, clinic_id)["waba_id"]
+    if not waba:
+        raise AgendaError("DADOS_INVALIDOS", "Salve o ID da conta do WhatsApp Business antes.")
+    try:
+        c = conexao.cliente_meta(conn, clinic_id)
+        lista = modelos_meta.criar_faltantes(c, waba) if criar else modelos_meta.situacao(c.listar_modelos(waba))
+    except WahaErro as e:  # MetaErro herda de WahaErro
+        raise AgendaError("ENVIO_FALHOU", f"A Meta não aceitou: {_motivo(e)}") from e
+    return {"modelos": lista, "aprovados": sum(m["situacao"] == "aprovado" for m in lista), "total": len(lista)}
+
+
+@router.get("/clinicas/{clinic_id}/whatsapp/meta/modelos", summary="Situação dos modelos do TemHorario na Meta")
+def ver_modelos(clinic_id: UUID, conn=Depends(get_conn)):
+    return _modelos(conn, clinic_id, criar=False)
+
+
+@router.post("/clinicas/{clinic_id}/whatsapp/meta/modelos", summary="Criar na Meta os modelos que faltam")
+def criar_modelos(clinic_id: UUID, conn=Depends(get_conn)):
+    return _modelos(conn, clinic_id, criar=True)
 
 
 @router.put("/clinicas/{clinic_id}/whatsapp/provedor", summary="Trocar o provedor do WhatsApp da clínica (WAHA ou Meta)")

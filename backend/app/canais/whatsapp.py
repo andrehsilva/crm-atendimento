@@ -19,9 +19,12 @@ from psycopg.rows import dict_row
 
 from app.agenda.erros import AgendaError
 from app.agenda.servico import carregar_clinica, obter_ou_criar_paciente
+from app.canais import modelos_meta
+from app.canais.meta import ClienteMeta
 from app.canais.waha import ROTULO_MIDIA, ClienteWaha, MensagemEntrada, WahaErro
 from app.canais.conexao import cliente_da_clinica, isis_pausada_no_whatsapp
 from app.config import get_settings
+from app.core import relogio
 from app import ia, transcricao, uso_ia
 from app.db import pool
 from app.eventos import avisar
@@ -233,7 +236,12 @@ def enviar_da_equipe(conn, clinic_id: UUID, conversa: dict, texto: str, cliente:
     if not inst or not inst["enabled"] or not conversa.get("external_chat_id"):
         raise AgendaError("DADOS_INVALIDOS", "Esta clínica não tem WhatsApp conectado para responder esta conversa.")
     try:
-        return (cliente or cliente_da_clinica(conn, clinic_id)).enviar_texto(inst["session"], conversa["external_chat_id"], texto, simular_digitacao=False)
+        cliente = cliente or cliente_da_clinica(conn, clinic_id)
+        if isinstance(cliente, ClienteMeta) and not modelos_meta.janela_aberta(
+                conn, clinic_id, conversa["patient_id"], relogio.agora()):
+            raise AgendaError("FORA_DA_JANELA", "No WhatsApp oficial só dá para escrever até 24 h depois da última "
+                              "mensagem do cliente. Espere ele escrever de novo ou ligue para ele.")
+        return cliente.enviar_texto(inst["session"], conversa["external_chat_id"], texto, simular_digitacao=False)
     except WahaErro as e:
         raise AgendaError("ENVIO_FALHOU", f"Não consegui enviar pelo WhatsApp: {e}") from e
 

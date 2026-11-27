@@ -326,6 +326,15 @@ Só no celular (tela < 768 px); no computador nada muda.
 - Trocar para a Meta exige o WAHA desligado e já liga a clínica na Meta; voltar ao WAHA deixa desligada (religa pelo
   caminho de sempre). Ainda sem "visto/digitando" na Meta e sem modelos fora da janela de 24 h (36C).
 
+## Etapa 36C — WhatsApp oficial: modelos e janela de 24 h ✅ (27/11/2026; D131; branch `whatsapp-oficial`)
+- Janela aberta (cliente escreveu nas últimas 24 h) → sai o texto de sempre. Fechada → sai o **modelo aprovado** do TemHorario.
+- Catálogo fixo de 9 modelos (pt_BR): lembrete (com botões Confirmar · Remarcar · Cancelar), confirmação, remarcação,
+  cancelamento, pós-consulta, tratamento e resumo do dia (utilidade); retorno e aniversário (marketing, com "Responda PARAR").
+- Admin geral (API): criar na conta da Meta da clínica os modelos que faltam e ver a situação (aprovado, em análise, recusado + motivo).
+- Fora da janela: campanha falha com motivo claro (campanha na Meta = 36E); resposta manual da equipe é recusada com
+  aviso "espere o cliente escrever ou ligue"; resumo do dia do profissional sai sempre como modelo.
+- A conversa do painel mostra o texto do modelo que o cliente recebeu.
+
 ---
 
 ## Depois da 1ª versão (backlog)
