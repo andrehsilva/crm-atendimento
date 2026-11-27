@@ -73,6 +73,7 @@ def criar(conn, clinic_id: UUID, *, titulo: str, texto: str, publico: str, envia
         """insert into campaigns (clinic_id, titulo, texto, publico, enviar_em, total, criada_por)
            values (%s, %s, %s, %s, %s, %s, %s) returning id""",
         (clinic_id, titulo.strip(), texto.strip(), publico, enviar_em, len(lista), autor)).fetchone()[0]
+    _modelo_na_meta(conn, clinic_id, cid, texto, nome_clinica)
     with conn.cursor() as cur:
         cur.executemany(
             """insert into outbound_messages (clinic_id, patient_id, kind, channel, body, scheduled_for, campaign_id)
@@ -80,6 +81,26 @@ def criar(conn, clinic_id: UUID, *, titulo: str, texto: str, publico: str, envia
             [(clinic_id, p["id"], montar_texto(texto.strip(), p["name"], nome_clinica), enviar_em, cid) for p in lista])
     avisar(conn, clinic_id, "mensagens")
     return {"id": cid, "total": len(lista)}
+
+
+def _modelo_na_meta(conn, clinic_id: UUID, campanha_id, texto: str, nome_clinica: str) -> None:
+    """36E (D131): clínica no WhatsApp oficial — a campanha vira um modelo de marketing, que a Meta aprova antes de
+    sair (quem já escreveu nas últimas 24 h recebe o texto normal). Se a Meta recusar o pedido, a campanha não é criada."""
+    from app.canais import conexao, modelos_meta
+    from app.canais.waha import WahaErro
+
+    if conexao.provedor(conn, clinic_id) != "meta":
+        return
+    try:
+        pedido = modelos_meta.pedido_campanha(campanha_id, texto, nome_clinica)
+        waba = conexao.estado_meta(conn, clinic_id)["waba_id"]
+        conexao.cliente_meta(conn, clinic_id).criar_modelo(waba, pedido)
+    except ValueError as e:
+        raise AgendaError("DADOS_INVALIDOS", str(e)) from e
+    except WahaErro as e:  # MetaErro
+        raise AgendaError("ENVIO_FALHOU", f"A Meta não aceitou o modelo da campanha: {e}") from e
+    conn.execute("update campaigns set meta_modelo = %s, meta_situacao = 'em análise' where id = %s",
+                 (pedido["name"], campanha_id))
 
 
 def cancelar(conn, clinic_id: UUID, campanha_id: UUID) -> int:
@@ -95,6 +116,7 @@ def cancelar(conn, clinic_id: UUID, campanha_id: UUID) -> int:
 def listar(conn, clinic_id: UUID) -> list[dict]:
     return conn.cursor(row_factory=dict_row).execute(
         """select c.id, c.titulo, c.texto, c.publico, c.enviar_em, c.status, c.total, c.created_at,
+                  c.meta_situacao, c.meta_motivo,
                   count(o.id) filter (where o.status in ('enviada', 'entregue', 'lida')) as enviadas,
                   count(o.id) filter (where o.status = 'agendada') as na_fila,
                   count(o.id) filter (where o.status in ('falhou', 'cancelada')) as nao_enviadas

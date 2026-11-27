@@ -172,13 +172,15 @@ def _texto(m: dict) -> str:
     return ""
 
 
-def interpretar_webhook(evento: dict, sessao: str, phone_number_id: str) -> tuple[list, list, list]:
-    """(mensagens recebidas, entregas [(id, nível)], falhas [(id, motivo)]) — só do número desta clínica."""
+def interpretar_webhook(evento: dict, sessao: str, phone_number_id: str) -> tuple[list, list, list, list]:
+    """(mensagens recebidas, entregas [(id, nível)], falhas [(id, motivo)], cobranças [(id, categoria, cobrável)])
+    — só do número desta clínica. A cobrança vem no aviso "pricing" de enviada/entregue (36E)."""
     mensagens: list[MensagemEntrada] = []
     entregas: list[tuple[str, int]] = []
     falhas: list[tuple[str, str]] = []
+    cobrancas: list[tuple[str, str, bool]] = []
     if evento.get("object") != "whatsapp_business_account":
-        return mensagens, entregas, falhas
+        return mensagens, entregas, falhas, cobrancas
     for entrada in evento.get("entry") or []:
         for mudanca in entrada.get("changes") or []:
             v = mudanca.get("value") or {}
@@ -202,6 +204,9 @@ def interpretar_webhook(evento: dict, sessao: str, phone_number_id: str) -> tupl
                 i, nome = st.get("id"), st.get("status")
                 if not i:
                     continue
+                preco = st.get("pricing") or {}
+                if preco.get("category"):
+                    cobrancas.append((str(i), str(preco["category"]).lower(), preco.get("billable") is not False))
                 if nome in ENTREGA:
                     entregas.append((str(i), ENTREGA[nome]))
                 elif nome == "failed":
@@ -209,4 +214,4 @@ def interpretar_webhook(evento: dict, sessao: str, phone_number_id: str) -> tupl
                     e0 = erros[0] if isinstance(erros[0], dict) else {}
                     motivo = f"{e0.get('code', '')} {e0.get('title') or e0.get('message') or 'falhou na Meta'}".strip()
                     falhas.append((str(i), motivo[:300]))
-    return mensagens, entregas, falhas
+    return mensagens, entregas, falhas, cobrancas

@@ -204,7 +204,7 @@ def test_interpretar_texto_audio_botao_e_status():
         statuses=[{"id": "wamid.A", "status": "delivered"}, {"id": "wamid.B", "status": "read"},
                   {"id": "wamid.C", "status": "sent"},
                   {"id": "wamid.D", "status": "failed", "errors": [{"code": 131047, "title": "Re-engagement message"}]}])
-    msgs, entregas, falhas = meta.interpretar_webhook(ev, SESSAO_META, PHONE_ID)
+    msgs, entregas, falhas, _ = meta.interpretar_webhook(ev, SESSAO_META, PHONE_ID)
     texto, audio, botao, foto, outro = msgs
     assert (texto.texto, texto.telefone, texto.chat_id, texto.nome) == (
         "Oi, tem horário?", "+5511988887777", "5511988887777", "Rita Moraes")
@@ -218,7 +218,7 @@ def test_interpretar_texto_audio_botao_e_status():
 
 def test_evento_de_outro_numero_e_ignorado():
     ev = _evento(mensagens=[_texto_in("w", "oi")], phone_id="555555555555")
-    assert meta.interpretar_webhook(ev, "s", PHONE_ID) == ([], [], [])
+    assert meta.interpretar_webhook(ev, "s", PHONE_ID) == ([], [], [], [])
 
 
 def test_trocar_para_meta_liga_e_voltar_desliga(conn, clinica):
@@ -285,7 +285,7 @@ def test_mensagem_da_meta_entra_na_conversa_da_clinica(conn, clinica):
     _na_meta(conn, clinica)
     conn.execute("update clinics set settings = coalesce(settings, '{}'::jsonb) || %s where id = %s",
                  (Jsonb({"isis_pausada_whatsapp": True}), clinica.id))  # sem IA: só confere a entrada
-    (msg,), _, _ = meta.interpretar_webhook(_evento(mensagens=[_texto_in("wamid.in1", "Oi")]), SESSAO_META, PHONE_ID)
+    (msg,), _, _, _ = meta.interpretar_webhook(_evento(mensagens=[_texto_in("wamid.in1", "Oi")]), SESSAO_META, PHONE_ID)
     falsa = ClienteMeta(PHONE_ID, TOKEN, base_url="https://graph.test/v23.0", transport=_meta_simulada([]))
     whatsapp.processar_com(SemCommit(conn), msg, cliente=falsa)  # processar_com faz commit: aqui não pode
     r = conn.execute(
@@ -316,7 +316,7 @@ def test_entregue_lida_e_falha_pela_sessao_meta(conn, clinica):
 # ---------------------------------------------------------------------------
 # Etapa 36C — modelos (templates) e janela de 24 h
 # ---------------------------------------------------------------------------
-from datetime import timedelta  # noqa: E402
+from datetime import UTC, datetime, timedelta  # noqa: E402
 
 from app.agenda import servico as S  # noqa: E402
 from app.agenda.erros import AgendaError  # noqa: E402
@@ -539,3 +539,136 @@ def test_canais_da_clinica_na_meta_sem_qr_nem_reinicio(cliente, conn, clinica, m
         raise MetaErro("token expirado")
     monkeypatch.setattr(ClienteMeta, "testar", cai)
     assert adm.get(base).json()["situacao"] == "sem_resposta"
+
+
+# ---------------------------------------------------------------------------
+# Etapa 36E — custo das mensagens e campanhas como modelo de marketing
+# ---------------------------------------------------------------------------
+from app.canais import custo_meta  # noqa: E402
+from app.mensagens import campanhas  # noqa: E402
+
+
+def test_aviso_da_meta_traz_a_cobranca():
+    ev = _evento(statuses=[
+        {"id": "wamid.1", "status": "sent", "pricing": {"billable": True, "pricing_model": "PMP", "category": "utility"}},
+        {"id": "wamid.2", "status": "delivered", "pricing": {"billable": False, "category": "service"}},
+        {"id": "wamid.3", "status": "read"},
+    ])
+    *_, cobrancas = meta.interpretar_webhook(ev, SESSAO_META, PHONE_ID)
+    assert cobrancas == [("wamid.1", "utility", True), ("wamid.2", "service", False)]
+
+
+def test_gasto_do_mes_desconta_atendimento_gratis(conn, clinica):
+    conn.execute("""update platform_settings set meta_servico_gratis = 2, cotacao_brl = 5,
+                    meta_precos_usd = '{"marketing": 0.06, "utility": 0.01, "service": 0.01, "authentication": 0.01}'::jsonb
+                    where id = 1""")
+    cob = [(f"s{i}", "service", True) for i in range(3)] + [("u1", "utility", True), ("m1", "marketing", True),
+                                                            ("m2", "marketing", True), ("x", "utility", False)]
+    assert custo_meta.registrar(conn, clinica.id, cob) == 7
+    assert custo_meta.registrar(conn, clinica.id, [("u1", "utility", True)]) == 0  # o mesmo aviso de novo não conta
+    r = custo_meta.do_mes(conn, clinica.id, datetime.now(UTC))
+    por = {linha["categoria"]: linha for linha in r["linhas"]}
+    assert (por["service"]["mensagens"], por["service"]["cobradas"]) == (3, 1)  # 2 grátis
+    assert por["utility"]["mensagens"] == 1  # a não cobrável fica de fora
+    assert por["marketing"]["cobradas"] == 2
+    assert r["total_usd"] == pytest.approx(0.01 + 0.01 + 0.12)
+    assert r["total_brl"] == pytest.approx(0.70)
+
+
+def test_webhook_repassa_as_cobrancas(conn, clinica, monkeypatch):
+    from app.api import webhooks
+
+    _na_meta(conn, clinica)
+    t = _token_webhook(conn, clinica)
+    achado = conexao.por_token_meta(conn, t)
+    monkeypatch.setattr(conexao, "por_token_meta", lambda c, tk, exigir_meta=True: achado if tk == t else None)
+    recebidas: list = []
+    monkeypatch.setattr(webhooks.custo_meta, "processar", lambda cid, cob: recebidas.append((cid, cob)))
+    corpo = json.dumps(_evento(statuses=[{"id": "w9", "status": "sent", "pricing": {"billable": True, "category": "marketing"}}])).encode()
+    assert TestClient(app).post(f"/webhooks/meta/{t}", content=corpo, headers={"x-hub-signature-256": _assinar(corpo)}).status_code == 200
+    assert recebidas == [(clinica.id, [("w9", "marketing", True)])]
+
+
+def test_texto_da_campanha_no_formato_da_meta():
+    assert modelos_meta.texto_campanha("Olá, {nome}! A {clinica} deseja boas festas.", "Clínica X") == \
+        "Olá, {{1}}! A Clínica X deseja boas festas."
+    with pytest.raises(ValueError, match="só uma vez"):
+        modelos_meta.texto_campanha("{nome}, oi {nome}", "X")
+    with pytest.raises(ValueError, match="começar nem terminar"):
+        modelos_meta.texto_campanha("Feliz Natal, {nome}", "X")
+    pedido = modelos_meta.pedido_campanha("abc-123", "Aviso: a {clinica} fecha dia 24.", "Clínica X")
+    assert pedido["category"] == "MARKETING" and "example" not in pedido["components"][0]
+    assert pedido["components"][1] == {"type": "FOOTER", "text": modelos_meta.RODAPE_PARAR}
+
+
+def _campanha_na_meta(conn, clinica, monkeypatch):
+    _na_meta(conn, clinica)
+    pid = conn.execute("insert into patients (clinic_id, name, phone) values (%s, 'Rita Moraes', %s) returning id",
+                       (clinica.id, TEL_CLIENTE)).fetchone()[0]
+    conn.execute("""insert into appointments (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at, status)
+                    values (%s, %s, %s, %s, %s, %s, 'realizada')""",
+                 (clinica.id, pid, clinica.prof_a, clinica.servico, AGORA - timedelta(days=30), AGORA - timedelta(days=30, minutes=-60)))
+    pedidos: list = []
+    monkeypatch.setattr(ClienteMeta, "criar_modelo", lambda self, waba, pedido: pedidos.append(pedido) or {"id": "1"})
+    r = campanhas.criar(conn, clinica.id, titulo="Natal", texto="Olá, {nome}! A {clinica} deseja boas festas.",
+                        publico="todos", enviar_em=AGORA, autor=None, agora=AGORA)
+    return r["id"], pedidos
+
+
+def test_criar_campanha_na_meta_manda_o_modelo_para_aprovar(conn, clinica, monkeypatch):
+    cid, pedidos = _campanha_na_meta(conn, clinica, monkeypatch)
+    assert len(pedidos) == 1 and pedidos[0]["category"] == "MARKETING"
+    nome, sit = conn.execute("select meta_modelo, meta_situacao from campaigns where id = %s", (cid,)).fetchone()
+    assert nome == modelos_meta.nome_modelo_campanha(cid) and sit == "em análise"
+
+
+def test_campanha_espera_aprovacao_e_depois_sai_como_modelo(conn, clinica, monkeypatch):
+    cid, _ = _campanha_na_meta(conn, clinica, monkeypatch)
+    nome = modelos_meta.nome_modelo_campanha(cid)
+    situacao = {"status": "PENDING"}
+    monkeypatch.setattr(ClienteMeta, "listar_modelos", lambda self, waba: [{"name": nome, "language": "pt_BR", **situacao}])
+    chamadas: list = []
+    envio.enviar_pendentes(SemCommit(conn), AGORA, cliente=_meta_falsa(chamadas), s=_cfg(), so_clinica=clinica.id)
+    assert chamadas == []  # em análise: não manda
+    st, erro, quando = conn.execute("select status, error, scheduled_for from outbound_messages where campaign_id = %s",
+                                    (cid,)).fetchone()
+    assert st == "agendada" and "aprovar" in erro and quando > AGORA
+
+    situacao["status"] = "APPROVED"
+    depois = AGORA + timedelta(minutes=31)
+    envio.enviar_pendentes(SemCommit(conn), depois, cliente=_meta_falsa(chamadas), s=_cfg(), so_clinica=clinica.id)
+    corpo = json.loads(chamadas[0].content)
+    assert corpo["template"]["name"] == nome
+    assert [p["text"] for p in corpo["template"]["components"][0]["parameters"]] == ["Rita"]
+    assert conn.execute("select status from outbound_messages where campaign_id = %s", (cid,)).fetchone()[0] == "enviada"
+
+
+def test_campanha_recusada_falha_com_motivo(conn, clinica, monkeypatch):
+    cid, _ = _campanha_na_meta(conn, clinica, monkeypatch)
+    nome = modelos_meta.nome_modelo_campanha(cid)
+    monkeypatch.setattr(ClienteMeta, "listar_modelos", lambda self, waba: [
+        {"name": nome, "language": "pt_BR", "status": "REJECTED", "rejected_reason": "PROMOTIONAL"}])
+    chamadas: list = []
+    envio.enviar_pendentes(SemCommit(conn), AGORA, cliente=_meta_falsa(chamadas), s=_cfg(), so_clinica=clinica.id)
+    st, erro = conn.execute("select status, error from outbound_messages where campaign_id = %s", (cid,)).fetchone()
+    assert chamadas == [] and st == "falhou" and "recusado" in erro and "PROMOTIONAL" in erro
+
+
+def test_campanha_no_waha_nao_chama_a_meta(conn, clinica, monkeypatch):
+    pid = conn.execute("insert into patients (clinic_id, name, phone) values (%s, 'Rita Moraes', %s) returning id",
+                       (clinica.id, TEL_CLIENTE)).fetchone()[0]
+    conn.execute("""insert into appointments (clinic_id, patient_id, professional_id, service_id, starts_at, ends_at, status)
+                    values (%s, %s, %s, %s, %s, %s, 'realizada')""",
+                 (clinica.id, pid, clinica.prof_a, clinica.servico, AGORA - timedelta(days=30), AGORA - timedelta(days=30, minutes=-60)))
+    monkeypatch.setattr(ClienteMeta, "criar_modelo", lambda *a: pytest.fail("não podia chamar a Meta"))
+    r = campanhas.criar(conn, clinica.id, titulo="Natal", texto="Olá, {nome}! Boas festas.", publico="todos",
+                        enviar_em=AGORA, autor=None, agora=AGORA)
+    assert conn.execute("select meta_modelo from campaigns where id = %s", (r["id"],)).fetchone()[0] is None
+
+
+def test_custo_so_para_clinica_na_meta(cliente, conn, clinica):  # noqa: F811
+    adm = _como(cliente, _usuario(conn, clinic_id=clinica.id, papel="clinic_admin"))
+    url = f"/api/clinics/{clinica.id}/config/canais/whatsapp/custo"
+    assert adm.get(url).status_code == 422
+    _na_meta(conn, clinica)
+    assert {x["categoria"] for x in adm.get(url).json()["linhas"]} >= {"service", "utility", "marketing"}

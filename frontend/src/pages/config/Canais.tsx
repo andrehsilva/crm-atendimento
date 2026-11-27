@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, MessageCircle, QrCode, RefreshCw } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
+import { CustoMeta } from '../../components/CustoMeta'
 import { Botao, Secao, Selo, type CorSelo } from '../../components/ui'
 import { api, type CanalWhatsapp } from '../../lib/api'
 import { useClinica } from '../../lib/clinica'
@@ -131,6 +132,7 @@ export function Canais({ podeEditar }: { podeEditar: boolean }) {
           <p className="mt-4 text-xs text-muted">Só o administrador da clínica pausa ou retoma.</p>
         )}
       </Secao>
+      {meta && s.ligado && <CustoMeta url={`/clinics/${clinica.id}/config/canais/whatsapp/custo`} chave={['canais', 'custo-meta', clinica.id]} />}
     </div>
   )
 }

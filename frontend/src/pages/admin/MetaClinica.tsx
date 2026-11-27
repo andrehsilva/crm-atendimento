@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BadgeCheck, Check, Copy, FileText, KeyRound, ListChecks, Loader2, RefreshCw, Webhook } from 'lucide-react'
 import { useAviso } from '../../components/Aviso'
+import { CustoMeta } from '../../components/CustoMeta'
 import { Botao, Campo, Entrada, Modal, Secao, Selo } from '../../components/ui'
 import { api, type EstadoMeta, type ModelosMeta } from '../../lib/api'
 
@@ -26,6 +27,8 @@ export function MetaClinica({ id, emUso, ligadoWaha, onTrocou }: {
       <Dados id={id} m={m} />
       <Endereco m={m} />
       {pronto && <Modelos id={id} />}
+      {emUso && <CustoMeta url={`/admin/clinicas/${id}/whatsapp/meta/custo`} chave={['admin', 'meta-custo', id]} />}
+      <Precos />
       <Trocar id={id} emUso={emUso} pronto={pronto} ligadoWaha={ligadoWaha} onTrocou={onTrocou} />
     </div>
   )
@@ -233,6 +236,46 @@ function Trocar({ id, emUso, pronto, ligadoWaha, onTrocou }: {
           <Botao type="button" disabled={trocar.isPending} onClick={() => trocar.mutate('meta')}>{trocar.isPending ? 'Trocando…' : 'Trocar'}</Botao>
         </div>
       </Modal>
+    </Secao>
+  )
+}
+
+type Precos = { marketing: number; utility: number; authentication: number; service: number; servico_gratis: number; cotacao_brl: number | null }
+const NOMES_PRECO: [keyof Omit<Precos, 'servico_gratis' | 'cotacao_brl'>, string][] = [
+  ['marketing', 'Marketing'], ['utility', 'Utilidade'], ['service', 'Atendimento'], ['authentication', 'Autenticação'],
+]
+
+/** 36E: tabela de preços da Meta (vale para todas as clínicas; a Meta muda por trimestre). */
+function Precos() {
+  const aviso = useAviso()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['admin', 'meta-precos'], queryFn: () => api.get<Precos>('/admin/whatsapp/meta/precos') })
+  const [f, setF] = useState<Precos | null>(null)
+  useEffect(() => { if (q.data) setF(q.data) }, [q.data])
+  const salvar = useMutation({
+    mutationFn: () => api.put<Precos>('/admin/whatsapp/meta/precos', f),
+    onSuccess: (r) => { qc.setQueryData(['admin', 'meta-precos'], r); qc.invalidateQueries({ queryKey: ['admin', 'meta-custo'] }); aviso.ok('Preços salvos.') },
+    onError: aviso.erro,
+  })
+  if (!f) return null
+  return (
+    <Secao titulo="Preços da Meta (todas as clínicas)" icone={<FileText className="size-5" />}>
+      <form onSubmit={(e: FormEvent) => { e.preventDefault(); salvar.mutate() }} className="flex flex-col gap-4">
+        <div className="grid gap-4 sm:grid-cols-3">
+          {NOMES_PRECO.map(([k, rot]) => (
+            <Campo key={k} rotulo={`${rot} (US$ por mensagem)`}>
+              <Entrada type="number" min={0} max={1} step={0.0001} value={f[k]} onChange={(e) => setF({ ...f, [k]: Number(e.target.value) })} />
+            </Campo>
+          ))}
+          <Campo rotulo="Atendimento grátis por mês">
+            <Entrada type="number" min={0} value={f.servico_gratis} onChange={(e) => setF({ ...f, servico_gratis: Number(e.target.value) })} />
+          </Campo>
+        </div>
+        <p className="text-xs text-muted">
+          Usados só na estimativa de gasto. Confira na tabela oficial da Meta (Brasil). Cotação do dólar: {f.cotacao_brl ? `R$ ${f.cotacao_brl}` : 'não cadastrada (Admin geral › Uso › Cotação do dólar)'}.
+        </p>
+        <div className="flex justify-end"><Botao type="submit" disabled={salvar.isPending}>{salvar.isPending ? 'Salvando…' : 'Salvar preços'}</Botao></div>
+      </form>
     </Secao>
   )
 }

@@ -21,7 +21,8 @@ from app.db import get_conn
 from app.eventos import avisar
 from app.segmentos import SEGMENTOS
 from app import ia, uso_ia
-from app.canais import conexao, modelos_meta
+from app.canais import conexao, custo_meta, modelos_meta
+from app.core import relogio
 
 
 def _so_super_admin(request: Request, _=Depends(acesso)) -> None:
@@ -451,6 +452,34 @@ def ver_modelos(clinic_id: UUID, conn=Depends(get_conn)):
 @router.post("/clinicas/{clinic_id}/whatsapp/meta/modelos", summary="Criar na Meta os modelos que faltam")
 def criar_modelos(clinic_id: UUID, conn=Depends(get_conn)):
     return _modelos(conn, clinic_id, criar=True)
+
+
+@router.get("/clinicas/{clinic_id}/whatsapp/meta/custo", summary="Mensagens cobradas no mês e gasto estimado (Meta)")
+def custo_meta_clinica(clinic_id: UUID, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    return custo_meta.do_mes(conn, clinic_id, relogio.agora())
+
+
+class PrecosMeta(BaseModel):
+    marketing: float = Field(ge=0, le=1)
+    utility: float = Field(ge=0, le=1)
+    authentication: float = Field(ge=0, le=1)
+    service: float = Field(ge=0, le=1)
+    servico_gratis: int = Field(1000, ge=0, le=100000)
+
+
+@router.get("/whatsapp/meta/precos", summary="Preços da Meta usados na estimativa (US$ por mensagem)")
+def ver_precos_meta(conn=Depends(get_conn)):
+    tabela, gratis, cotacao = custo_meta.precos(conn)
+    return {**tabela, "servico_gratis": gratis, "cotacao_brl": float(cotacao) if cotacao else None}
+
+
+@router.put("/whatsapp/meta/precos", summary="Atualizar os preços da Meta (mudam por trimestre)")
+def salvar_precos_meta(body: PrecosMeta, conn=Depends(get_conn)):
+    d = body.model_dump()
+    gratis = d.pop("servico_gratis")
+    custo_meta.salvar_precos(conn, d, gratis)
+    return ver_precos_meta(conn)
 
 
 @router.put("/clinicas/{clinic_id}/whatsapp/provedor", summary="Trocar o provedor do WhatsApp da clínica (WAHA ou Meta)")

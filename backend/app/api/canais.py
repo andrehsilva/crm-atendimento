@@ -15,9 +15,11 @@ from app.admin import servico as adm
 from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.auth.acesso import acesso, exigir_admin_clinica
+from app.canais import custo_meta
 from app.canais.conexao import cliente_da_clinica, isis_pausada_no_whatsapp, provedor
 from app.canais.waha import WahaErro
 from app.canais.whatsapp import instancia_da_clinica
+from app.core import relogio
 from app.db import get_conn
 from app.eventos import avisar
 
@@ -112,3 +114,11 @@ def whatsapp_pausa(clinic_id: UUID, body: Pausa, request: Request, conn=Depends(
     adm.auditar(conn, u.id, "pausar_isis_whatsapp" if body.pausada else "retomar_isis_whatsapp", clinic_id)
     avisar(conn, clinic_id, "whatsapp", clinic_id)
     return whatsapp(clinic_id, conn)
+
+
+@router.get("/whatsapp/custo", summary="WhatsApp oficial: mensagens cobradas no mês e gasto estimado")
+def whatsapp_custo(clinic_id: UUID, conn=Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    if provedor(conn, clinic_id) != "meta":
+        raise AgendaError("DADOS_INVALIDOS", "Só o WhatsApp oficial (Meta) cobra por mensagem.")
+    return custo_meta.do_mes(conn, clinic_id, relogio.agora())

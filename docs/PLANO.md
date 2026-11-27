@@ -343,6 +343,17 @@ Só no celular (tela < 768 px); no computador nada muda.
 - **Configurações › Canais (clínica):** na Meta mostra "WhatsApp oficial", situação conferida na Meta e o aviso das
   24 h; sem QR code nem "Reiniciar conexão" (a API também recusa).
 
+## Etapa 36E — WhatsApp oficial: custo e campanhas ✅ (27/11/2026; D131; branch `whatsapp-oficial`)
+- **Custo:** a Meta diz, no aviso de enviada/entregue, a categoria cobrada de cada mensagem; guardamos (migration 0036,
+  `meta_cobrancas`) e mostramos o **gasto estimado do mês** (Configurações › Canais e Admin geral), descontando as
+  1.000 respostas de atendimento grátis. Preços editáveis pelo super admin (padrão Brasil: marketing US$ 0,0625;
+  utilidade/atendimento/autenticação US$ 0,0068), convertidos pela cotação do dólar já cadastrada.
+- **Campanhas na Meta:** ao criar, o texto vira um modelo de marketing próprio (`{nome}` uma vez só, com "Responda PARAR")
+  enviado para aprovação. Em análise → a mensagem espera na fila (confere a cada 10 min, até 3 dias); aprovada → sai;
+  recusada → "falhou" com o motivo da Meta. Quem escreveu nas últimas 24 h recebe o texto normal. A lista de
+  campanhas mostra "Meta: em análise / aprovada / recusada".
+- **Falta (fora do código):** homologar com uma conta real da Meta antes de juntar o branch na `main`.
+
 ---
 
 ## Depois da 1ª versão (backlog)

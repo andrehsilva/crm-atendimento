@@ -12,6 +12,10 @@ import { useTermos } from '../lib/termos'
 type Campanha = {
   id: string; titulo: string; texto: string; publico: string; enviar_em: string; status: 'agendada' | 'cancelada'
   total: number; enviadas: number; na_fila: number; nao_enviadas: number
+  meta_situacao?: string | null; meta_motivo?: string | null  // 36E (D131): modelo da campanha no WhatsApp oficial
+}
+const SELO_META: Record<string, ['verde' | 'ambar' | 'vermelho', string]> = {
+  aprovado: ['verde', 'Meta: aprovada'], 'em análise': ['ambar', 'Meta: em análise'], recusado: ['vermelho', 'Meta: recusada'],
 }
 type Dados = { campanhas: Campanha[]; modelos: { id: string; titulo: string; texto: string }[]; publicos: Record<string, string> }
 
@@ -50,6 +54,12 @@ export function Campanhas() {
                     {c.status === 'cancelada' ? <Selo cor="vermelho">cancelada</Selo> : c.na_fila === 0 ? <Selo cor="verde">concluída</Selo> : <Selo cor="azul">enviando</Selo>}
                   </div>
                   <p className="text-xs text-muted">{d.publicos[c.publico]} · a partir de {dataHora(c.enviar_em, clinica.timezone)}</p>
+                  {c.meta_situacao && c.status === 'agendada' && (
+                    <p className="mt-1 text-xs" title={c.meta_situacao === 'em análise' ? 'A Meta aprova o modelo antes de enviar; quem escreveu nas últimas 24 h já recebe.' : undefined}>
+                      <Selo cor={SELO_META[c.meta_situacao]?.[0] ?? 'ambar'}>{SELO_META[c.meta_situacao]?.[1] ?? `Meta: ${c.meta_situacao}`}</Selo>
+                      {c.meta_motivo && <span className="ml-2 text-muted">{c.meta_motivo}</span>}
+                    </p>
+                  )}
                 </div>
                 <div className="w-56">
                   <div className="mb-1 flex justify-between text-xs text-muted"><span>{c.enviadas} de {c.total} enviadas</span>{c.nao_enviadas > 0 && <span>{c.nao_enviadas} não enviadas</span>}</div>

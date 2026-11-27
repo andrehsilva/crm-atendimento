@@ -94,7 +94,7 @@ def enviar_pendentes(conn, agora: datetime, cliente: ClienteWaha | None = None, 
     enviados = 0
     while enviados < maximo:
         o = conn.cursor(row_factory=dict_row).execute(
-            """select o.id, o.clinic_id, o.patient_id, o.kind, o.body, o.attempts, o.appointment_id, p.phone, p.optout_disparos
+            """select o.id, o.clinic_id, o.patient_id, o.kind, o.body, o.attempts, o.appointment_id, o.campaign_id, p.phone, p.optout_disparos
                from outbound_messages o join patients p on p.id = o.patient_id
                where o.status = 'agendada' and o.channel = 'whatsapp' and o.scheduled_for <= %s
                  and not (o.clinic_id = any(%s))
@@ -153,10 +153,18 @@ def _enviar(conn, clinica: dict, sessao: str, o: dict, agora: datetime, cliente:
     try:
         if isinstance(cliente, ClienteMeta) and not modelos_meta.janela_aberta(conn, clinica["id"], o["patient_id"], agora):
             # 36C (D131): fora da janela de 24 h a Meta só aceita modelo aprovado
+            if o["kind"] == "campanha" and o.get("campaign_id"):  # 36E: o modelo da campanha precisa estar aprovado
+                waba = conn.execute("select meta_waba_id from whatsapp_instances where clinic_id = %s",
+                                    (clinica["id"],)).fetchone()[0]
+                modelos_meta.conferir_campanha(conn, cliente, waba, o["campaign_id"], agora)
             modelo, params, texto = modelos_meta.montar(conn, clinica, o)
             id_ext = cliente.enviar_modelo(chat_id, modelo.nome, params)
         else:
             id_ext = cliente.enviar_texto(sessao, chat_id, o["body"])
+    except modelos_meta.AguardandoAprovacao as e:  # espera a Meta, sem gastar tentativa
+        conn.execute("update outbound_messages set scheduled_for = %s, error = %s where id = %s",
+                     (agora + timedelta(minutes=30), str(e), o["id"]))
+        return False
     except modelos_meta.SemModelo as e:  # não adianta tentar de novo
         conn.execute("update outbound_messages set status = 'falhou', attempts = attempts + 1, error = %s where id = %s",
                      (str(e)[:300], o["id"]))

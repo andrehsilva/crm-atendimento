@@ -105,10 +105,11 @@ def montar(conn, clinica: dict, o: dict) -> tuple[Modelo, list[str], str]:
     from app.agenda.servico import detalhar
     from app.painel.avisos import palavras, primeiro_nome, quando
 
+    if o["kind"] == "campanha" and o.get("campaign_id"):  # 36E: modelo próprio da campanha
+        return montar_campanha(conn, clinica, o)
     modelo = POR_TIPO.get(o["kind"])
     if modelo is None:
-        raise SemModelo("Fora da janela de 24 h esta mensagem precisa de um modelo aprovado pela Meta "
-                        "(campanhas no WhatsApp oficial chegam na próxima etapa).")
+        raise SemModelo("Fora da janela de 24 h esta mensagem precisa de um modelo aprovado pela Meta.")
     nome = conn.execute("select name from patients where id = %s", (o["patient_id"],)).fetchone()[0]
     nome, clin, tz = primeiro_nome(nome), clinica["name"], clinica["tz"]
     if o["kind"] in ("lembrete", "confirmacao", "remarcacao", "cancelamento"):
@@ -180,3 +181,72 @@ def criar_faltantes(cliente, waba_id: str) -> list[dict]:
         if (m.nome, IDIOMA) not in ja:
             cliente.criar_modelo(waba_id, pedido_de_criacao(m))
     return situacao(cliente.listar_modelos(waba_id))
+
+
+# ---------------------------------------------------------------------------
+# Campanhas (Etapa 36E): cada campanha de clínica na Meta vira um modelo de marketing próprio
+# ---------------------------------------------------------------------------
+class AguardandoAprovacao(Exception):
+    """O modelo da campanha ainda está em análise na Meta: a mensagem espera na fila."""
+
+
+CONFERIR_A_CADA = timedelta(minutes=10)
+ESPERA_MAXIMA = timedelta(days=3)
+
+
+def nome_modelo_campanha(campanha_id) -> str:
+    return f"temhorario_campanha_{str(campanha_id).replace('-', '')[:12]}"
+
+
+def texto_campanha(texto: str, nome_clinica: str) -> str:
+    """Texto da campanha no formato da Meta: {clinica} fica fixo; {nome} vira {{1}} (uma vez só)."""
+    if texto.count("{nome}") > 1:
+        raise ValueError("No WhatsApp oficial use {nome} só uma vez no texto da campanha.")
+    t = texto.strip().replace("{clinica}", nome_clinica).replace("{nome}", "{{1}}")
+    if t.startswith("{{1}}") or t.endswith("{{1}}"):
+        raise ValueError("No WhatsApp oficial o texto não pode começar nem terminar com {nome}.")
+    return t
+
+
+def pedido_campanha(campanha_id, texto: str, nome_clinica: str) -> dict:
+    corpo = texto_campanha(texto, nome_clinica)
+    m = Modelo(nome_modelo_campanha(campanha_id), "MARKETING", corpo, ("Ana",) if "{{1}}" in corpo else (),
+               rodape=RODAPE_PARAR)
+    pedido = pedido_de_criacao(m)
+    if not m.exemplo:  # sem variável: a Meta não aceita "example" vazio
+        pedido["components"][0].pop("example", None)
+    return pedido
+
+
+def conferir_campanha(conn, cliente, waba_id: str, campanha_id, agora: datetime) -> None:
+    """Garante que o modelo da campanha está aprovado. Em análise → AguardandoAprovacao; recusado ou
+    esperando demais → SemModelo (a mensagem falha com o motivo)."""
+    r = conn.execute("""select meta_modelo, meta_situacao, meta_motivo, meta_conferido_em, enviar_em
+                        from campaigns where id = %s""", (campanha_id,)).fetchone()
+    if not r or not r[0]:
+        raise SemModelo("Esta campanha foi criada antes de a clínica usar o WhatsApp oficial: crie de novo.")
+    nome, sit, motivo, conferido, enviar_em = r
+    if sit != "aprovado" and (conferido is None or agora - conferido > CONFERIR_A_CADA):
+        achado = next((e for e in cliente.listar_modelos(waba_id) if e.get("name") == nome), None)
+        sit = SITUACAO.get((achado or {}).get("status", ""), "não criado")
+        motivo = (achado or {}).get("rejected_reason")
+        conn.execute("""update campaigns set meta_situacao = %s, meta_motivo = %s, meta_conferido_em = %s
+                        where id = %s""", (sit, motivo, agora, campanha_id))
+    if sit == "aprovado":
+        return
+    if sit in ("recusado", "pausado", "desativado", "não criado"):
+        raise SemModelo(f"A Meta não liberou o modelo da campanha ({sit}{': ' + motivo if motivo else ''}).")
+    if agora - enviar_em > ESPERA_MAXIMA:
+        raise SemModelo("A Meta não aprovou o modelo da campanha em 3 dias.")
+    raise AguardandoAprovacao("aguardando a Meta aprovar o modelo da campanha")
+
+
+def montar_campanha(conn, clinica: dict, o: dict) -> tuple[Modelo, list[str], str]:
+    from app.painel.avisos import primeiro_nome
+
+    r = conn.execute("select meta_modelo, texto from campaigns where id = %s", (o["campaign_id"],)).fetchone()
+    corpo = texto_campanha(r[1], clinica["name"])
+    m = Modelo(r[0], "MARKETING", corpo, (), rodape=RODAPE_PARAR)
+    nome = conn.execute("select name from patients where id = %s", (o["patient_id"],)).fetchone()[0]
+    params = [_param(primeiro_nome(nome))] if "{{1}}" in corpo else []
+    return m, params, renderizar(m, params)

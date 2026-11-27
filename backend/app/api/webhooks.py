@@ -8,7 +8,7 @@ import hmac
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 
-from app.canais import meta, waha, whatsapp
+from app.canais import custo_meta, meta, waha, whatsapp
 from app.config import get_settings
 from app.db import pool
 from app.eventos import avisar
@@ -123,11 +123,13 @@ async def webhook_meta(token: str, request: Request, tarefas: BackgroundTasks):
         evento = json.loads(corpo)
     except ValueError as e:
         raise HTTPException(400, "JSON inválido") from e
-    mensagens, entregas, falhas = meta.interpretar_webhook(evento, achado["sessao"], achado["phone_number_id"])
+    mensagens, entregas, falhas, cobrancas = meta.interpretar_webhook(evento, achado["sessao"], achado["phone_number_id"])
     for msg in mensagens:
         tarefas.add_task(whatsapp.processar, msg)  # responde à Meta já; a Ísis trabalha em segundo plano
     for i, nivel in entregas:
         tarefas.add_task(whatsapp.processar_entrega, achado["sessao"], i, nivel)
     for i, motivo in falhas:
         tarefas.add_task(whatsapp.processar_falha, achado["sessao"], i, motivo)
+    if cobrancas:
+        tarefas.add_task(custo_meta.processar, achado["clinic_id"], cobrancas)
     return {"ok": True}
