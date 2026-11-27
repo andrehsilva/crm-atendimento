@@ -10,7 +10,7 @@ Este é o **único lugar** com as perguntas em aberto do projeto.
 - Se você concordar com a **sugestão**, basta escrever "ok".
 - "Veremos depois" → a pergunta vai para **⏸ Adiadas** (não bloqueia nada agora).
 
-**Progresso:** 110 de 118 resolvidas (107 respondidas · 3 adiadas) — 27/11/2026.
+**Progresso:** 111 de 119 resolvidas (108 respondidas · 3 adiadas) — 27/11/2026.
 
 ---
 
@@ -117,6 +117,12 @@ Hoje: a consulta entra como "agendada" (a confirmar); o lembrete da véspera já
 
 ✅ Nada pendente — Etapa 34 liberada.
 
+## ✉️ Bloqueia a Etapa 35 (Mensagens: por cliente e por período)
+
+Pedido (27/11/2026): filtro por cliente (mostra tudo o que foi enviado para ele) e, por padrão, só a última semana, com opção de período maior. Campanhas e aniversário já aparecem na lista.
+
+✅ Nada pendente — Etapa 35 liberada.
+
 ## 🟤 Bloqueia a Etapa 12 (Domínio próprio)
 
 ✅ Nada pendente — Etapa 12 liberada (depois da 11).
@@ -147,6 +153,7 @@ Decisões que eu sugeri e que ainda não foram confirmadas. Se não houver obje�
 
 ## ✅ Respondidas
 
+- [x] **Q112 — Campanha e aniversário:** sim, resumo de cada disparo no topo; período 7 (padrão), 30 e 90 dias. *(27/11 → D130)*
 - [x] **Q108 — Mensagem ao marcar com menos de 24 h:** continua saindo, mas só como comprovante, sem pedir confirmação. *(27/11 → D129)*
 - [x] **Q109 — Quem marca:** vale para a Ísis e para a recepção. *(27/11 → D129)*
 - [x] **Q110 — Remarcação:** remarcar para menos de 24 h também já fica confirmada. *(27/11 → D129)*

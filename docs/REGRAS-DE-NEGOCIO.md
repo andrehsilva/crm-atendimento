@@ -70,6 +70,7 @@ Status: 🟡 proposta · ✅ aprovada · ❌ descartada. Para mudar uma regra, e
 | RN-MS-05 | Lembrete não respondido até **X h** antes (config) → aparece em destaque no painel para a recepção ligar. | Código + Config | 🟡 |
 | RN-MS-06 | Cada mensagem automática é registrada (`outbound_messages`) com status: `agendada`, `enviada`, `entregue`, `lida`, `falhou`. | Código | ✅ |
 | RN-MS-10 | **Entregue/lida** (D85): vem do WhatsApp (evento `message.ack`: 2 = entregue, 3 ou 4 = lida). Vale para mensagens automáticas e para respostas da Ísis/equipe na conversa. Só avança (enviada → entregue → lida), nunca volta; o aviso de uma sessão só mexe em mensagens da clínica dona da sessão. | Código | ✅ |
+| RN-MS-11 | **Tela Mensagens (D130, Etapa 35):** padrão últimos 7 dias (30 e 90 opcionais), fila sempre visível; filtro por cliente mostra todo o histórico dele; resumo por disparo em massa (campanha / aniversários) com enviadas, entregues, falharam e na fila. | Código | ✅ |
 | RN-MS-07 | Se a consulta for cancelada/remarcada, lembretes pendentes dela são cancelados. | Código | ✅ |
 | RN-MS-08 | WhatsApp oficial: fora da janela de 24h só se envia por **template aprovado**. | Código | 🟡 |
 | RN-MS-09 | Não enviar mensagens automáticas entre **21h e 08h** (config). | Código + Config | ✅ |

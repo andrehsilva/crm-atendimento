@@ -303,6 +303,12 @@ Só no celular (tela < 768 px); no computador nada muda.
   "✅ Já está confirmada, não precisa confirmar". A Ísis também avisa isso na conversa.
 - Configurações › Assistente › Regras da agenda: "Já confirmada se marcada com menos de (horas)" — padrão 24; 0 desliga.
 
+## Etapa 35 — Mensagens por período e por cliente ✅ (27/11/2026; D130)
+- Abre nos **últimos 7 dias** (seletor: 7, 30 ou 90); a fila do que ainda vai sair aparece sempre.
+- **Cliente:** busca pelo nome/telefone ou clique no nome na lista → tudo o que foi enviado para ele, de qualquer data.
+- **Disparos do período:** um cartão por campanha e um para os aniversários, com barra e números (enviadas · entregues ·
+  falharam · na fila). Clicar filtra a lista e abre a aba certa ("Não enviadas" se houve falha).
+
 ---
 
 ## Depois da 1ª versão (backlog)

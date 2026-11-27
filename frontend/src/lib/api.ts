@@ -160,6 +160,24 @@ export type Mensagem = {
   error: string | null
   paciente: string | null
   telefone: string
+  patient_id?: string
+  campaign_id?: string | null
+  campanha?: string | null
+}
+
+/** Etapa 35 (D130): resumo de cada campanha e dos aniversários do período */
+export type Disparo = {
+  tipo: 'campanha' | 'aniversario'
+  campaign_id: string | null
+  titulo: string
+  inicio: string
+  fim: string
+  total: number
+  enviadas: number
+  entregues: number
+  falharam: number
+  na_fila: number
+  canceladas: number
 }
 
 export type Paciente = {

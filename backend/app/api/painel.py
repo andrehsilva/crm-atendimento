@@ -29,7 +29,7 @@ from app.canais.conexao import isis_pausada_no_whatsapp
 from app.core import cache, relogio
 from app.mensagens import lembretes
 from app.mensagens.agendador import agendador, rodada
-from app.painel import chat, crm
+from app.painel import chat, crm, historico
 from app import aparencia, configuracao_inicial as inicial, ia, segmentos, uso_ia
 
 router = APIRouter(prefix="/api", tags=["painel"], dependencies=[Depends(acesso)])
@@ -335,9 +335,11 @@ def remover_foto_paciente(clinic_id: UUID, patient_id: UUID, conn: Conn = Depend
 # ---------------------------------------------------------------------------
 @router.get("/clinics/{clinic_id}/outbound", summary="Mensagens automáticas (fila e enviadas)")
 def mensagens(clinic_id: UUID, tipo: str | None = None, status: str | None = None, limite: int = 100,
-              conn: Conn = Depends(get_conn)):
+              dias: int | None = None, paciente: UUID | None = None, conn: Conn = Depends(get_conn)):
     servico.carregar_clinica(conn, clinic_id)
-    sql = """select o.id, o.kind, o.channel, o.body, o.status, o.scheduled_for, o.sent_at, o.created_at, o.error,
+    if dias is not None or paciente:  # Etapa 35 (D130): por período (fila sempre aparece) ou tudo de um cliente
+        return historico.listar(conn, clinic_id, agora=relogio.agora(), dias=dias or 7, patient_id=paciente, tipo=tipo)
+    sql ="""select o.id, o.kind, o.channel, o.body, o.status, o.scheduled_for, o.sent_at, o.created_at, o.error,
                     p.name as paciente, p.phone as telefone, o.appointment_id
              from outbound_messages o join patients p on p.id = o.patient_id where o.clinic_id = %s"""
     params: list = [clinic_id]
@@ -348,6 +350,12 @@ def mensagens(clinic_id: UUID, tipo: str | None = None, status: str | None = Non
         sql += " and o.status = %s"
         params.append(status)
     return _cur(conn).execute(sql + " order by o.created_at desc limit %s", [*params, min(limite, 500)]).fetchall()
+
+
+@router.get("/clinics/{clinic_id}/outbound/disparos", summary="Resumo das campanhas e aniversários do período")
+def disparos(clinic_id: UUID, dias: int = 7, conn: Conn = Depends(get_conn)):
+    servico.carregar_clinica(conn, clinic_id)
+    return historico.resumo(conn, clinic_id, agora=relogio.agora(), dias=dias)
 
 
 # ---------------------------------------------------------------------------
