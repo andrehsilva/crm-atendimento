@@ -1,5 +1,8 @@
 """Peças comuns dos materiais de venda do TemHorario: estilo, marca e telas ilustrativas (dados fictícios)."""
 
+import base64
+import pathlib
+
 CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
 :root{--marca:#b85c74;--marca-soft:#f6e4ea;--marca-escura:#8f4257;--bg:#f3f1ee;--surface:#fff;--text:#1f1f22;
@@ -84,15 +87,20 @@ body{background:var(--surface)}
 .mob .abas i{display:block;width:16px;height:16px;border-radius:5px;border:1.6px solid currentColor;margin:0 auto 3px}
 """
 
+_LOGOS = pathlib.Path(__file__).resolve().parents[2] / "temhorario"  # docs/temhorario (logo oficial)
+
+
+def _img_svg(nome: str) -> str:
+    return "data:image/svg+xml;base64," + base64.b64encode((_LOGOS / nome).read_bytes()).decode()
+
+
 def logo(tam=34, texto=True, cor_texto="var(--text)"):
-    svg = f"""<svg width="{tam}" height="{tam}" viewBox="0 0 40 40" aria-hidden="true">
-<rect width="40" height="40" rx="11" fill="#b85c74"/>
-<circle cx="20" cy="21" r="11" fill="none" stroke="#fff" stroke-width="2.6"/>
-<path d="M20 15v6l4 2.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M14 7.5h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>"""
+    """Logo oficial de docs/temhorario. `tam` = altura em px. Fundo escuro (texto branco) usa a versão negativa."""
     if not texto:
-        return svg
-    return f'<span class="marca" style="font-size:{tam*0.62:.0f}px;color:{cor_texto}">{svg}<span>Tem<b>Horario</b></span></span>'
+        return f'<img class="marca" src="{_img_svg("temhorario-icone.svg")}" alt="TemHorario" style="height:{tam}px;width:{tam}px">'
+    claro = str(cor_texto).lower() in ("#fff", "#ffffff", "white")
+    arq = "temhorario-logo-negativo.svg" if claro else "temhorario-logo.svg"
+    return f'<img class="marca" src="{_img_svg(arq)}" alt="TemHorario" style="height:{tam}px;width:auto">'
 
 
 def _chat(bolhas):
