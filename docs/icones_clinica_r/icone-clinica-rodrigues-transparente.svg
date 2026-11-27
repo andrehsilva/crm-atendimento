@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 50 400 400" width="512" height="512">
+  <title>Clínica Rodrigues de Odontologia</title>
+  <defs>
+    <linearGradient id="dente" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#19A7A8"/>
+      <stop offset="1" stop-color="#0B6370"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Dente -->
+  <path fill="url(#dente)" d="M256 150
+    C230 120 190 105 160 110
+    C115 118 95 160 100 205
+    C104 245 120 270 130 300
+    C140 335 145 380 165 405
+    C180 425 205 415 210 390
+    C218 350 228 322 256 322
+    C284 322 294 350 302 390
+    C307 415 332 425 347 405
+    C367 380 372 335 382 300
+    C392 270 408 245 412 205
+    C417 160 397 118 352 110
+    C322 105 282 120 256 150 Z"/>
+
+  <!-- Monograma R -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M222 172 V284"/>
+    <path d="M222 172 H260 A32 32 0 0 1 260 236 H222"/>
+    <path d="M254 236 L294 284"/>
+  </g>
+
+  <!-- Brilho -->
+  <path fill="#19A7A8" d="M424 72 Q428 96 452 100 Q428 104 424 128 Q420 104 396 100 Q420 96 424 72 Z"/>
+  <circle cx="452" cy="146" r="7" fill="#19A7A8" opacity="0.85"/>
+</svg>
