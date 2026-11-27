@@ -387,6 +387,58 @@ def testar_conexao(clinic_id: UUID, conn=Depends(get_conn)):
 
 
 # ---------------------------------------------------------------------------
+# WhatsApp oficial (Etapa 36A — D131): o super admin escolhe o provedor de cada clínica (padrão WAHA)
+# ---------------------------------------------------------------------------
+class Provedor(BaseModel):
+    provedor: str = Field(pattern="^(waha|meta)$")
+
+
+class DadosMeta(BaseModel):
+    phone_number_id: str = Field(pattern=r"^\s*[0-9]{5,30}\s*$")
+    waba_id: str = Field(pattern=r"^\s*[0-9]{5,30}\s*$")
+    token: str | None = Field(None, max_length=1000)  # vazio = mantém o salvo
+    app_secret: str | None = Field(None, max_length=200)  # vazio = mantém a salva
+
+
+@router.get("/clinicas/{clinic_id}/whatsapp/meta", summary="Provedor e dados da Meta da clínica (sem segredos)")
+def ver_meta(clinic_id: UUID, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    return conexao.estado_meta(conn, clinic_id)
+
+
+@router.put("/clinicas/{clinic_id}/whatsapp/meta", summary="Salvar os dados da Meta (não troca o provedor)")
+def salvar_meta(clinic_id: UUID, body: DadosMeta, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    try:
+        conexao.salvar_meta(conn, clinic_id, phone_number_id=body.phone_number_id, waba_id=body.waba_id,
+                            token=(body.token or "").strip() or None, app_secret=(body.app_secret or "").strip() or None)
+    except ValueError as e:
+        raise AgendaError("DADOS_INVALIDOS", str(e)) from e
+    return conexao.estado_meta(conn, clinic_id)
+
+
+@router.post("/clinicas/{clinic_id}/whatsapp/meta/testar", summary="Testar ID do número e token na Meta")
+def testar_meta(clinic_id: UUID, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    try:
+        return {"ok": True, **conexao.cliente_meta(conn, clinic_id).testar()}
+    except WahaErro as e:  # MetaErro herda de WahaErro
+        return {"ok": False, "detalhe": f"A Meta não aceitou: {_motivo(e)}"}
+
+
+@router.put("/clinicas/{clinic_id}/whatsapp/provedor", summary="Trocar o provedor do WhatsApp da clínica (WAHA ou Meta)")
+def trocar_provedor(clinic_id: UUID, body: Provedor, request: Request, conn=Depends(get_conn)):
+    _existe(conn, clinic_id)
+    if body.provedor == "meta":
+        m = conexao.estado_meta(conn, clinic_id)
+        if not (m["phone_number_id"] and m["token_final"] and m["tem_app_secret"]):
+            raise AgendaError("DADOS_INVALIDOS", "Salve os dados da Meta (ID do número, token e chave secreta) antes de trocar.")
+    conexao.trocar_provedor(conn, clinic_id, body.provedor)
+    adm.auditar(conn, usuario_da_requisicao(request).id, "whatsapp_provedor", clinic_id, {"provedor": body.provedor})
+    return conexao.estado_meta(conn, clinic_id)
+
+
+# ---------------------------------------------------------------------------
 # IA da clínica vista pelo admin geral (D46): ligar/desligar "usar a chave da plataforma"
 # ---------------------------------------------------------------------------
 class UsoPlataforma(BaseModel):

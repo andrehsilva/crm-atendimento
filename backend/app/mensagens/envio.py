@@ -67,8 +67,8 @@ def _cliente(conn, clinic_id, s) -> ClienteWaha:
     """Servidor WAHA da clínica (Etapa 16); sem servidor próprio, o da plataforma."""
     from app.canais.conexao import cliente_da_clinica
 
-    r = conn.execute("select waha_url from whatsapp_instances where clinic_id = %s", (clinic_id,)).fetchone()
-    return cliente_da_clinica(conn, clinic_id) if r and r[0] else ClienteWaha(s)
+    r = conn.execute("select waha_url, provider from whatsapp_instances where clinic_id = %s", (clinic_id,)).fetchone()
+    return cliente_da_clinica(conn, clinic_id) if r and (r[0] or r[1] == "meta") else ClienteWaha(s)
 
 
 def _enviados_desde(conn, clinic_id, desde: datetime) -> int:

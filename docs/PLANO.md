@@ -309,6 +309,13 @@ Só no celular (tela < 768 px); no computador nada muda.
 - **Disparos do período:** um cartão por campanha e um para os aniversários, com barra e números (enviadas · entregues ·
   falharam · na fila). Clicar filtra a lista e abre a aba certa ("Não enviadas" se houve falha).
 
+## Etapa 36A — WhatsApp oficial: base ✅ (27/11/2026; D131; branch `whatsapp-oficial`)
+- Banco (migration 0035): provedor `waha` (padrão) ou `meta` por clínica + dados da Meta (token e chave secreta cifrados).
+- `ClienteMeta` (envio de texto, visto, baixar mídia, testar) com os mesmos métodos do WAHA; a fila, a Ísis e a equipe
+  pegam o cliente certo pelo provedor da clínica. Clínica em WAHA segue exatamente o caminho de antes.
+- Admin geral (API, só super admin): ver/salvar dados da Meta, testar, trocar o provedor (exige os dados salvos).
+  Tela fica para a 36D; receber mensagens pela Meta, para a 36B.
+
 ---
 
 ## Depois da 1ª versão (backlog)

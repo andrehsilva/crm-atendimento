@@ -11,6 +11,7 @@ import secrets
 from uuid import UUID
 
 from app import ia
+from app.canais.meta import ClienteMeta, MetaErro
 from app.canais.waha import ClienteWaha
 from app.config import get_settings
 
@@ -46,7 +47,15 @@ def webhook_alinhado(info: dict, url: str) -> bool:
     return False
 
 
-def cliente_da_clinica(conn, clinic_id: UUID) -> ClienteWaha:
+def provedor(conn, clinic_id: UUID) -> str:
+    """D131: 'waha' (padrão, todas as clínicas de hoje) ou 'meta' (WhatsApp oficial)."""
+    r = conn.execute("select provider from whatsapp_instances where clinic_id = %s", (clinic_id,)).fetchone()
+    return r[0] if r else "waha"
+
+
+def cliente_da_clinica(conn, clinic_id: UUID) -> "ClienteWaha | ClienteMeta":
+    if provedor(conn, clinic_id) == "meta":  # D131: só quem o super admin passou para a Meta entra aqui
+        return cliente_meta(conn, clinic_id)
     r = _linha(conn, clinic_id)
     if r and r[1] and r[2]:
         chave = ia.decifrar(r[2])
@@ -135,3 +144,66 @@ def atualizar_webhooks() -> int:
             except Exception as e:  # noqa: BLE001 — servidor fora do ar etc.: tenta na próxima subida
                 log.warning("não deu para atualizar o webhook da sessão %s: %s", sessao, e)
     return mudaram
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp oficial (Etapa 36A — D131). Dados em docs/conexao_meta.md. Token e chave secreta nunca voltam para a tela.
+# ---------------------------------------------------------------------------
+def _meta(conn, clinic_id: UUID):
+    return conn.execute(
+        """select meta_phone_number_id, meta_waba_id, meta_token_cipher, meta_token_last4, meta_app_secret_cipher,
+                  meta_verify_token from whatsapp_instances where clinic_id = %s""", (clinic_id,)).fetchone()
+
+
+def cliente_meta(conn, clinic_id: UUID) -> ClienteMeta:
+    r = _meta(conn, clinic_id)
+    token = ia.decifrar(r[2]) if r and r[2] else None
+    if not (r and r[0] and token):
+        raise MetaErro("WhatsApp oficial ainda não configurado: falta o ID do número ou o token da Meta.")
+    return ClienteMeta(r[0], token)
+
+
+def trocar_provedor(conn, clinic_id: UUID, novo: str) -> None:
+    """Só o super admin (Admin geral). Os dados do outro provedor ficam guardados para voltar depois."""
+    if novo not in ("waha", "meta"):
+        raise ValueError("Provedor inválido.")
+    garantir_linha(conn, clinic_id)
+    conn.execute("update whatsapp_instances set provider = %s, updated_at = now() where clinic_id = %s", (novo, clinic_id))
+
+
+def salvar_meta(conn, clinic_id: UUID, *, phone_number_id: str, waba_id: str, token: str | None,
+                app_secret: str | None) -> None:
+    """Token ou chave secreta vazios = mantém os já salvos. O token de verificação do webhook é gerado aqui."""
+    garantir_linha(conn, clinic_id)
+    atual = _meta(conn, clinic_id)
+    if not token and not (atual and atual[2]):
+        raise ValueError("Cole o token de acesso permanente da Meta.")
+    if not app_secret and not (atual and atual[4]):
+        raise ValueError("Cole a chave secreta do app da Meta.")
+    sets = ["meta_phone_number_id = %s", "meta_waba_id = %s"]
+    vals: list = [phone_number_id.strip(), waba_id.strip()]
+    if token:
+        sets += ["meta_token_cipher = %s", "meta_token_last4 = %s"]
+        vals += [ia.cifrar(token.strip()), token.strip()[-4:]]
+    if app_secret:
+        sets.append("meta_app_secret_cipher = %s")
+        vals.append(ia.cifrar(app_secret.strip()))
+    if not (atual and atual[5]):
+        sets.append("meta_verify_token = %s")
+        vals.append(secrets.token_urlsafe(24))
+    conn.execute(f"update whatsapp_instances set {', '.join(sets)}, updated_at = now() where clinic_id = %s",
+                 (*vals, clinic_id))
+    linha = _linha(conn, clinic_id)
+    if not (linha and linha[4]):  # endereço exclusivo (opaco) do webhook, o mesmo usado pelo WAHA (D123)
+        gerar_webhook(conn, clinic_id)
+
+
+def estado_meta(conn, clinic_id: UUID) -> dict:
+    """O que a tela pode ver (sem segredos)."""
+    r = _meta(conn, clinic_id)
+    base = get_settings().public_base_url.rstrip("/")
+    return {"provedor": provedor(conn, clinic_id),
+            "phone_number_id": r[0] if r else None, "waba_id": r[1] if r else None,
+            "token_final": r[3] if r else None, "tem_app_secret": bool(r and r[4]),
+            "webhook_url": f"{base}/webhooks/meta/{w[4]}" if base and (w := _linha(conn, clinic_id)) and w[4] else None,
+            "verify_token": r[5] if r else None}

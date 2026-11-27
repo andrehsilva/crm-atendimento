@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     waha_webhook_hmac_key: str = ""   # segredo que assina os webhooks (HMAC SHA-512)
     public_base_url: str = ""         # endereço público do backend (túnel em dev), ex.: https://xxx.trycloudflare.com
     waha_simular_digitacao: bool = True
+    # Etapa 36 (D131): WhatsApp oficial (Cloud API da Meta). Os dados de cada clínica ficam no banco, cifrados.
+    meta_graph_url: str = "https://graph.facebook.com/v23.0"
     # Etapa 13 (D66): mensagens picadas — espera este silêncio (s) antes de responder, no máximo o total abaixo
     whatsapp_espera_s: float = 8.0
     whatsapp_espera_max_s: float = 30.0
