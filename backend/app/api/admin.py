@@ -241,10 +241,13 @@ def _ligada(conn, clinic_id: UUID):
 @router.get("/clinicas/{clinic_id}/whatsapp", summary="Status do WhatsApp da clínica (com servidor e webhook)")
 def whatsapp_status(clinic_id: UUID, conn=Depends(get_conn)):
     _existe(conn, clinic_id)
-    base = {"conexao": conexao.estado(conn, clinic_id)}
+    prov = conexao.provedor(conn, clinic_id)
+    base = {"conexao": conexao.estado(conn, clinic_id), "provedor": prov}
     r = _ligada(conn, clinic_id)
     if not r:
         return {**base, "ligado": False}
+    if prov == "meta":  # 36D: a conexão é na Meta — nada de sessão/QR do WAHA aqui
+        return {**base, "ligado": True, **_instancia(conn, clinic_id)}
     try:
         info = _waha(conn, clinic_id).sessao(r[0])
     except WahaErro as e:

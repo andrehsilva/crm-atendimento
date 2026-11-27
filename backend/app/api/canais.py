@@ -15,7 +15,7 @@ from app.admin import servico as adm
 from app.agenda import servico
 from app.agenda.erros import AgendaError
 from app.auth.acesso import acesso, exigir_admin_clinica
-from app.canais.conexao import cliente_da_clinica, isis_pausada_no_whatsapp
+from app.canais.conexao import cliente_da_clinica, isis_pausada_no_whatsapp, provedor
 from app.canais.waha import WahaErro
 from app.canais.whatsapp import instancia_da_clinica
 from app.db import get_conn
@@ -41,13 +41,25 @@ def _cliente(conn, clinic_id: UUID):
         raise AgendaError("ENVIO_FALHOU", str(e)) from e
 
 
+def _so_waha(conn, clinic_id: UUID) -> None:
+    if provedor(conn, clinic_id) == "meta":
+        raise AgendaError("DADOS_INVALIDOS", "No WhatsApp oficial não há QR code nem reinício: a conexão fica na Meta.")
+
+
 @router.get("/whatsapp", summary="Status do WhatsApp da clínica (sem dados técnicos)")
 def whatsapp(clinic_id: UUID, conn=Depends(get_conn)):
     clinica = servico.carregar_clinica(conn, clinic_id)
     base = {"isis_pausada": isis_pausada_no_whatsapp(clinica)}
     inst = instancia_da_clinica(conn, clinic_id)
+    base["provedor"] = provedor(conn, clinic_id)
     if not inst or not inst["enabled"]:
         return {**base, "ligado": False, "situacao": "sem_whatsapp", "numero": None}
+    if base["provedor"] == "meta":  # 36D: WhatsApp oficial — confere na Meta se o número responde
+        try:
+            t = _cliente(conn, clinic_id).testar()
+        except (WahaErro, AgendaError):
+            return {**base, "ligado": True, "situacao": "sem_resposta", "numero": inst["phone"]}
+        return {**base, "ligado": True, "situacao": "conectado", "numero": t.get("numero") or inst["phone"]}
     try:
         info = _cliente(conn, clinic_id).sessao(inst["session"])
     except (WahaErro, AgendaError):
@@ -65,6 +77,7 @@ def whatsapp(clinic_id: UUID, conn=Depends(get_conn)):
 def whatsapp_qr(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
     exigir_admin_clinica(request, clinic_id)
     inst = _instancia(conn, clinic_id)
+    _so_waha(conn, clinic_id)
     try:
         png = _cliente(conn, clinic_id).qr_png(inst["session"])
     except WahaErro as e:
@@ -76,6 +89,7 @@ def whatsapp_qr(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
 def whatsapp_reiniciar(clinic_id: UUID, request: Request, conn=Depends(get_conn)):
     u = exigir_admin_clinica(request, clinic_id)
     inst = _instancia(conn, clinic_id)
+    _so_waha(conn, clinic_id)
     try:
         _cliente(conn, clinic_id).reiniciar(inst["session"])
     except WahaErro as e:

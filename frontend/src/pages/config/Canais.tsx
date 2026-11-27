@@ -60,6 +60,7 @@ export function Canais({ podeEditar }: { podeEditar: boolean }) {
   if (!s) return <p className="text-sm text-muted">{q.isError ? 'Não deu para carregar agora.' : 'Carregando…'}</p>
   const [rotulo, cor, explica] = SITUACAO[s.situacao]
   const nome = clinica.nome_assistente
+  const meta = s.provedor === 'meta'
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -71,9 +72,20 @@ export function Canais({ podeEditar }: { podeEditar: boolean }) {
           <Selo cor={cor} className="!text-sm">{rotulo}</Selo>
           {s.numero && <span className="text-lg font-semibold tabular-nums">{telefone(s.numero)}</span>}
         </div>
-        <p className="mt-3 text-sm text-muted">{explica}</p>
+        <p className="mt-3 text-sm text-muted">
+          {meta && s.situacao === 'sem_resposta'
+            ? 'A Meta não respondeu agora. Se continuar, fale com o suporte da plataforma (pode ser o token ou a conta na Meta).'
+            : explica}
+        </p>
+        {/* Etapa 36D (D131): WhatsApp oficial — conexão fica na Meta, sem QR code nem reinício */}
+        {meta && (
+          <p className="mt-3 rounded-2xl bg-surface-muted px-4 py-3 text-sm text-muted">
+            <b className="text-text">WhatsApp oficial (Meta).</b> A Meta cobra cada mensagem enviada pela clínica.
+            Fora das 24 h depois da última mensagem do cliente, só saem os modelos aprovados (lembrete, aniversário…).
+          </p>
+        )}
 
-        {s.ligado && podeEditar && (
+        {s.ligado && podeEditar && !meta && (
           <div className="mt-5 flex flex-wrap gap-2">
             {s.situacao !== 'conectado' && (
               <Botao onClick={() => setQr(qr ? 0 : Date.now())}><QrCode className="size-4" />{qr ? 'Esconder QR code' : 'Mostrar QR code'}</Botao>
@@ -83,7 +95,7 @@ export function Canais({ podeEditar }: { podeEditar: boolean }) {
             </Botao>
           </div>
         )}
-        {s.ligado && !podeEditar && s.situacao !== 'conectado' && (
+        {s.ligado && !podeEditar && !meta && s.situacao !== 'conectado' && (
           <p className="mt-4 rounded-2xl bg-surface-muted px-4 py-3 text-sm text-muted">Peça ao administrador da clínica para reconectar.</p>
         )}
 

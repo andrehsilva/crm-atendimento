@@ -6,6 +6,7 @@ import { Botao, Campo, Entrada, Modal, Secao, Selo } from '../../components/ui'
 import { api, type ConexaoWhatsapp, type SessaoWaha, type StatusWhatsapp } from '../../lib/api'
 import { telefone } from '../../lib/formato'
 import { SeloWhatsapp } from './Clinicas'
+import { MetaClinica } from './MetaClinica'
 
 /**
  * Etapa 31 (D122–D124): WhatsApp de uma clínica em 3 passos.
@@ -16,6 +17,7 @@ export function WhatsAppClinica({ id, slug }: { id: string; slug: string }) {
   const qc = useQueryClient()
   const base = `/admin/clinicas/${id}/whatsapp`
   const chave = ['admin', 'whatsapp', id]
+  const [verAba, setVerAba] = useState<'waha' | 'meta' | null>(null)
   const st = useQuery({
     queryKey: chave,
     queryFn: () => api.get<StatusWhatsapp>(base),
@@ -30,8 +32,31 @@ export function WhatsAppClinica({ id, slug }: { id: string; slug: string }) {
 
   if (st.isLoading || !st.data) return <p className="text-sm text-muted">Carregando…</p>
   const s = st.data
+  const naMeta = s.provedor === 'meta'
+  const aba = verAba ?? (naMeta ? 'meta' : 'waha')
   return (
     <div className="grid max-w-5xl gap-6">
+      {/* Etapa 36D (D131): o super admin escolhe o provedor de cada clínica; padrão WAHA */}
+      <div role="tablist" aria-label="Provedor do WhatsApp" className="flex flex-wrap gap-2">
+        {([['waha', 'WAHA'], ['meta', 'WhatsApp oficial (Meta)']] as const).map(([v, rot]) => (
+          <button key={v} type="button" role="tab" aria-selected={aba === v} onClick={() => setVerAba(v)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${aba === v ? 'bg-primary text-primary-contrast' : 'bg-surface text-muted hover:text-text'}`}>
+            {rot}{(v === 'meta') === naMeta && <span className={`rounded-full px-2 text-xs font-semibold ${aba === v ? 'bg-white/25' : 'bg-surface-muted'}`}>em uso</span>}
+          </button>
+        ))}
+      </div>
+      {aba === 'meta'
+        ? <MetaClinica id={id} emUso={naMeta} ligadoWaha={s.ligado && !naMeta}
+            onTrocou={() => { setVerAba(null); qc.invalidateQueries({ queryKey: ['admin'] }) }} />
+        : naMeta
+          ? <p className="rounded-2xl bg-surface p-4 text-sm text-muted">Esta clínica usa o WhatsApp oficial (Meta). Para voltar ao WAHA, use a aba "WhatsApp oficial (Meta)" › Voltar para o WAHA.</p>
+          : painelWaha()}
+    </div>
+  )
+
+  function painelWaha() {
+    return (
+    <div className="grid gap-6">
       <PassoServidor id={id} conexao={s.conexao} ligado={s.ligado} onSalvo={() => qc.invalidateQueries({ queryKey: chave })} />
       {s.ligado
         ? <Ligado id={id} s={s} onMudou={atualizar} />
@@ -43,7 +68,8 @@ export function WhatsAppClinica({ id, slug }: { id: string; slug: string }) {
         Mudar o webhook de uma sessão faz o WAHA reiniciá-la: o número fica alguns segundos sem conexão.
       </p>
     </div>
-  )
+    )
+  }
 }
 
 /* ---------------------------------------------------------------- 1. Servidor */

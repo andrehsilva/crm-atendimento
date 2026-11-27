@@ -287,9 +287,24 @@ export type ConexaoWhatsapp = {
   webhook_url?: string; webhook_exclusivo?: boolean; webhook_pronto?: boolean
 }
 
-export type StatusWhatsapp =
+export type StatusWhatsapp = { provedor?: 'waha' | 'meta' } & (
   | { ligado: false; conexao: ConexaoWhatsapp }
   | { ligado: true; conexao: ConexaoWhatsapp; sessao: string; status: string; numero: string | null; ativo: boolean; webhooks?: string[]; webhook_ok?: boolean; erro?: string }
+)
+
+/** Etapa 36 (D131): WhatsApp oficial (Meta) da clínica, sem segredos */
+export type EstadoMeta = {
+  provedor: 'waha' | 'meta'
+  phone_number_id: string | null
+  waba_id: string | null
+  token_final: string | null
+  tem_app_secret: boolean
+  webhook_url: string | null
+  verify_token: string | null
+}
+
+export type ModeloMeta = { nome: string; categoria: 'UTILITY' | 'MARKETING'; tipos: string[]; situacao: string; motivo: string | null }
+export type ModelosMeta = { modelos: ModeloMeta[]; aprovados: number; total: number }
 
 export type UsoClinica = {
   id: string
@@ -397,6 +412,7 @@ export type CanalWhatsapp = {
   situacao: 'conectado' | 'qr' | 'iniciando' | 'parado' | 'falhou' | 'sem_resposta' | 'sem_whatsapp' | 'desconhecido'
   numero: string | null
   isis_pausada: boolean
+  provedor?: 'waha' | 'meta'
 }
 
 /** Sino (Etapa 19, D81–D83). situacao = some sozinha quando resolvida; o resto cada pessoa marca como lida. */

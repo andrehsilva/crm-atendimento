@@ -142,7 +142,7 @@ def test_servidor_antes_de_ligar_e_sessoes_do_servidor_da_clinica(cliente, conn,
     _waha_memoria(monkeypatch, propria=[])
     sup = _como(cliente, _usuario(conn, super_admin=True))
     base = f"/api/admin/clinicas/{clinica.id}/whatsapp"
-    assert sup.get(base).json() == {"ligado": False, "conexao": {"numero_cadastrado": None, "servidor_proprio": False,
+    assert sup.get(base).json() == {"ligado": False, "provedor": "waha", "conexao": {"numero_cadastrado": None, "servidor_proprio": False,
                                                                   "servidor_url": None, "chave_final": None}}
     r = sup.put(f"{base}/conexao", json={"url": "https://waha.clinica.com", "chave": "chave-9999"})
     assert r.status_code == 200 and r.json()["servidor_proprio"]

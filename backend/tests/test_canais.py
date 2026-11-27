@@ -48,7 +48,8 @@ def _url(clinica, resto=""):
 def test_recepcao_ve_status_mas_nao_mexe(cliente, conn, ligada, waha):  # noqa: F811
     rec = _como(cliente, _usuario(conn, clinic_id=ligada.id, papel="reception"))
     r = rec.get(_url(ligada)).json()
-    assert r == {"isis_pausada": False, "ligado": True, "situacao": "conectado", "numero": "+5511944445555"}
+    assert r == {"isis_pausada": False, "ligado": True, "situacao": "conectado", "numero": "+5511944445555",
+                 "provedor": "waha"}  # 36D (D131): a tela sabe o provedor
     assert rec.get(_url(ligada, "/qr")).status_code == 403
     assert rec.post(_url(ligada, "/reiniciar")).status_code == 403
     assert rec.put(_url(ligada, "/pausa"), json={"pausada": True}).status_code == 403

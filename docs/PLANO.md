@@ -335,6 +335,14 @@ Só no celular (tela < 768 px); no computador nada muda.
   aviso "espere o cliente escrever ou ligue"; resumo do dia do profissional sai sempre como modelo.
 - A conversa do painel mostra o texto do modelo que o cliente recebeu.
 
+## Etapa 36D — WhatsApp oficial: telas ✅ (27/11/2026; D131; branch `whatsapp-oficial`)
+- **Admin geral › clínica › WhatsApp:** abas "WAHA" e "WhatsApp oficial (Meta)", com selo "em uso". Na da Meta:
+  passo a passo para a clínica; dados (IDs, token e chave secreta mascarados, botão Testar); endereço do webhook e token
+  de verificação com botão copiar; modelos (situação de cada um, "Criar os que faltam na Meta"); trocar o provedor
+  (com confirmação; exige dados salvos e WAHA desligado) e "Voltar para o WAHA".
+- **Configurações › Canais (clínica):** na Meta mostra "WhatsApp oficial", situação conferida na Meta e o aviso das
+  24 h; sem QR code nem "Reiniciar conexão" (a API também recusa).
+
 ---
 
 ## Depois da 1ª versão (backlog)

@@ -494,3 +494,48 @@ def test_criar_modelos_que_faltam_e_situacao():
     assert lista["temhorario_aniversario"]["situacao"] == "recusado"
     assert lista["temhorario_aniversario"]["motivo"] == "INVALID_FORMAT"
     assert lista["temhorario_confirmacao"]["situacao"] == "em análise"
+
+
+# ---------------------------------------------------------------------------
+# Etapa 36D — telas: Admin geral e Configurações › Canais
+# ---------------------------------------------------------------------------
+from tests.test_acesso import _como, _usuario, cliente  # noqa: E402, F401
+
+
+def test_admin_geral_salva_testa_e_troca_o_provedor(cliente, conn, clinica, monkeypatch):  # noqa: F811
+    sup = _como(cliente, _usuario(conn, super_admin=True))
+    base = f"/api/admin/clinicas/{clinica.id}/whatsapp"
+    assert sup.get(f"{base}/meta").json()["provedor"] == "waha"
+    assert sup.put(f"{base}/provedor", json={"provedor": "meta"}).status_code == 422  # sem dados da Meta
+    r = sup.put(f"{base}/meta", json={"phone_number_id": PHONE_ID, "waba_id": WABA_ID, "token": TOKEN, "app_secret": SEGREDO})
+    assert r.status_code == 200 and r.json()["token_final"] == "wxyz" and TOKEN not in r.text
+
+    monkeypatch.setattr(ClienteMeta, "testar", lambda self: {"numero": "+55 16 99112-2235", "nome": "Clínica", "qualidade": "GREEN"})
+    assert sup.post(f"{base}/meta/testar").json()["ok"] is True
+
+    assert sup.put(f"{base}/provedor", json={"provedor": "meta"}).json()["provedor"] == "meta"
+    st = sup.get(base).json()  # status não chama o WAHA para clínica na Meta
+    assert st["provedor"] == "meta" and st["ligado"] is True and st["sessao"] == SESSAO_META
+
+
+def test_so_super_admin_mexe_na_meta(cliente, conn, clinica):  # noqa: F811
+    adm = _como(cliente, _usuario(conn, clinic_id=clinica.id, papel="clinic_admin"))
+    base = f"/api/admin/clinicas/{clinica.id}/whatsapp"
+    assert adm.get(f"{base}/meta").status_code == 403
+    assert adm.put(f"{base}/provedor", json={"provedor": "meta"}).status_code == 403
+
+
+def test_canais_da_clinica_na_meta_sem_qr_nem_reinicio(cliente, conn, clinica, monkeypatch):  # noqa: F811
+    _na_meta(conn, clinica)
+    adm = _como(cliente, _usuario(conn, clinic_id=clinica.id, papel="clinic_admin"))
+    base = f"/api/clinics/{clinica.id}/config/canais/whatsapp"
+    monkeypatch.setattr(ClienteMeta, "testar", lambda self: {"numero": "+55 16 99112-2235", "nome": "C", "qualidade": None})
+    r = adm.get(base).json()
+    assert (r["provedor"], r["situacao"], r["numero"]) == ("meta", "conectado", "+55 16 99112-2235")
+    assert adm.get(f"{base}/qr").status_code == 422
+    assert adm.post(f"{base}/reiniciar").status_code == 422
+
+    def cai(self):
+        raise MetaErro("token expirado")
+    monkeypatch.setattr(ClienteMeta, "testar", cai)
+    assert adm.get(base).json()["situacao"] == "sem_resposta"
