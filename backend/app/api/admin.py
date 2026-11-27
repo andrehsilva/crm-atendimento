@@ -433,7 +433,10 @@ def trocar_provedor(clinic_id: UUID, body: Provedor, request: Request, conn=Depe
         m = conexao.estado_meta(conn, clinic_id)
         if not (m["phone_number_id"] and m["token_final"] and m["tem_app_secret"]):
             raise AgendaError("DADOS_INVALIDOS", "Salve os dados da Meta (ID do número, token e chave secreta) antes de trocar.")
-    conexao.trocar_provedor(conn, clinic_id, body.provedor)
+    try:
+        conexao.trocar_provedor(conn, clinic_id, body.provedor)
+    except ValueError as e:
+        raise AgendaError("DADOS_INVALIDOS", str(e)) from e
     adm.auditar(conn, usuario_da_requisicao(request).id, "whatsapp_provedor", clinic_id, {"provedor": body.provedor})
     return conexao.estado_meta(conn, clinic_id)
 

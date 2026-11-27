@@ -316,6 +316,16 @@ Só no celular (tela < 768 px); no computador nada muda.
 - Admin geral (API, só super admin): ver/salvar dados da Meta, testar, trocar o provedor (exige os dados salvos).
   Tela fica para a 36D; receber mensagens pela Meta, para a 36B.
 
+## Etapa 36B — WhatsApp oficial: receber mensagens ✅ (27/11/2026; D131; branch `whatsapp-oficial`)
+- Webhook exclusivo da clínica na Meta: `/webhooks/meta/<token>` (o mesmo token opaco do WAHA, D123).
+  - GET: a Meta confere o endereço com o token de verificação (funciona antes de trocar o provedor).
+  - POST: confere a assinatura `X-Hub-Signature-256` com a chave secreta do app; só aceita eventos do número da clínica.
+- Mensagens recebidas (texto, áudio, foto, vídeo, documento, botão) entram no mesmo fluxo do WAHA: agrupar picadas,
+  transcrever áudio, Ísis, equipe. Status entregue/lida igual ao D85; **falhou** marca a mensagem automática como
+  "falhou" com o motivo da Meta (ou deixa aviso na conversa).
+- Trocar para a Meta exige o WAHA desligado e já liga a clínica na Meta; voltar ao WAHA deixa desligada (religa pelo
+  caminho de sempre). Ainda sem "visto/digitando" na Meta e sem modelos fora da janela de 24 h (36C).
+
 ---
 
 ## Depois da 1ª versão (backlog)

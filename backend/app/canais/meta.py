@@ -3,15 +3,18 @@
 Mesmos métodos de envio do ClienteWaha, para a fila, a Ísis e a equipe não precisarem saber qual provedor a clínica
 usa. O `sessao` recebido é ignorado: cada cliente já nasce preso ao número (Phone Number ID) da clínica.
 
-Ainda não cobre (etapas seguintes): receber mensagens pelo webhook (36B) e modelos fora da janela de 24 h (36C).
+36B: webhook da Meta — assinatura, mensagens recebidas e status (entregue/lida/falhou).
+Ainda não cobre: modelos fora da janela de 24 h (36C).
 """
 
+import hashlib
+import hmac
 import logging
 import re
 
 import httpx
 
-from app.canais.waha import WahaErro
+from app.canais.waha import MensagemEntrada, WahaErro
 from app.config import get_settings
 from app.services.llm import USER_AGENT
 
@@ -111,3 +114,78 @@ class ClienteMeta:
 
     def atualizar_eventos_do_webhook(self, *_a, **_k) -> bool:
         return False  # o webhook da Meta é configurado no painel da Meta
+
+
+# ---------------------------------------------------------------------------
+# Webhook (Etapa 36B)
+# ---------------------------------------------------------------------------
+def sessao_meta(phone_number_id: str) -> str:
+    """Nome interno da "sessão" de uma clínica na Meta (a coluna session é única e o resto do sistema usa ela)."""
+    return f"meta:{phone_number_id}"
+
+
+def verificar_assinatura(corpo: bytes, assinatura: str | None, app_secret: str) -> bool:
+    """X-Hub-Signature-256 = "sha256=" + HMAC-SHA256(chave secreta do app, corpo cru)."""
+    if not (assinatura and app_secret and assinatura.startswith("sha256=")):
+        return False
+    esperado = hmac.new(app_secret.encode(), corpo, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(esperado, assinatura[7:].strip().lower())
+
+
+_MIDIA = {"audio": "audio", "image": "foto", "video": "video", "sticker": "figurinha", "document": "documento"}
+ENTREGA = {"delivered": 2, "read": 3}  # mesmos níveis do WAHA (D85); "sent" já é "enviada"
+
+
+def _texto(m: dict) -> str:
+    t = m.get("type")
+    if t == "text":
+        return (m.get("text") or {}).get("body") or ""
+    if t == "button":  # botão de resposta rápida de um modelo (36C: lembrete)
+        return (m.get("button") or {}).get("text") or (m.get("button") or {}).get("payload") or ""
+    if t == "interactive":
+        i = m.get("interactive") or {}
+        r = i.get("button_reply") or i.get("list_reply") or {}
+        return r.get("title") or r.get("id") or ""
+    if t in _MIDIA:
+        return (m.get(t) or {}).get("caption") or ""
+    return ""
+
+
+def interpretar_webhook(evento: dict, sessao: str, phone_number_id: str) -> tuple[list, list, list]:
+    """(mensagens recebidas, entregas [(id, nível)], falhas [(id, motivo)]) — só do número desta clínica."""
+    mensagens: list[MensagemEntrada] = []
+    entregas: list[tuple[str, int]] = []
+    falhas: list[tuple[str, str]] = []
+    if evento.get("object") != "whatsapp_business_account":
+        return mensagens, entregas, falhas
+    for entrada in evento.get("entry") or []:
+        for mudanca in entrada.get("changes") or []:
+            v = mudanca.get("value") or {}
+            if mudanca.get("field") != "messages" or (v.get("metadata") or {}).get("phone_number_id") != phone_number_id:
+                continue  # nunca aceita evento de outro número neste endereço
+            nomes = {c.get("wa_id"): ((c.get("profile") or {}).get("name")) for c in v.get("contacts") or []}
+            for m in v.get("messages") or []:
+                de = re.sub(r"\D", "", str(m.get("from") or ""))
+                t = m.get("type")
+                midia = _MIDIA.get(t) or (None if t in ("text", "button", "interactive") else "outro")
+                texto = _texto(m).strip()
+                if not de or not m.get("id") or (not texto and not midia):
+                    continue
+                dados = m.get(t) if t in _MIDIA and isinstance(m.get(t), dict) else {}
+                mensagens.append(MensagemEntrada(
+                    sessao=sessao, chat_id=de, telefone=f"+{de}", texto=texto[:2000], id_externo=str(m["id"]),
+                    nome=nomes.get(m.get("from")), midia=midia,
+                    midia_url=dados.get("id"), midia_mime=dados.get("mime_type"), duracao_s=None,
+                ))
+            for st in v.get("statuses") or []:
+                i, nome = st.get("id"), st.get("status")
+                if not i:
+                    continue
+                if nome in ENTREGA:
+                    entregas.append((str(i), ENTREGA[nome]))
+                elif nome == "failed":
+                    erros = st.get("errors") or [{}]
+                    e0 = erros[0] if isinstance(erros[0], dict) else {}
+                    motivo = f"{e0.get('code', '')} {e0.get('title') or e0.get('message') or 'falhou na Meta'}".strip()
+                    falhas.append((str(i), motivo[:300]))
+    return mensagens, entregas, falhas

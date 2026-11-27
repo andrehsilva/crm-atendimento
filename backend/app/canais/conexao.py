@@ -11,7 +11,7 @@ import secrets
 from uuid import UUID
 
 from app import ia
-from app.canais.meta import ClienteMeta, MetaErro
+from app.canais.meta import ClienteMeta, MetaErro, sessao_meta
 from app.canais.waha import ClienteWaha
 from app.config import get_settings
 
@@ -164,11 +164,29 @@ def cliente_meta(conn, clinic_id: UUID) -> ClienteMeta:
 
 
 def trocar_provedor(conn, clinic_id: UUID, novo: str) -> None:
-    """Só o super admin (Admin geral). Os dados do outro provedor ficam guardados para voltar depois."""
+    """Só o super admin (Admin geral). Os dados do outro provedor ficam guardados para voltar depois.
+
+    - Para a Meta: o WhatsApp (WAHA) da clínica precisa estar desligado; a clínica já fica ligada na Meta
+      (sessão interna "meta:<ID do número>").
+    - De volta ao WAHA: fica desligada; religa-se a sessão do WAHA pelo caminho de sempre (Admin geral › Ligar)."""
     if novo not in ("waha", "meta"):
         raise ValueError("Provedor inválido.")
     garantir_linha(conn, clinic_id)
-    conn.execute("update whatsapp_instances set provider = %s, updated_at = now() where clinic_id = %s", (novo, clinic_id))
+    sessao, ligado, atual = conn.execute(
+        "select session, enabled, provider from whatsapp_instances where clinic_id = %s", (clinic_id,)).fetchone()
+    if novo == atual:
+        return
+    if novo == "meta":
+        if ligado and not (sessao or "").startswith("meta:"):
+            raise ValueError("Desligue o WhatsApp (WAHA) da clínica antes de trocar para a Meta.")
+        r = _meta(conn, clinic_id)
+        if not (r and r[0]):
+            raise ValueError("Salve os dados da Meta antes de trocar.")
+        conn.execute("""update whatsapp_instances set provider = 'meta', session = %s, enabled = true, status = 'META',
+                        updated_at = now() where clinic_id = %s""", (sessao_meta(r[0]), clinic_id))
+    else:
+        conn.execute("""update whatsapp_instances set provider = 'waha', session = null, enabled = false,
+                        status = 'DESLIGADO', updated_at = now() where clinic_id = %s""", (clinic_id,))
 
 
 def salvar_meta(conn, clinic_id: UUID, *, phone_number_id: str, waba_id: str, token: str | None,
@@ -193,6 +211,9 @@ def salvar_meta(conn, clinic_id: UUID, *, phone_number_id: str, waba_id: str, to
         vals.append(secrets.token_urlsafe(24))
     conn.execute(f"update whatsapp_instances set {', '.join(sets)}, updated_at = now() where clinic_id = %s",
                  (*vals, clinic_id))
+    if provedor(conn, clinic_id) == "meta":  # já na Meta e trocou o número: a sessão interna acompanha
+        conn.execute("update whatsapp_instances set session = %s where clinic_id = %s",
+                     (sessao_meta(phone_number_id.strip()), clinic_id))
     linha = _linha(conn, clinic_id)
     if not (linha and linha[4]):  # endereço exclusivo (opaco) do webhook, o mesmo usado pelo WAHA (D123)
         gerar_webhook(conn, clinic_id)
@@ -207,3 +228,15 @@ def estado_meta(conn, clinic_id: UUID) -> dict:
             "token_final": r[3] if r else None, "tem_app_secret": bool(r and r[4]),
             "webhook_url": f"{base}/webhooks/meta/{w[4]}" if base and (w := _linha(conn, clinic_id)) and w[4] else None,
             "verify_token": r[5] if r else None}
+
+
+def por_token_meta(conn, token: str, exigir_meta: bool = True) -> dict | None:
+    """Webhook da Meta: dados da clínica dona deste endereço. Mensagens só se ela estiver na Meta; a verificação
+    do endereço (feita pela Meta ao salvar o webhook) vale antes da troca, para a clínica configurar com calma."""
+    r = conn.execute(
+        """select clinic_id, session, meta_phone_number_id, meta_app_secret_cipher, meta_verify_token, provider
+           from whatsapp_instances where webhook_token = %s""", (token,)).fetchone()
+    if not r or not r[2] or (exigir_meta and r[5] != "meta"):
+        return None
+    return {"clinic_id": r[0], "sessao": r[1], "phone_number_id": r[2],
+            "app_secret": ia.decifrar(r[3]) if r[3] else None, "verify_token": r[4]}

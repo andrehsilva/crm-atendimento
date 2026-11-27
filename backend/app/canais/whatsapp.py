@@ -280,3 +280,34 @@ def processar_entrega(sessao: str, id_externo: str, ack: int) -> None:
             conn.commit()
     except Exception:  # noqa: BLE001
         log.exception("falha ao registrar entregue/lida da mensagem %s", id_externo)
+
+
+def registrar_falha_envio(conn, sessao: str, id_externo: str, motivo: str) -> bool:
+    """36B: a Meta avisou depois que não entregou (ex.: fora da janela de 24 h, número inválido).
+    Mensagem automática vira "falhou" com o motivo; resposta na conversa ganha um aviso para a equipe."""
+    inst = instancia_por_sessao(conn, sessao)
+    if not inst:
+        return False
+    cid = inst["clinic_id"]
+    fila = conn.execute(
+        """update outbound_messages set status = 'falhou', error = %s
+           where clinic_id = %s and external_id = %s and status in ('enviada', 'entregue') returning id""",
+        (f"Meta: {motivo}"[:300], cid, id_externo)).fetchall()
+    conversa = conn.execute(
+        "select conversation_id from messages where clinic_id = %s and external_id = %s and direction = 'out' limit 1",
+        (cid, id_externo)).fetchone()
+    if conversa and not fila:
+        _registrar_falha(conn, cid, conversa[0], motivo)
+    if fila:
+        avisar(conn, cid, "mensagens")
+    return bool(fila or conversa)
+
+
+def processar_falha(sessao: str, id_externo: str, motivo: str) -> None:
+    """Chamado em segundo plano pelo webhook da Meta. Nunca levanta erro."""
+    try:
+        with pool().connection() as conn:
+            registrar_falha_envio(conn, sessao, id_externo, motivo)
+            conn.commit()
+    except Exception:  # noqa: BLE001
+        log.exception("falha ao registrar envio não entregue %s", id_externo)

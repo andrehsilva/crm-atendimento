@@ -1,11 +1,14 @@
-"""Entrada dos webhooks dos canais (spec 04). Hoje: WAHA (Etapa 5)."""
+"""Entrada dos webhooks dos canais (spec 04): WAHA (Etapa 5) e WhatsApp oficial da Meta (Etapa 36B, D131)."""
 
 import json
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+import hmac
 
-from app.canais import waha, whatsapp
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from fastapi.responses import PlainTextResponse
+
+from app.canais import meta, waha, whatsapp
 from app.config import get_settings
 from app.db import pool
 from app.eventos import avisar
@@ -87,3 +90,44 @@ async def webhook_da_clinica(token: str, request: Request, tarefas: BackgroundTa
     tarefas.add_task(whatsapp.processar, msg)
     return {"ok": True}
 
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp oficial (Meta) — Etapa 36B. Endereço exclusivo e opaco por clínica (o mesmo token do WAHA, D123).
+# ---------------------------------------------------------------------------
+@router.get("/meta/{token}", summary="Meta: verificação do endereço do webhook (hub.challenge)")
+def verificar_webhook_meta(token: str, request: Request):
+    from app.canais import conexao
+
+    q = request.query_params
+    with pool().connection() as conn:
+        achado = conexao.por_token_meta(conn, token, exigir_meta=False)
+    if not achado or not achado["verify_token"] or q.get("hub.mode") != "subscribe" or not hmac.compare_digest(
+            q.get("hub.verify_token") or "", achado["verify_token"]):
+        raise HTTPException(403, "verificação recusada")
+    return PlainTextResponse(q.get("hub.challenge") or "")
+
+
+@router.post("/meta/{token}", summary="Meta: mensagens recebidas e status (entregue, lida, falhou)")
+async def webhook_meta(token: str, request: Request, tarefas: BackgroundTasks):
+    from app.canais import conexao
+
+    corpo = await request.body()
+    with pool().connection() as conn:
+        achado = conexao.por_token_meta(conn, token)
+    if not achado:
+        raise HTTPException(404, "webhook desconhecido")
+    if not meta.verificar_assinatura(corpo, request.headers.get("x-hub-signature-256"), achado["app_secret"] or ""):
+        raise HTTPException(401, "assinatura inválida")
+    try:
+        evento = json.loads(corpo)
+    except ValueError as e:
+        raise HTTPException(400, "JSON inválido") from e
+    mensagens, entregas, falhas = meta.interpretar_webhook(evento, achado["sessao"], achado["phone_number_id"])
+    for msg in mensagens:
+        tarefas.add_task(whatsapp.processar, msg)  # responde à Meta já; a Ísis trabalha em segundo plano
+    for i, nivel in entregas:
+        tarefas.add_task(whatsapp.processar_entrega, achado["sessao"], i, nivel)
+    for i, motivo in falhas:
+        tarefas.add_task(whatsapp.processar_falha, achado["sessao"], i, motivo)
+    return {"ok": True}
