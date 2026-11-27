@@ -4,13 +4,15 @@ from venda import venda
 from apresentacao import apresentacao
 from apoio import apoio
 from checklist import checklist
+from conexoes import conexoes
 
 CONTATO = sys.argv[1] if len(sys.argv) > 1 else "WhatsApp (00) 00000-0000"
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 aqui = pathlib.Path(__file__).parent
 saida = aqui.parent
 for nome, html in [("TemHorario-Venda", venda(CONTATO)), ("TemHorario-Apresentacao", apresentacao(CONTATO)), ("TemHorario-Apoio-a-venda", apoio(CONTATO)),
-                   ("TemHorario-Checklist-de-implantacao", checklist(CONTATO))]:
+                   ("TemHorario-Checklist-de-implantacao", checklist(CONTATO)),
+                   ("TemHorario-Conexoes-WhatsApp", conexoes(CONTATO))]:
     arq = saida / f"{nome}.html"  # versão HTML pronta, ao lado do PDF
     arq.write_text(html, encoding="utf-8")
     pdf = saida / f"{nome}.pdf"

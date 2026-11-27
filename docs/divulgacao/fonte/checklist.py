@@ -43,7 +43,7 @@ def checklist(contato):
         ("Informações para a Ísis", "o que ela pode responder aos clientes", 7),
         ("Jeito de falar", "mais formal ou mais próximo", 8),
         ("Equipe que vai usar o painel", "e-mail de cada pessoa e quem é o administrador", 9),
-        ("WhatsApp da clínica", "o número e o celular em mãos para o QR code", 10),
+        ("WhatsApp da clínica", "como conectar (QR code ou oficial da Meta) e o número", 10),
         ("Mensagens automáticas", "lembrete, pós-consulta, retorno e aniversário", 11),
     ]
     itens = "".join(
@@ -114,6 +114,8 @@ input[type=checkbox]:checked::after{{content:'';width:4px;height:7px;border:soli
 .dois{{display:grid;grid-template-columns:1fr 1fr;gap:5mm}}
 .bloco{{border:1px solid var(--line);border-radius:12px;padding:3.5mm 4mm}}
 .bloco b.t{{display:block;font-size:11px;margin-bottom:2mm}}
+.bloco.opc p{{font-size:9.6px;color:var(--muted);line-height:1.5;margin:1.5mm 0 0 6mm}}
+.bloco.opc b{{color:var(--text)}}
 .aviso{{background:var(--ambar-soft);color:#6e4c08;border-radius:12px;padding:3mm 4mm;font-size:9.6px;line-height:1.5;margin-top:3mm}}
 .fim{{background:var(--text);color:#fff;border-radius:18px;padding:6mm 7mm;display:grid;grid-template-columns:1fr auto;gap:6mm;align-items:center;margin-top:6mm}}
 .fim h3{{font-size:16px;font-weight:700;margin-bottom:1.5mm}}.fim p{{font-size:10px;color:#cfcbd2;line-height:1.55}}
@@ -150,7 +152,7 @@ input[type=checkbox]:checked::after{{content:'';width:4px;height:7px;border:soli
   <div class="passos">
     <div class="passo"><div class="p">1</div><b>Você preenche</b><p>Este checklist, no papel ou direto no computador. Leva uns 20 minutos.</p></div>
     <div class="passo"><div class="p">2</div><b>A gente configura</b><p>Horários, profissionais, procedimentos, mensagens e o jeito de falar da Ísis.</p></div>
-    <div class="passo"><div class="p">3</div><b>Ligamos o WhatsApp</b><p>Lemos o QR code com o celular da clínica, testamos juntos e a equipe aprende o painel.</p></div>
+    <div class="passo"><div class="p">3</div><b>Ligamos o WhatsApp</b><p>Pelo QR code ou pela conta oficial da Meta, testamos juntos e a equipe aprende o painel.</p></div>
   </div>
 
   <h3 class="tit">O que vamos precisar <small>marque conforme for separando</small></h3>
@@ -216,17 +218,26 @@ input[type=checkbox]:checked::after{{content:'';width:4px;height:7px;border:soli
 
   {_secao(9, "Equipe que vai usar o painel", "Cada pessoa recebe um acesso com senha provisória, trocada no primeiro login. O administrador mexe nas configurações; os demais cuidam do dia a dia.")}
   <table class="tab"><tr><th style="width:34%">Nome</th><th style="width:40%">E-mail</th><th style="width:26%;text-align:center">Administrador?</th></tr>
-  {"".join('<tr><td contenteditable="true"></td><td contenteditable="true"></td><td class="c"><input type="checkbox"></td></tr>' for _ in range(4))}</table>
-
-  {_secao(10, "WhatsApp da clínica")}
-  <div class="grade">{_campo("Número que vai atender os clientes", 3)}{_campo("Quem estará com o celular no dia da ativação", 3)}</div>
-  <div class="aviso"><b>No dia da ativação:</b> o celular com esse WhatsApp precisa estar em mãos para ler o QR code (como no WhatsApp Web).
-  A conexão usa uma integração não oficial do WhatsApp; explicamos os cuidados na implantação.</div>
+  {"".join('<tr><td contenteditable="true"></td><td contenteditable="true"></td><td class="c"><input type="checkbox"></td></tr>' for _ in range(8))}</table>
 
   {_rodape(4)}
 </section>
 
 <section class="pg">
+  {_secao(10, "WhatsApp da clínica", "Escolha como as mensagens vão passar. A Ísis, o painel e a agenda são os mesmos nas duas — e dá para trocar depois. Veja o guia “Duas formas de conectar o WhatsApp”.")}
+  <div class="dois">
+    <div class="bloco opc">{_caixa("<b>Conexão pelo QR code</b>")}
+      <p>Sem custo por mensagem. Ativa no mesmo dia, lendo o QR code com o celular da clínica (como o WhatsApp Web).
+      É uma integração não oficial: existe risco de o WhatsApp bloquear o número.</p></div>
+    <div class="bloco opc">{_caixa("<b>WhatsApp oficial (Meta)</b>")}
+      <p>Conexão oficial, sem risco de bloqueio por integração não oficial. Tem um <b>custo por mensagem</b>, pago pela
+      clínica direto à Meta, que aparece no painel todo mês. A ativação leva alguns dias.</p></div>
+  </div>
+  <div class="grade" style="margin-top:3mm">{_campo("Número que vai atender os clientes", 3)}{_campo("Quem cuida disso na clínica", 3)}</div>
+  <div class="aviso"><b>Se escolher o QR code:</b> o celular com esse WhatsApp precisa estar em mãos no dia da ativação.
+  <b>Se escolher o oficial:</b> separe acesso de administrador ao Gerenciador de Negócios da Meta, os dados da empresa
+  para a verificação (CNPJ, site ou documento) e um cartão para a Meta cobrar as mensagens. A gente ajuda em cada passo.</div>
+
   {_secao(11, "Mensagens automáticas", "Todas podem ser ligadas, desligadas ou ter o texto mudado depois.")}
   <div class="dois">
     <div class="bloco"><div class="cxs pilha">
@@ -245,7 +256,7 @@ input[type=checkbox]:checked::after{{content:'';width:4px;height:7px;border:soli
   <div class="linha-tempo">
     <div><span class="p">1</span><b>Configuramos</b><p>Montamos a clínica no TemHorario com o que veio neste checklist.</p></div>
     <div><span class="p">2</span><b>Revisamos juntos</b><p>Mostramos a agenda e as mensagens, e ajustamos o que precisar.</p></div>
-    <div><span class="p">3</span><b>Ativamos o WhatsApp</b><p>Leitura do QR code e uma conversa de teste com a Ísis.</p></div>
+    <div><span class="p">3</span><b>Ativamos o WhatsApp</b><p>QR code ou conexão oficial, e uma conversa de teste com a Ísis.</p></div>
     <div><span class="p">4</span><b>Equipe no painel</b><p>Cada pessoa entra com o seu acesso e aprende o dia a dia.</p></div>
   </div>
 
